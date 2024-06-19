@@ -1,7 +1,7 @@
-import galspy.IO.bigfile as bf
+import galspy.IO.BigFile as bf
 import os
 
-def main(args,env):
+def main(env,args):
     path = os.path.join(env["PWD"],"header")
     header = bf.Header(path).Read()
 

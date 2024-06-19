@@ -3,114 +3,36 @@ import importlib.util
 import os,sys, readchar
 from typing import Callable, Union
 
-class TerminalUtility:
-    def __init__(self,terminal:Terminal) -> None:
-        self.terminal=terminal
     
-    def save_history(self,history):
-        pass
-
-    def execute_command(self,command:str):
-        cmd_chunks  = command.split(" ")
-        cmd_exec    = cmd_chunks[0]
-        cmd_args    = cmd_chunks[1:]
-
-        # Internal Command
-        if cmd_exec.lower() in ["clear","cls","clc"]:
-            self.clear()
-        elif cmd_exec.lower() in ["pwd"]:
-            self.pwd()
-        elif cmd_exec.lower() in ["env"]:
-            self.env(cmd_args)
-        elif cmd_exec.lower() in ["echo"]:
-            self.echo(cmd_args)
-        elif cmd_exec.lower() in ["where","which"]:
-            self.where(cmd_args,True)
-        else:
-            # External Command
-            exec_path = self.where([cmd_exec])[0]
-            exec_dir = str(os.path.dirname(exec_path))
-            sys.path.insert(0,exec_dir)
-            target=importlib.import_module(cmd_exec)
-            #---
-            target.main(cmd_args,self.terminal.env)
-            #---
-            sys.path.pop(0)
-            
-    def clear(self):
-        if os.name=="nt":os.system("cls")
-        else: os.system("clear")
-    
-    def pwd(self):
-        print(self.terminal.env["PWD"])
-
-    def env(self,args):
-        env         = self.terminal.env
-        keys        = env.keys()
-        max_len     = max([len(k) for k in keys])   # check for empty in max
-        if max_len > 32 : max_len = 32
-        for key in env:print(str(key).rjust(max_len),"=",env[key])
-
-    
-    def echo(self,args):
-        if len(args)==0:return
-        env         = self.terminal.env
-        keys        = env.keys()
-        ckeys       = [a for a in args if a in keys]
-        # ---
-        max_len     = max([len(k) for k in ckeys])  # check for empty in max
-        if max_len > 32 : max_len = 32
-        for key in ckeys:print(env[key])
-
-    def where(self,args,print_list:bool=False):
-        found_path=[]
-        for path in self.terminal.env["PATH"]:
-            childs      = [c for c in os.listdir(path)]
-            subfiles    = [f for f in childs if os.path.isfile(os.path.join(path, f))]
-            pyfiles     = [p.split(".py")[0] for p in subfiles if p.endswith(".py") and not p.startswith(("_","__"))]
-
-            for exe in args:
-                if not exe in pyfiles: continue
-                found_path.append(os.path.join(path,exe+".py"))
-
-        if print_list: 
-            for path in found_path:print(path)
-
-        return found_path 
-
-
-    # def get_command(self):
-        # return "hi"
-    
-
-# -----------------------------------------------
+# ====================
+# ----- TERMINAL -----
+# ====================
 
 class Terminal:
-    def __init__(self,wlcmsg:str="",hist_len:int=32) -> None:
+    def __init__(self,initmsg:str="",hist_len:int=32) -> None:
         self.env = {}                   
         self.history = []
-        self._ut = TerminalUtility(self) 
         
         # Validation
-        if wlcmsg=="":wlcmsg = "galspy terminal"
         if hist_len<5:hist_len=5
 
         # Initialise Environment
-        self.env["WLCMSG"] = wlcmsg
+        self.env["INITMSG"] = initmsg
         self.env["PS"] = "$"
         self.env["PATH"] = []
         self.env["HIST_LEN"] = hist_len
         self.env["PWD"] = os.getcwd()
 
     def AddPath(self,path:str):
+        if path in self.env["PATH"]:return
         self.env["PATH"].append(path)
 
     def Start(self):
-        # Clear screen
-        self._ut.clear()
+        # Clear screen at start
+        clear()
 
         # Show welcome message
-        print(self.env["WLCMSG"],"\n")
+        print(self.env["INITMSG"],"\n")
 
         # Run main loop
         while True:
@@ -120,24 +42,48 @@ class Terminal:
             # command=self._ut.get_command()
 
             if command.lower() in ["quit","exit"]:
-                self._ut.save_history(self.history)
+                # self._ut.save_history(self.history)
                 break
 
             # --- UPDATE HISTORY
             # Remove old duplicates
-            if command in self.history:
-                self.history.remove(command)
-            # Inser current command
+            if command in self.history:self.history.remove(command)
+            # Insert current command
             if not command.strip()=="":self.history.insert(0,command)
             # Cap length
             hlen = self.env["HIST_LEN"]
-            if len(self.history)>hlen:
-                self.history = self.history[:hlen]
+            if len(self.history)>hlen:self.history = self.history[:hlen]
 
 
             # --- EXECUTE COMMAND
             try:
-                self._ut.execute_command(command)
+                cmd_chunks  = command.split(" ")
+                cmd_exec    = cmd_chunks[0].strip()
+                cmd_args    = [cnk for cnk in cmd_chunks[1:] if cnk.strip()!=""]
+
+                # Internal Command
+                cmd_exec_lc = cmd_exec.lower()
+                if cmd_exec_lc in ["clear","cls","clc"]: clear()
+                elif cmd_exec_lc in ["pwd"]: pwd(self.env)
+                elif cmd_exec_lc in ["ls"]: ls(self.env,cmd_args)
+                elif cmd_exec_lc in ["env"]: env(self.env,cmd_args)
+                elif cmd_exec_lc in ["echo"]: echo(self.env,cmd_args)
+                elif cmd_exec_lc in ["where","which"]: where(self.env,cmd_args,True)
+                else:
+                    # External Command
+                    exec_path = where(self.env,[cmd_exec])
+                    if len(exec_path)==0:
+                        print("Unknown command :",cmd_exec)
+                        continue
+                    else:
+                        exec_path=exec_path[0]
+                    exec_dir = str(os.path.dirname(exec_path))
+                    sys.path.insert(0,exec_dir)
+                    target=importlib.import_module(cmd_exec)
+                    #----------
+                    target.main(self.env,cmd_args)
+                    #----------
+                    sys.path.pop(0)
             except Exception as e:
                 print(e)
 
@@ -148,3 +94,59 @@ class Terminal:
     
 
     
+# =============================
+# ----- INTERNAL COMMANDS -----
+# =============================
+
+def clear():
+    if os.name=="nt":os.system("cls")
+    else: os.system("clear")
+
+def pwd(env:dict):
+    print(env["PWD"])
+
+def env(env:dict,args:list[str]):
+    keys        = env.keys()
+    if len(args)!=0: keys = [a for a in args if a in keys]
+    if len(keys)==0: return
+    max_len     = max([len(k) for k in keys])
+    if max_len > 32 : max_len = 32
+    for key in keys:
+        print(str(key).rjust(max_len),"=",env[key])
+    
+def echo(env:dict,args:list[str]):
+    keys = env.keys()
+    for i,a in enumerate(args):
+        if a.startswith("$") and a[1:] in keys: args[i]=env[a[1:]]
+    print(" ".join(args))
+         
+    
+def where(env:dict,args:list[str],print_list:bool=False):
+    found_path=[]
+    for path in env["PATH"]:
+        childs      = [c for c in os.listdir(path)]
+        subfiles    = [f for f in childs if os.path.isfile(os.path.join(path, f))]
+        pyfiles     = [p.split(".py")[0] for p in subfiles if p.endswith(".py") and not p.startswith("_")]
+        for exe in args:
+            if not exe in pyfiles: continue
+            found_path.append(os.path.join(path,exe+".py"))
+    if print_list: 
+        for path in found_path:print(path)
+    return found_path 
+
+
+def ls(env:dict,args:list[str]):
+    path = env["PWD"]
+    childs = [c for c in os.listdir(path)]
+    for c in childs:
+        if os.path.isdir(os.path.join(path,c)):
+            print("",c,end="\t")
+        elif os.path.isfile(os.path.join(path,c)):
+            print(c,end="\t")
+    print("")
+
+
+
+
+
+
