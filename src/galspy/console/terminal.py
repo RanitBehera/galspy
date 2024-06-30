@@ -1,16 +1,19 @@
 from __future__ import annotations
 import importlib.util
-import os,sys, readchar
-from typing import Callable, Union
+import os,sys
+import readline
 
-    
+from prompt_toolkit import prompt
+from prompt_toolkit.completion import WordCompleter, NestedCompleter
+
+
 # ====================
 # ----- TERMINAL -----
 # ====================
 
 class Terminal:
     def __init__(self,initmsg:str="",hist_len:int=32) -> None:
-        self.env = {}                   
+        self.env = {}                  
         self.history = []
         
         # Validation
@@ -34,18 +37,38 @@ class Terminal:
         # Show welcome message
         print(self.env["INITMSG"],"\n")
 
+        # Auto-Completion
+        completion_dict = {}
+        
+        internal_commands = ("quit","exit","clear","cls","clc","pwd","ls","env","echo","where","which")
+        for ic in internal_commands:completion_dict[ic]=None
+
+        for path in self.env["PATH"]:
+            childs      = [c for c in os.listdir(path)]
+            subfiles    = [f for f in childs if os.path.isfile(os.path.join(path, f))]
+            pyfiles     = [p.split(".py")[0] for p in subfiles if p.endswith(".py") and not p.startswith("_")]
+            for pyfile in pyfiles:
+                sys.path.insert(0,path)
+                target=importlib.import_module(pyfile)
+                if hasattr(target,"main") and hasattr(target,"completion"):
+                    completion_dict.update({pyfile:target.completion()})
+                sys.path.pop(0)
+
+        nest_completer = NestedCompleter.from_nested_dict(completion_dict) 
+        
+
         # Run main loop
         while True:
-            # --- GET COMMAND
-            print(self.env["PS"],end=" ",flush=True)
-            command=input()
-            # command=self._ut.get_command()
+            # <----- GET COMMAND ----->
+            # command=input(self.env["PS"] + " ")
+            command = prompt(self.env["PS"] + " ",completer=nest_completer)
+            
 
             if command.lower() in ["quit","exit"]:
                 # self._ut.save_history(self.history)
                 break
 
-            # --- UPDATE HISTORY
+            # <----- UPDATE HISTORY ----->
             # Remove old duplicates
             if command in self.history:self.history.remove(command)
             # Insert current command
@@ -55,11 +78,34 @@ class Terminal:
             if len(self.history)>hlen:self.history = self.history[:hlen]
 
 
-            # --- EXECUTE COMMAND
+            # <----- EXECUTE COMMAND ----->
             try:
-                cmd_chunks  = command.split(" ")
-                cmd_exec    = cmd_chunks[0].strip()
-                cmd_args    = [cnk for cnk in cmd_chunks[1:] if cnk.strip()!=""]
+                tokens      = command.split(" ")
+                
+                # Replace env-variables
+                env_keys    = self.env.keys()
+                for i,tok in enumerate(tokens):
+                    if not tok.startswith("$"): continue
+                    tok = tok[1:]
+
+                    if not tok in env_keys: continue
+                    env_val = self.env[tok]
+
+                    if not type(env_val) in [str,int,float]:continue
+                    tokens[i] = env_val
+                
+                # Extract exec name and args
+                cmd_exec    = tokens[0].strip()
+                cmd_args    = [arg for arg in tokens[1:] if arg.strip()!=""]
+
+                # Expand combined args
+                for i,arg in enumerate(cmd_args):
+                    if not arg.startswith('-'): continue
+                    if arg.startswith("--"): continue
+                    if len(arg)==2:continue
+                    cmd_args.remove(arg)
+                    [cmd_args.insert(i,"-"+char) for char in arg[1:][::-1] if char.isalnum()] 
+                
 
                 # Internal Command
                 cmd_exec_lc = cmd_exec.lower()
@@ -102,8 +148,14 @@ def clear():
     if os.name=="nt":os.system("cls")
     else: os.system("clear")
 
+
 def pwd(env:dict):
     print(env["PWD"])
+
+
+def echo(env:dict,args:list[str]):
+    print(" ".join(args))
+
 
 def env(env:dict,args:list[str]):
     keys        = env.keys()
@@ -113,14 +165,8 @@ def env(env:dict,args:list[str]):
     if max_len > 32 : max_len = 32
     for key in keys:
         print(str(key).rjust(max_len),"=",env[key])
-    
-def echo(env:dict,args:list[str]):
-    keys = env.keys()
-    for i,a in enumerate(args):
-        if a.startswith("$") and a[1:] in keys: args[i]=env[a[1:]]
-    print(" ".join(args))
-         
-    
+
+
 def where(env:dict,args:list[str],print_list:bool=False):
     found_path=[]
     for path in env["PATH"]:

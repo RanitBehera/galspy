@@ -20,8 +20,11 @@ class TextConfig:
             # Remove unwanted space
             line = line.strip()
 
-            # Filter out blank lines and comments.
+            # Filter out blank lines and full comments.
             if line=='' or line.startswith(self.cmnt):continue
+
+            # Filter out the inline comments
+            line = line.split(self.cmnt)[0].strip()
 
             # Form key-value pair.
             tokens  = line.split("=")

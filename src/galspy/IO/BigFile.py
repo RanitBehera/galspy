@@ -69,7 +69,7 @@ class Header:
         return header_dict
 
 
-
+# -----------------------------------------------------
 class Blob:
     def __init__(self,path:str,dtype:str) -> None:
         self.path = path
@@ -79,8 +79,12 @@ class Blob:
         with open(self.path,mode="rb") as file:
             return numpy.fromfile(file,dtype=self.dtype)
         
+def ReadBlobWrapper(path_n_type):
+    return Blob(path_n_type[0],path_n_type[1]).Read()
 
 
+
+# -----------------------------------------------------
 class Column:
     def __init__(self,path:str) -> None:
         self.path = path
@@ -93,19 +97,25 @@ class Column:
 
         filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(nfile)]
         rowlen_per_blob = [header[fn] for fn in filenames]
-
+        rowlen = sum(rowlen_per_blob)
+        
         if not parallel:
-            rowlen = sum(rowlen_per_blob)
             data = numpy.empty(rowlen*nmemb,dtype=dtype)
             for i in range(nfile):
                 blob_start  = nmemb * sum(rowlen_per_blob[0:i])
                 blob_end    = nmemb * sum(rowlen_per_blob[0:i+1])
                 blob_path   = os.path.join(self.path,filenames[i])
-                data[blob_start:blob_end] = Blob(blob_path,dtype=dtype).Read()    
+                data[blob_start:blob_end] = Blob(blob_path,dtype).Read()    
             if nmemb>1: data = data.reshape(rowlen,nmemb)
             return data
         else:
-            pass
+            blob_paths = [(os.path.join(self.path,fn),dtype) for fn in filenames]
+            with Pool(nfile) as p:
+                blobs = p.map(ReadBlobWrapper,blob_paths)
+            data=numpy.array(blobs).flatten()
+            # data=numpy.array(blobs).ravel()
+            if nmemb>1: data = data.reshape(rowlen,nmemb)
+            return data
             
         
 
