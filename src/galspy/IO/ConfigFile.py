@@ -32,11 +32,7 @@ def ReadAsDictionary(filepath,sep_char='\n',comment_char='#'):
         key,value     = tokens[0].strip(),tokens[1].strip()
 
         # Cast to appropiate types
-        # - String
-        if value.startswith('"') and value.endswith('"'):value = str(value[1:-1])
-        # - Integer : Not implemented
-        # - Float : Not implemented
-        
+        # if value.startswith('"') and value.endswith('"'):value = str(value[1:-1])
         value = ast.literal_eval(value)
 
         # Fill the dictionary
