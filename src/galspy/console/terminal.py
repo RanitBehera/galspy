@@ -2,36 +2,43 @@ from __future__ import annotations
 import importlib.util
 import os,sys
 import readline
+import inspect
 
-from prompt_toolkit import prompt
+from prompt_toolkit import prompt, PromptSession
 from prompt_toolkit.completion import WordCompleter, NestedCompleter
 from prompt_toolkit.styles import Style
+from prompt_toolkit.shortcuts import CompleteStyle
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+
 
 # ====================
 # ----- TERMINAL -----
 # ====================
 
 class Terminal:
-    def __init__(self,initmsg:str="",hist_len:int=32) -> None:
+    def __init__(self,initmsg:str="") -> None:
         self.env = {}                  
-        self.history = []
-        
-        # Validation
-        if hist_len<5:hist_len=5
-
-        # Initialise Environment
         self.env["INITMSG"] = initmsg
         self.env["PS"] = "$"
-        self.env["PATH"] = []
-        self.env["HIST_LEN"] = hist_len
         self.env["PWD"] = os.getcwd()
+        self.env["USER"] = os.environ.get("USER")
+        self.env["HOSTNAME"] = os.environ.get("HOSTNAME")
+        self.env["HOME"] = os.environ.get("HOME")
+        self.env["PATH"] = []
 
-        # Classes for Prompt Style
+        self.Set_Prompt_Style()
+
+
+    def AddPath(self,path:str):
+        if path in self.env["PATH"]:return
+        self.env["PATH"].append(path)
+
+
+    def Set_Prompt_Style(self):
         self.pt_style = Style.from_dict(
             {
-                # Default
-                "" : "#ffffff",
-                # Prompt
+                ""          : "#ffffff",
                 "username"  : "#00ff00 bold",
                 "at"        : "#ffffff bold",
                 "hostname"  : "#ffff00 bold",
@@ -41,33 +48,35 @@ class Terminal:
             }
         )
 
-    def AddPath(self,path:str):
-        if path in self.env["PATH"]:return
-        self.env["PATH"].append(path)
 
-
-    def Set_Prompt(self):    
-        user_name   = os.environ.get("USER")
-        host_name   = os.environ.get("HOSTNAME")
-        home_dir    = os.environ.get("HOME")
-        work_dir    = self.env["PWD"].replace(home_dir,"~")
-
+    def Get_Prompt(self):    
         prompt_fragmenets = [
-            ("class:username",user_name),
+            ("class:username",self.env["USER"]),
             ("class:at","@"),
-            ("class:hostname",host_name),
+            ("class:hostname",self.env["HOSTNAME"]),
             ("class:colon"," : "),
-            ("class:workdir",work_dir),
-            ("class:dollar"," $ ")
+            ("class:workdir",self.env["PWD"].replace(self.env["HOME"],"~")),
+            ("class:dollar","$ ")
         ]
-
-        self.env["PS"]= "".join([val for cl,val in prompt_fragmenets])
+        self.env["PS"]= "".join([val for _,val in prompt_fragmenets])
         return prompt_fragmenets
+
+
+    def Get_RPrompt(self):
+        rprompt = ""
+        return rprompt
 
 
     def Get_Completion(self):
         completion_dict = {}
         
+
+        internal_commands = [name for name,obj in inspect.getmembers(sys.modules[__name__]) 
+                            if (inspect.isfunction(obj) and
+                                # name.startswith('test') and
+                                obj.__module__ == __name__)]
+
+        print(internal_commands)
         internal_commands = ("quit","exit","clear","cls","clc","pwd","ls","env","echo","where","which")
         for ic in internal_commands:completion_dict[ic]=None
 
@@ -90,34 +99,32 @@ class Terminal:
         if clear_prev:clear()
 
         # Show welcome message
-        if not self.env["INITMSG"]=="":print(self.env["INITMSG"],"\n")
+        if not self.env["INITMSG"]=="":print(self.env["INITMSG"])
 
-        # Auto-Completion
-        nest_completer = NestedCompleter.from_nested_dict(self.Get_Completion()) 
-        
-
+        # Promot Session
+        nest_completer  = NestedCompleter.from_nested_dict(self.Get_Completion())
+        hist_file       = FileHistory(os.path.join(os.environ.get("HOME"),".gspy_history"))
+        session = PromptSession(style=self.pt_style,
+                                completer=nest_completer,
+                                complete_in_thread=True,
+                                history=hist_file,
+                                auto_suggest=AutoSuggestFromHistory()
+                               )
+        return
         # Run main loop
         while True:
             # <----- UPDATE PROMPT ----->
-            prompt_fragments = self.Set_Prompt()
+            prompt_fragments = self.Get_Prompt()
+            rprompt = self.Get_RPrompt()
 
             # <----- GET COMMAND ----->
             # command=input(self.env["PS"] + " ")
-            command = prompt(prompt_fragments,completer=nest_completer,style=self.pt_style)
+            command = session.prompt(prompt_fragments,rprompt=rprompt)
             
-
+            if command=="": continue
             if command.lower() in ["quit","exit"]:
                 # self._ut.save_history(self.history)
                 break
-
-            # <----- UPDATE HISTORY ----->
-            # Remove old duplicates
-            if command in self.history:self.history.remove(command)
-            # Insert current command
-            if not command.strip()=="":self.history.insert(0,command)
-            # Cap length
-            hlen = self.env["HIST_LEN"]
-            if len(self.history)>hlen:self.history = self.history[:hlen]
 
 
             # <----- EXECUTE COMMAND ----->
@@ -190,6 +197,7 @@ def clear():
     if os.name=="nt":os.system("cls")
     else: os.system("clear")
 
+cls = clear
 
 def pwd(env:dict):
     print(env["PWD"])
