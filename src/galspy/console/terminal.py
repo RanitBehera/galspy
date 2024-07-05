@@ -5,7 +5,7 @@ import readline
 
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter, NestedCompleter
-
+from prompt_toolkit.styles import Style
 
 # ====================
 # ----- TERMINAL -----
@@ -26,18 +26,46 @@ class Terminal:
         self.env["HIST_LEN"] = hist_len
         self.env["PWD"] = os.getcwd()
 
+        # Classes for Prompt Style
+        self.pt_style = Style.from_dict(
+            {
+                # Default
+                "" : "#ffffff",
+                # Prompt
+                "username"  : "#00ff00 bold",
+                "at"        : "#ffffff bold",
+                "hostname"  : "#ffff00 bold",
+                "colon"     : "#ffffff bold",
+                "workdir"   : "#3fa2f6 bold",
+                "dollar"    : "#ffffff bold"
+            }
+        )
+
     def AddPath(self,path:str):
         if path in self.env["PATH"]:return
         self.env["PATH"].append(path)
 
-    def Start(self):
-        # Clear screen at start
-        clear()
 
-        # Show welcome message
-        print(self.env["INITMSG"],"\n")
+    def Set_Prompt(self):    
+        user_name   = os.environ.get("USER")
+        host_name   = os.environ.get("HOSTNAME")
+        home_dir    = os.environ.get("HOME")
+        work_dir    = self.env["PWD"].replace(home_dir,"~")
 
-        # Auto-Completion
+        prompt_fragmenets = [
+            ("class:username",user_name),
+            ("class:at","@"),
+            ("class:hostname",host_name),
+            ("class:colon"," : "),
+            ("class:workdir",work_dir),
+            ("class:dollar"," $ ")
+        ]
+
+        self.env["PS"]= "".join([val for cl,val in prompt_fragmenets])
+        return prompt_fragmenets
+
+
+    def Get_Completion(self):
         completion_dict = {}
         
         internal_commands = ("quit","exit","clear","cls","clc","pwd","ls","env","echo","where","which")
@@ -54,14 +82,28 @@ class Terminal:
                     completion_dict.update({pyfile:target.completion()})
                 sys.path.pop(0)
 
-        nest_completer = NestedCompleter.from_nested_dict(completion_dict) 
+        return completion_dict
+
+
+    def Start(self,clear_prev = False):
+        # Clear screen at start
+        if clear_prev:clear()
+
+        # Show welcome message
+        if not self.env["INITMSG"]=="":print(self.env["INITMSG"],"\n")
+
+        # Auto-Completion
+        nest_completer = NestedCompleter.from_nested_dict(self.Get_Completion()) 
         
 
         # Run main loop
         while True:
+            # <----- UPDATE PROMPT ----->
+            prompt_fragments = self.Set_Prompt()
+
             # <----- GET COMMAND ----->
             # command=input(self.env["PS"] + " ")
-            command = prompt(self.env["PS"] + " ",completer=nest_completer)
+            command = prompt(prompt_fragments,completer=nest_completer,style=self.pt_style)
             
 
             if command.lower() in ["quit","exit"]:
