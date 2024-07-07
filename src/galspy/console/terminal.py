@@ -241,6 +241,11 @@ def cd(env:dict,args:list[str]):
     env["PWD"] = os.getcwd()
 
 
+def mkdir(env:dict,args:list[str]):
+    for a in args:
+        if a.startswith(("-","/")):continue
+        os.mkdir(os.path.join(env["PWD"],a))
+
 
 def ls(env:dict,args:list[str]):
     path    = env["PWD"]
