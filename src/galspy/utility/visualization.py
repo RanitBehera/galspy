@@ -1,11 +1,11 @@
 import numpy
 import matplotlib.pyplot as plt
 
-def CubeVisualizer(ax:plt.Axes,pos:list[list[float]],box_size,point_size,point_color,alpha=1):    
+def CubeVisualizer(ax:plt.Axes,pos:list[list[float]],box_size_kpc,point_size,point_color,alpha=1):    
     # Validation
     if not ax.name=="3d": raise Exception("ERROR : Axes type is not 3d")
-    if box_size==0:raise Exception("ERROR : Box Size=0.")
-    L=box_size
+    if box_size_kpc==0:raise Exception("ERROR : Box Size=0.")
+    L=box_size_kpc
 
     #------------------------------------------------------------
     x,y,z=numpy.transpose(pos)
