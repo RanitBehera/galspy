@@ -75,7 +75,7 @@ else:
         ind_within_cyl_of_infl = list(set(ind_within_cyl_of_infl))
         
         pos_in_cyl = kdt.data[ind_within_cyl_of_infl]
-        CubeVisualizer(ax,pos_in_cyl,BOX_SIZE,1,'k',0.1)
+        CubeVisualizer(ax,pos_in_cyl,BOX_SIZE,1,'k',0.2)
         plt.show()
 
 

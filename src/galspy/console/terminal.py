@@ -3,6 +3,8 @@ import importlib.util
 import os,sys
 import readline
 import inspect
+import traceback
+
 
 from prompt_toolkit import prompt, PromptSession
 from prompt_toolkit.completion import WordCompleter, NestedCompleter
@@ -54,7 +56,6 @@ class ANSI:
     def bg_256(n):return f"\033[48;5;{n}m"
     def fg_rgb(r,g,b):return f"\033[38;2;{r};{g};{b}m"
     def bg_rgb(r,g,b):return f"\033[48;2;{r};{g};{b}m"
-             
 
 
 
@@ -75,10 +76,28 @@ class Terminal:
         self.env["PATH"] = []
 
         self.ic = self.Get_Internal_Commands()
+    
+    def SetTitle(self,title:str):
+        print(f"\33]0;{title}\a",end="") 
 
-    def AddPath(self,path:str):
-        if path in self.env["PATH"]:return
-        self.env["PATH"].append(path)
+    def AddPath(self,path:str,recursive:bool=False):
+        def Add_If_New(new_path:str):
+            if not new_path in self.env["PATH"]:
+                self.env["PATH"].append(new_path)
+
+        Add_If_New(path)
+        
+        if recursive:
+            MAX_RECURSION_DEPTH = 2
+            def AddSubDir(path:str,recursion_level:int=1):
+                if recursion_level>MAX_RECURSION_DEPTH:return
+                childs = [os.path.join(path,c) for c in os.listdir(path) if os.path.isdir(os.path.join(path,c)) and not c.startswith((".","_"))]
+                for child in childs:
+                    Add_If_New(child)
+                    AddSubDir(child,recursion_level+1)
+            AddSubDir(path)
+
+
 
     def Get_Internal_Commands(self):
         int_cmd = {}
@@ -103,6 +122,7 @@ class Terminal:
 
     def Get_RPrompt(self):
         rprompt = ANSI.BG_CYAN + ANSI.FG_BLACK + " GalSpy " + ANSI.RESET
+        rprompt = ""
         return rprompt
 
 
@@ -129,6 +149,8 @@ class Terminal:
 
 
     def Start(self,clear_prev = False):
+        self.SetTitle("GalSpy")
+        
         # Clear screen at start
         if clear_prev:clear()
 
@@ -208,7 +230,8 @@ class Terminal:
                     #----------
                     sys.path.pop(0)
             except Exception as e:
-                print(e)
+                # print(e)
+                traceback.print_exc()
 
 
 
