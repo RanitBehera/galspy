@@ -4,7 +4,7 @@ import os,sys
 import readline
 import inspect
 import traceback
-
+import shlex
 
 from prompt_toolkit import prompt, PromptSession
 from prompt_toolkit.completion import Completer, Completion
@@ -22,7 +22,7 @@ from prompt_toolkit.key_binding import KeyBindings
 # =============================
 # ----- ANSI ESCAPE CODE ------
 # =============================
-#region
+#region(collapsed)
 class ANSI:
     def ansi(n):return f"\033[{n}m"
 
@@ -72,6 +72,7 @@ class ANSI:
 # ==========================
 # ----- PROMPT TOOLKIT -----
 # ==========================
+#region
 _kb = KeyBindings()
 
 @_kb.add('"')
@@ -92,7 +93,8 @@ def _(event):
     buffer.insert_text('{')
     buffer.insert_text('}',move_cursor=False)
 
-
+@_kb.add('c-z')
+def _(event):exit()
 
 class _CommandCompleter(Completer):
     def __init__(self,env:dict) -> None:
@@ -101,7 +103,7 @@ class _CommandCompleter(Completer):
         self.nest_completer = NestedCompleter.from_nested_dict(self.get_nest_dict())
 
     def get_nest_dict(self):
-        completion_dict = {}
+        completion_dict = {"exit":None,"quit":None}
 
         # Auto-Detect Internal Commands
         for name,obj in inspect.getmembers(sys.modules[__name__]):
@@ -138,6 +140,7 @@ class _CommandCompleter(Completer):
                 Completion(comp.text,comp.start_position,display=comp.display)
                 for comp in self.nest_completer.get_completions(Document(document.text),complete_event)
             )
+#endregion
         
 
 
@@ -150,13 +153,15 @@ class _CommandCompleter(Completer):
 class Terminal:
     def __init__(self,initmsg:str="") -> None:
         self.env = {}                  
-        self.env["INITMSG"] = initmsg
-        self.env["PS"] = "$"
-        self.env["PWD"] = os.getcwd()
-        self.env["USER"] = os.environ.get("USER")
-        self.env["HOSTNAME"] = os.environ.get("HOSTNAME")
-        self.env["HOME"] = os.environ.get("HOME")
-        self.env["PATH"] = []
+        self.env["INITMSG"]     = initmsg
+        self.env["PS"]          = "$"
+        self.env["PWD"]         = os.getcwd()
+        self.env["USER"]        = os.environ.get("USER")
+        self.env["HOSTNAME"]    = os.environ.get("HOSTNAME")
+        self.env["HOME"]        = os.environ.get("HOME")
+        self.env["PATH"]        = []
+        
+        self.rprompt            = None
 
         self._int_cmd = self._get_internal_commands()
         self._enable_nerd_font = True
@@ -209,18 +214,21 @@ class Terminal:
             rprompt = self._get_rprompt()
 
             # ----- GET COMMAND
-            command:str = str(session.prompt(PT_ANSI(prompt),rprompt=PT_ANSI(rprompt)))
+            command = str(session.prompt(PT_ANSI(prompt),rprompt=PT_ANSI(rprompt)))
                                          
             # ----- IMMEDIATE ACTION
             if command.strip()=="": continue
             if command.lower() in ["quit","exit"]: break
 
             # ----- PARSE COMMAND
-            # Tokenize command
-            tokens      = [token.strip() for token in command.split(" ") if token.strip!=""]
-            
             # Replace env-variables
-            self._expand_env_tokens(tokens)
+            command = self._expand_env_vars(command)
+            
+            # Tokenize command
+            delimiter   = ["="]
+            for d in delimiter: command = command.replace(d,f" {d} ")
+            # tokens      = [token.strip() for token in command.split() if token.strip()!=""]
+            tokens = shlex.split(command)
 
             # Extract name and args
             cmd_name, cmd_args    = tokens[0],tokens[1:] 
@@ -228,30 +236,37 @@ class Terminal:
             # Expand combined arguments
             self._split_merged_options(cmd_args)
 
+            if False:
+                print(cmd_name)
+                print(cmd_args)
+                print(tokens,type(tokens))
+                continue
+
             # ----- EXECUTE COMMAND
-            # Internal commands
-            if cmd_name in self._int_cmd : 
-                self._int_cmd[cmd_name](self.env,cmd_args)
-                continue
-            
-            # External commands
-            exec_path = which(self.env,[cmd_name],False)
-            if len(exec_path)==0:
-                print("Unknown command :",cmd_name)
-                continue
-            
-            exec_path=exec_path[0]
-            exec_dir = str(os.path.dirname(exec_path))
             try:
+                # Internal commands
+                if cmd_name in self._int_cmd : 
+                    self._int_cmd[cmd_name](self.env,cmd_args)
+                    continue
+                
+                # External commands
+                exec_path = which(self.env,[cmd_name],False)
+                if len(exec_path)==0:
+                    print("Unknown command :",cmd_name)
+                    continue
+                
+                exec_path=exec_path[0]
+                exec_dir = str(os.path.dirname(exec_path))
                 sys.path.insert(0,exec_dir)
                 target=importlib.import_module(cmd_name)
                 target.main(self.env,cmd_args)
+                sys.path.pop(0)
             except Exception as e:
                 traceback.print_exc()
             else:
                 pass
             finally:
-                sys.path.pop(0)
+                pass
                 
 
     def _get_internal_commands(self):
@@ -274,24 +289,17 @@ class Terminal:
         return "".join(["".join(frag)+ANSI.RESET for frag in prompt_fragmenets])
         
     def _get_rprompt(self):
-        rprompt = ""
-        rprompt += ANSI.FG_CYAN +"\ue0b6" + ANSI.RESET 
-        rprompt += ANSI.BG_CYAN + ANSI.FG_BLACK + "GalSpy" + ANSI.RESET
-        rprompt += ANSI.FG_CYAN +"\uf07b" 
-        return rprompt
+        if callable(self.rprompt):
+            return self.rprompt(self.env)
+        else:
+            return ""
 
-    def _expand_env_tokens(self,tokens:list[str]):
-        env_keys    = self.env.keys()
-        for i,tok in enumerate(tokens):
-            if not tok.startswith("$"): continue
-            tok = tok[1:]
-
-            if not tok in env_keys: continue
-            env_val = self.env[tok]
-
-            if not type(env_val) in [str,int,float]:continue
-            tokens[i] = env_val
-        return tokens
+    def _expand_env_vars(self,command:str):
+        for key,_ in self.env.items():
+            if type(self.env[key]) not in [str,int,float]:continue
+            command = command.replace("$"+key,str(self.env[key]))
+        return command
+        
 
     def _split_merged_options(self,cmd_args):                        
         for i,arg in enumerate(cmd_args):
@@ -300,6 +308,7 @@ class Terminal:
             if len(arg)==2:continue
             cmd_args.remove(arg)
             [cmd_args.insert(i,"-"+char) for char in arg[1:][::-1] if char.isalnum()] 
+
 
 
             
@@ -328,8 +337,25 @@ def cd(env:dict,args:list[str]):
 
 def mkdir(env:dict,args:list[str]):
     for a in args:
-        if a.startswith(("-","/")):continue
+        if not (a[0].isalnum() or a[0] in ['.']):continue
         os.mkdir(os.path.join(env["PWD"],a))
+
+
+def env(env:dict,args:list[str]):
+    keys        = env.keys()
+    if len(args)!=0: keys = [a for a in args if a in keys]
+    if len(keys)==0: return
+    max_len     = max([len(k) for k in keys])
+    if max_len > 32 : max_len = 32
+    for key in keys:
+        value = env[key]
+        key = ANSI.FG_MAGENTA + key.rjust(max_len) + ANSI.RESET
+        if type(value)==str: value=f'"{value}"'
+        if type(value)==list: value="[ " + ",\n".ljust(max_len+7).join([f'"{v}"' if type(v)==str else v for v in value]) + " ]"
+        
+
+        print(f"{key} = {value}")
+        
 
 
 def ls(env:dict,args:list[str]):
@@ -359,17 +385,7 @@ def ls(env:dict,args:list[str]):
     [print(ANSI.fg_256(51)+l+ANSI.RESET,os.readlink(os.path.join(path,l)) if "-l" in args else "",sep="  ->  ",end=END) for l in child_links]
     [print(f,end=END) for f in child_files]
     
-    print("")
-
-
-def env(env:dict,args:list[str]):
-    keys        = env.keys()
-    if len(args)!=0: keys = [a for a in args if a in keys]
-    if len(keys)==0: return
-    max_len     = max([len(k) for k in keys])
-    if max_len > 32 : max_len = 32
-    for key in keys:
-        print(str(key).rjust(max_len),"=",env[key])
+    if not END=="\n":print("")
 
 
 def which(env:dict,args:list[str],print_list:bool=True):
@@ -385,6 +401,22 @@ def which(env:dict,args:list[str],print_list:bool=True):
         for path in found_path:print(path)
     return found_path 
 
+
+def export(env:dict,args:list[str]):
+    for i,arg in enumerate(args):
+        if not arg=="=": continue
+        try:
+            env[args[i-1]]= int(args[i+1])
+        except:
+            try:
+                env[args[i-1]]= float(args[i+1])
+            except:
+                env[args[i-1]]= args[i+1]
+
+def unset(env:dict,args:list[str]):
+    keys = env.keys()
+    for arg in args:
+        if arg in keys: del env[arg]
 
 
 
