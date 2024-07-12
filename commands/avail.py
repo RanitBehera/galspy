@@ -10,7 +10,7 @@ def main(env:dict,args:list[str]):
         print('Possible arguments for "avail" are "sim" and "snap"')
 
 
-def completion():
+def completion(env:dict):
     return {
         "sim":None,
         "snap":None

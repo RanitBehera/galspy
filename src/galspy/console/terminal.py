@@ -119,7 +119,7 @@ class _CommandCompleter(Completer):
                 sys.path.insert(0,path)
                 target=importlib.import_module(pyfile)
                 if hasattr(target,"main") and hasattr(target,"completion"):
-                    completion_dict.update({pyfile:target.completion()})
+                    completion_dict.update({pyfile:target.completion(self.env)})
                 sys.path.pop(0)
         return completion_dict 
     

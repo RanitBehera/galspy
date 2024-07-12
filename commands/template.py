@@ -1,6 +1,6 @@
 import os,stat
 
-def completion():
+def completion(env:dict):
     return {
         "genic":None,
         "gadget":None,

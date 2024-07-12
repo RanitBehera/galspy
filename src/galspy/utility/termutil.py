@@ -30,3 +30,9 @@ def get_available_sim(serach_paths:list[str],filters:list[str]=None):
             for word in filters:
                 if word in sim: filtered_simfiles[sim]=found_simfiles[sim]
         return filtered_simfiles
+    
+
+
+
+def get_available_snaps():
+    pass

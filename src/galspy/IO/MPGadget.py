@@ -195,12 +195,11 @@ class _RSGParticle(_NodeGroup):
         super().__init__(path)
 
         self.HaloID                     = self.AddNode("HaloID")
-        self.InternalHaloID             = self.AddNode("InternalHaloID")
-        self.AssignedInternalHaloID     = self.AddNode("AssignedInternalHaloID")
         self.ID                         = self.AddNode("ID")
         self.Mass                       = self.AddNode("Mass")
         self.Position                   = self.AddNode("Position")
         self.Velocity                   = self.AddNode("Velocity")
+        self.Velocity                   = self.AddNode("Type")
 
 class _RKSGroups(_NodeGroup):
     def __init__(self,path):
@@ -208,11 +207,15 @@ class _RKSGroups(_NodeGroup):
 
         self.HaloID             = self.AddNode("HaloID")
         self.InternalHaloID     = self.AddNode("InternalHaloID")
-        self.Length             = self.AddNode("Length")
+        self.ParticleLength     = self.AddNode("particleLength")
         self.VirialMass         = self.AddNode("VirialMass")
         self.VirialRadius       = self.AddNode("VirialRadius")
         self.Position           = self.AddNode("Position")
         self.Velocity           = self.AddNode("Velocity")
+
+        self.Child              = self.AddNode("Child")
+        self.NextCochild              = self.AddNode("NextCoChild")
+        # self.Child              = self.AddNode("Child")
 
         # Post Processed
         self.LengthByTypeWC         = self.AddNode("LengthByTypeWC")
@@ -224,12 +227,7 @@ class _RSG(_Folder):
     def __init__(self,path):
         super().__init__(path)
 
-        self.Gas         = _RSGParticle(os.path.join(self.path,"0"))
-        self.DarkMatter  = _RSGParticle(os.path.join(self.path,"1"))
-        self.Neutrino    = _RSGParticle(os.path.join(self.path,"2"))
-        self.Star        = _RSGParticle(os.path.join(self.path,"4"))
-        self.BlackHole   = _RSGParticle(os.path.join(self.path,"5"))
-
+        self.RKSParticles = _RSGParticle(os.path.join(self.path,"RKSParticles"))
         self.Header      = _SnapHeader(os.path.join(self.path,"Header"))
         self.RKSGroups   = _RKSGroups(os.path.join(self.path,"RKSGroups"))
 

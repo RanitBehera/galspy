@@ -1,6 +1,6 @@
 import os
 
-def completion():
+def completion(env:dict):
     oc = {"-o":None}
     return {
         "-t":oc,
