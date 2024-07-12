@@ -38,7 +38,6 @@ def main(env:dict,args:list[str]):
         
         if search_dir=="":
             with_pwd = input("Proceed with current directory? [Y/n] :")
-            print(with_pwd)
             if with_pwd.lower() in ["y",""]:search_dir = env["PWD"]
             else:return
 
