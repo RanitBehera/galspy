@@ -5,6 +5,7 @@ import readline
 import inspect
 import traceback
 import shlex
+import argparse
 
 from prompt_toolkit import prompt, PromptSession
 from prompt_toolkit.completion import Completer, Completion
@@ -236,11 +237,6 @@ class Terminal:
             # Expand combined arguments
             self._split_merged_options(cmd_args)
 
-            if False:
-                print(cmd_name)
-                print(cmd_args)
-                print(tokens,type(tokens))
-                continue
 
             # ----- EXECUTE COMMAND
             try:
@@ -258,11 +254,17 @@ class Terminal:
                 exec_path=exec_path[0]
                 exec_dir = str(os.path.dirname(exec_path))
                 sys.path.insert(0,exec_dir)
+                sys.argv    +=cmd_args
                 target=importlib.import_module(cmd_name)
-                target.main(self.env,cmd_args)
+                target.main(self.env)
+                sys.argv    = sys.argv[:len(sys.argv)-len(cmd_args)]
                 sys.path.pop(0)
             except Exception as e:
                 traceback.print_exc()
+            except SystemExit:
+                # argparse error
+                sys.argv    = sys.argv[:len(sys.argv)-len(cmd_args)]
+                pass
             else:
                 pass
             finally:

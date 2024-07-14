@@ -5,7 +5,6 @@ def get_available_sim(serach_paths:list[str],filters:list[str]=None):
     # Validate
     if filters==None:filters=[]
 
-
     found_simfiles ={}
     
     # Find sim-files
@@ -34,5 +33,5 @@ def get_available_sim(serach_paths:list[str],filters:list[str]=None):
 
 
 
-def get_available_snaps():
+def get_available_snaps(part_path,rsg_path):
     pass

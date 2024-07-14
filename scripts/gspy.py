@@ -3,7 +3,7 @@ import galspy.console.terminal as pyterm
 
 term = pyterm.Terminal()
 term.AddPath("/mnt/home/student/cranit/Repo/galspy/commands",True)
-term.AddPath("/mnt/home/student/cranit/Repo/galspy/scripts/temp/sims")
+term.AddPath("/mnt/home/student/cranit/Repo/galspy/temp/sims")
 
 
 # UTF-8 Symbols

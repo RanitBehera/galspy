@@ -3,4 +3,4 @@ src/galspy.egg-info
 .vscode
 gsconda
 gspy
-scripts/temp
+**/temp
