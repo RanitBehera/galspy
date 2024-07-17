@@ -1,27 +1,46 @@
-import os,stat
+import os,stat, argparse
 from galspy.IO.ConfigFile import ReadAsDictionary
+import tqdm,numpy
 
+import galspy.IO.BigFile as bf
 
 def completion(env:dict):
+    iodir = {"-d":None,"--dir":None}
     return {
-        "--template":None,
-        "--post-process":{"-o":None}
+        "-t":iodir,
+        "--template":iodir,
+        "-p":iodir,
+        "--postprocess":iodir,
+        "-v":None,
+        "--verbose":None,
     }
 
-def help():pass
 
-def main(env:dict,args:list[str]):
-    if len(args)<1:return
+def main(env:dict):
+    ap = argparse.ArgumentParser()
+    group = ap.add_mutually_exclusive_group(required=True)
+    group.add_argument('-t','--template', action='store_true')
+    group.add_argument('-p','--postprocess', action='store_true')
+    ap.add_argument("-d","--dir",type=str)
+    ap.add_argument("-v","--verbose",action='store_true')
+    args = ap.parse_args()
 
-    if "--template" in args:
-        _rockstar_galaxies_template(env["PWD"])
-    elif "--post-process" in args:
-        _rockstar_galaxies_postprocess(env,args)
+    iodir = args.dir
+    if not iodir==None and not os.path.exists(iodir):
+        print(f'The path "{iodir}" does not exist.')
+        return
+    if iodir==None:
+        # TODO : Check symfile. If fails set PWD
+        iodir = env["PWD"]
+
+    if args.template:
+        _rockstar_galaxies_template(iodir)
+    elif args.postprocess:
+        _rockstar_galaxies_postprocess(env,iodir,args.verbose)
+
         
             
                     
-
-
 def _rockstar_galaxies_template(out_dir:str):
     with open(os.path.join(out_dir,"snapnames.txt"),"w") as fp: pass
     with open(os.path.join(out_dir,"blocknames.txt"),"w") as fp: pass
@@ -92,55 +111,32 @@ SUPPRESS_GALAXIES = 0
 
 
 
-def _rockstar_galaxies_postprocess(env:dict,args:list[str]):
-    snap_list = _resolve_directory(env,args)
-    for snap in snap_list:
-        _Process_Headers(snap)
-
-
-
-def _resolve_directory(env:dict,args:list[str]):
-    # Get Directory
-    search_dir  = ""
-    if "-o" in args:
-        o_index = args.index("-o")
-        if o_index<len(args)-1:
-            search_dir=args[o_index+1]
-            if not os.path.exists(search_dir):
-                print(f"Serach directory {search_dir} doesnot exist.")
-                search_dir = ""
-            if not os.path.isdir(search_dir):
-                print(f"Serach directory {search_dir} is not a directory!")
-                search_dir = ""
-        else:
-            print("No search directory given:")
-    
-    
-    if search_dir=="":
-        with_pwd = input("Proceed with current directory? [Y/n] :")
-        if with_pwd.lower() in ["y",""]:search_dir = env["PWD"]
-        else:return
-
-    # Get Snaps to work with
+def _rockstar_galaxies_postprocess(env:dict,search_dir:str,verbose:bool=False):
     snap_list=[]
-    if os.path.basename(search_dir).startswith("RSG_"):snap_list.append(search_dir)
+    if os.path.basename(search_dir).startswith("RSG_"):
+        snap_list.append(search_dir)
     else:
         childs = os.listdir(search_dir)
         for c in childs:
             full_dir = os.path.join(search_dir,c)
             if os.path.isdir(full_dir) and os.path.basename(c).startswith("RSG_"):
                 snap_list.append(full_dir)
-    
+
     if len(snap_list)==0:
         print(f"No snapshot found.:{search_dir}")
-    else:
-        print(f"Found {len(snap_list)} snapshots.")
+        return
 
-    return snap_list
+    print(f"Found {len(snap_list)} snapshots.")
+
+    for snap in tqdm.tqdm(snap_list):
+        # print(f"\nWorking on : {snap}")
+        _Process_Headers(snap,verbose)
+        _DumpParticleStart(snap)
+
+
                 
-
-        
-def _Process_Headers(snap_path:str):
+CWL = 40     
+def _Process_Headers(snap_path:str,verbose:bool=False):
     childs = [os.path.join(snap_path,child) for child in os.listdir(snap_path) if os.path.isdir(os.path.join(snap_path,child))]
     for child in childs:
         grands = [os.path.join(child,grand) for grand in os.listdir(child) if os.path.isdir(os.path.join(child,grand))]
@@ -148,6 +144,9 @@ def _Process_Headers(snap_path:str):
             headers = [os.path.join(grand,head) for head in os.listdir(grand) if head.startswith("header_")]
             nfile = len(headers)
             if nfile==0:continue
+
+            if verbose:
+                print(f"  Joining Header :".ljust(40) +f"{os.path.basename(child)}/{os.path.basename(grand)}")
 
             dtype_list = []
             nmemb_list = []
@@ -184,9 +183,27 @@ def _Process_Headers(snap_path:str):
                 for dl in datalen_list:
                     fp.write(dl+"\n")
 
-
-            datalen_list.sort()
-
+            if verbose:
+                print(f"  Cleaning Header Chunks :".ljust(CWL)+f"{os.path.basename(child)}/{os.path.basename(grand)}")
+            
             for head in headers:
                 os.remove(head)
 
+def _DumpParticleStart(snap_path:str):
+    hid_path = os.path.join(snap_path,"RKSParticles/HaloID")
+
+    header =bf.Header(os.path.join(hid_path,"header")).Read()
+    dtype = header["DTYPE"]
+    nmemb = header["NMEMB"]
+    nfile = header["NFILE"]
+    filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(nfile)]
+    pstart = []
+    for fn in filenames:
+        blob_path = os.path.join(hid_path,fn)
+        blob_HaloID=bf.Blob(blob_path,dtype).Read()
+
+        val,start,count = numpy.unique(blob_HaloID,return_index=True,return_counts=True)
+        pstart.append(start)
+
+    psi = bf.Column(os.path.join(snap_path,"RKSHalos/PP_ParticleStartIndex"))
+    psi.Write(pstart,"Overwrite")

@@ -1,6 +1,7 @@
 import os
 from typing import Any
 import galspy.IO.BigFile as bf
+import galspy.utility.rockstar as rs
 
 
 class _Folder:
@@ -267,6 +268,7 @@ class _RSG(_Folder):
         self.Header         = _SnapHeader(os.path.join(self.path,"Header"))
         self.RKSHalos      = _RKSGroups(os.path.join(self.path,"RKSHalos"))
 
+
 class _Sim(_Folder):
     def __init__(self, path: str) -> None:
         super().__init__(path)
@@ -290,3 +292,8 @@ def NavigationRoot(path:str):
     if not os.path.isdir(path):
         print("ERROR : Navigation Root Directory")
     return _Sim(path)
+
+def RSGRoot(path:str):
+    if not os.path.isdir(path):
+        print("ERROR : RSG Root Directory")
+    return _RSG(path)

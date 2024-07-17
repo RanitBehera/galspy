@@ -12,9 +12,9 @@ IC_SNAP    = "\U0001F790"  # Box
 IC_HALO    = "\U0001F78A"  # Ring
 
 def set_rprompt(env:dict):
-    SIM = env.get("SIM") or ""
-    SNAP = env.get("SNAP") or ""
-    HALO = env.get("HALO") or ""
+    SIM = env.get("SIM","")
+    SNAP = env.get("SNAP","")
+    HALO = env.get("HALO","")
 
     rp = ""
     if not (HALO=="" or SNAP=="" or SIM==""):rp += f'{HALO} {IC_HALO}   '

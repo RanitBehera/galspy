@@ -119,8 +119,9 @@ class _CommandCompleter(Completer):
             for pyfile in pyfiles:
                 sys.path.insert(0,path)
                 target=importlib.import_module(pyfile)
-                if hasattr(target,"main") and hasattr(target,"completion"):
-                    completion_dict.update({pyfile:target.completion(self.env)})
+                if hasattr(target,"main"):
+                    if hasattr(target,"completion"):completion_dict.update({pyfile:target.completion(self.env)})
+                    else:completion_dict.update({pyfile:None})
                 sys.path.pop(0)
         return completion_dict 
     
