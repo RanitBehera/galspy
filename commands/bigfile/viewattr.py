@@ -1,7 +1,7 @@
 import galspy.IO.BigFile as bf
 import os
 
-def main(env,args):
+def main(env):
     path = os.path.join(env["PWD"],"attr-v2")
     attr_v2 = bf.Attribute(path).Read()
 

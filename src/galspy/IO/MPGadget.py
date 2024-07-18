@@ -1,7 +1,7 @@
 import os
 from typing import Any
 import galspy.IO.BigFile as bf
-import galspy.utility.rockstar as rs
+import galspy.utility.HaloQuery as rs
 
 
 class _Folder:

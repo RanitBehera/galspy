@@ -1,4 +1,4 @@
-import galspy.utility.rockstar as rs
+import galspy.utility.HaloQuery as rs
 import galspy.IO.MPGadget as mp
 
 path = "/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017"

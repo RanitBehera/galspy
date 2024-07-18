@@ -1,5 +1,5 @@
 import galspy.IO.MPGadget as mp
-import galspy.utility.rockstar as rs
+import galspy.utility.HaloQuery as rs
 
 path = "/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64"
 root = mp.NavigationRoot(path)
@@ -7,7 +7,10 @@ root = mp.NavigationRoot(path)
 snap = 17
 
 
-qr = rs.RockstarQuery(root.RSG(snap).path)
+qr = rs.RSGQuery(root.RSG(snap).path)
+
+print(qr.get_massive_halos())
+
 halos = root.RSG(snap).RKSHalos
 
 hids = halos.HaloID()
@@ -34,7 +37,7 @@ print(f"BLOBNAME".ljust(8),
         )
 
 for i,hid in enumerate(hids):
-    print(f"{qr.get_blobname_of(hid)}".ljust(8),
+    print(f"{qr.get_blobname_of_halo_id(hid)}".ljust(8),
           str(hid).center(8),
           str(ihids[i]).center(8),
           str(sub_of[i]).center(8),

@@ -103,9 +103,14 @@ class Header:
 
 # -----------------------------------------------------
 class Blob:
-    def __init__(self,path:str,dtype:str) -> None:
+    def __init__(self,path:str,dtype:str=None) -> None:
         self.path = path
         self.dtype = dtype
+        
+        if self.dtype==None:
+            parent_dir = os.path.abspath(os.path.join(path, os.pardir))
+            header_path = os.path.join(parent_dir,"header")
+            self.dtype = Header(header_path).Read()["DTYPE"]
 
     def Read(self):
         with open(self.path,mode="rb") as file:
