@@ -88,8 +88,17 @@ class RSGQuery:
         
     
     def get_descendant_tree_of(self,internal_halo_id,blobname):
-        tree = {internal_halo_id:None}
+        def get_node_dict(ihid):
+            childs = self.get_child_halos_of(ihid,blobname)
+            if len(childs) == 0 : return None
+            node_dict = {}
+            for ch in childs:
+                node_dict[ch]=get_node_dict(ch)
+            return node_dict
     
+        return {internal_halo_id:get_node_dict(internal_halo_id)}
+    
+
     def get_parent_of(self):pass
 
     def get_ancenstor_track_of(self):pass

@@ -7,11 +7,11 @@ root = mp.NavigationRoot(path)
 snap = 17
 qr = rs.RSGQuery(root.RSG(snap).path)
 
-print(qr.get_massive_halos())
+# print(qr.get_massive_halos())
 
 bn = qr.get_blobname_of_halo_id(91)
 ihid = qr.get_internal_halo_id_of(91,bn)
 
-childs1 = qr.get_descendant_halos_of(ihid,bn)
+childs1 = qr.get_descendant_tree_of(ihid,bn)
 
 print(childs1)
