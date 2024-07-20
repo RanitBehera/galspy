@@ -12,6 +12,4 @@ qr = rs.RSGQuery(root.RSG(snap).path)
 bn = qr.get_blobname_of_halo_id(91)
 ihid = qr.get_internal_halo_id_of(91,bn)
 
-childs1 = qr.get_descendant_tree_of(ihid,bn)
-
-print(childs1)
+qr.get_child_indices(ihid,bn)

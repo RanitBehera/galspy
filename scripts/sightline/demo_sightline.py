@@ -35,20 +35,23 @@ else:
 
     if SLIDE==1: # The Box
         gas_pos = SIM.PART(SNAP).Gas.Position()
-        CubeVisualizer(ax,gas_pos,BOX_SIZE,1,'k',0.1)
-        plt.show()
+        cv=CubeVisualizer(ax)
+        cv.add_points(gas_pos)
+        cv.beautify_axis()
+        cv.show()
     elif SLIDE==2: # Sightline through Box
         gas_pos = SIM.PIG(SNAP).Gas.Position()
-        CubeVisualizer(ax,gas_pos,BOX_SIZE,1,'k',0.1)
-        START       = np.array([0.8,0,0.15])*BOX_SIZE
-        END         = np.array([0.5,1,0.25])*BOX_SIZE
+        cv=CubeVisualizer(ax)
+        cv.add_points(gas_pos)
+        START       = np.array([0.5,0,0.5])*BOX_SIZE
+        END         = np.array([0.5,1,0.5])*BOX_SIZE
         SX,SY,SZ    = np.array([START,END]).T
         ax.plot(SX,SY,SZ,'r',lw=2)
         ax.plot(0,0,0,'m.',ms=20)
-        plt.show()
+        cv.show()
     elif SLIDE == 3:    # kd-tree nn cylinder
-        # with open("/mnt/home/student/cranit/Repo/galspy/scripts/temp/outs/L10N64S17.ckdtree","rb") as fp:
-        with open("/mnt/home/student/cranit/Repo/galspy/scripts/temp/outs/L50N640S36.ckdtree","rb") as fp:
+        # with open("/mnt/home/student/cranit/Repo/galspy/temp/outs/L10N64S17.ckdtree","rb") as fp:
+        with open("/mnt/home/student/cranit/Repo/galspy/temp/outs/L50N640S36.ckdtree","rb") as fp:
             kdt = pickle.load(fp)
 
         # origin = np.array((0.621,0.547,0.193))*BOX_SIZE
@@ -75,10 +78,10 @@ else:
         ind_within_cyl_of_infl = list(set(ind_within_cyl_of_infl))
         
         pos_in_cyl = kdt.data[ind_within_cyl_of_infl]
-        CubeVisualizer(ax,pos_in_cyl,BOX_SIZE,1,'k',0.2)
-        plt.show()
-
-
+        
+        cv=CubeVisualizer(ax)
+        cv.add_points(pos_in_cyl)
+        cv.show()
 
 
 

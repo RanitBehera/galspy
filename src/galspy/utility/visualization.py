@@ -11,7 +11,8 @@ class CubeVisualizer:
         
         self.axis3d = ax
         self.points_bank = []
-        
+        self.use_max_bound = False
+
         self.viewangle()
 
         self._need_bound_update=True
@@ -52,6 +53,10 @@ class CubeVisualizer:
         OX,OY,OZ = self.origin
         LX,LY,LZ = self.bound
 
+        if self.use_max_bound:
+            LX,LY,LZ = numpy.ones(3)*max([LX,LY,LZ])
+
+
         # Set Label
         ax.set_xlabel("X",fontsize=18)
         ax.set_ylabel("Y",fontsize=18)
@@ -64,7 +69,7 @@ class CubeVisualizer:
         ax.set_xticks([]);ax.set_yticks([]);ax.set_zticks([])
         
         # Hide Axis
-        # ax.set_axis_off()
+        ax.set_axis_off()
 
         # Hide Background Grid
         ax.grid(False)
@@ -75,14 +80,14 @@ class CubeVisualizer:
         ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
         
         # Draw Cube Edge
-        alp=1
-        ax_cx=numpy.array([OX,LX,LX,OX,OX,OX,LX,LX,OX,OX])
-        ax_cy=numpy.array([OY,OY,LY,LY,OY,OY,OY,LY,LY,OY])
-        ax_cz=numpy.array([OZ,OZ,OZ,OZ,OZ,LZ,LZ,LZ,LZ,LZ])
-        ax.plot(ax_cx,ax_cy,ax_cz,'k-',alpha=alp,lw=1)
-        ax.plot([LX,LX],[OY,OY],[OZ,LZ],'k-',alpha=alp,lw=1)
-        ax.plot([OX,OX],[LY,LY],[OZ,LZ],'k-',alpha=alp,lw=1)
-        ax.plot([LX,LX],[LY,LY],[OZ,LZ],'k-',alpha=alp,lw=1)
+        # alp=1
+        # ax_cx=numpy.array([OX,LX,LX,OX,OX,OX,LX,LX,OX,OX])
+        # ax_cy=numpy.array([OY,OY,LY,LY,OY,OY,OY,LY,LY,OY])
+        # ax_cz=numpy.array([OZ,OZ,OZ,OZ,OZ,LZ,LZ,LZ,LZ,LZ])
+        # ax.plot(ax_cx,ax_cy,ax_cz,'k-',alpha=alp,lw=1)
+        # ax.plot([LX,LX],[OY,OY],[OZ,LZ],'k-',alpha=alp,lw=1)
+        # ax.plot([OX,OX],[LY,LY],[OZ,LZ],'k-',alpha=alp,lw=1)
+        # ax.plot([LX,LX],[LY,LY],[OZ,LZ],'k-',alpha=alp,lw=1)
     
         # Set equal aspect
         ax.set_aspect('equal', adjustable='box')

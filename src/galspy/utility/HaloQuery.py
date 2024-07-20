@@ -97,25 +97,30 @@ class RSGQuery:
             return node_dict
     
         return {internal_halo_id:get_node_dict(internal_halo_id)}
-    
-
-    def get_parent_of(self):pass
-
-    def get_ancenstor_track_of(self):pass
-                
-
-
-
-    #     first_child = self.halos.Child()[hid]
-    #     next_cochilds = self.halos.NextCochild()
-    #     child_halos =numpy.array([first_child])
-    #     while not child_halos[-1] == -1:
-    #         numpy.append(child_halos,next_cochilds[child_halos[-1]])
-    #         numpy.concatenate((child_halos,self.get_all_descendant_halos(child_halos[-1])))
-    #     # return numpy.array(child_halos[:-1])
-
+        
 
     def get_parent_halo_of(self,internal_halo_id,blobname):
+        blob_subof = bf.Blob(os.path.join(self.halos.Sub_of.path,blobname)).Read()
+        blob_ihid = bf.Blob(os.path.join(self.halos.InternalHaloID.path,blobname)).Read()
+        parent = blob_subof[blob_ihid==internal_halo_id]
+        if len(parent)==0: return None
+        if parent[0]==-1: return None
+        return numpy.array(parent[0])
+
+    def get_ancenstor_track_of(self,internal_halo_id,blobname):
+        blob_subof = bf.Blob(os.path.join(self.halos.Sub_of.path,blobname)).Read()
+        blob_ihid = bf.Blob(os.path.join(self.halos.InternalHaloID.path,blobname)).Read()
+        ancenstors = [internal_halo_id]
+
+        while not ancenstors[-1]==-1:
+            ancenstors+=list(blob_subof[blob_ihid==ancenstors[-1]])
+
+        return numpy.array(ancenstors[:-1][::-1])
+    
+
+    def get_child_indices(self,internal_halo_ids,blobname):
+        query = bf.Blob(os.path.join(self.halos.PP_ParticleQuery.path,blobname)).Read()
+        print(query)
+
         pass
 
-    

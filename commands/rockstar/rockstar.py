@@ -190,20 +190,21 @@ def _Process_Headers(snap_path:str,verbose:bool=False):
                 os.remove(head)
 
 def _DumpParticleStart(snap_path:str):
-    hid_path = os.path.join(snap_path,"RKSParticles/HaloID")
+    ihid_path = os.path.join(snap_path,"RKSParticles/HaloID")
 
-    header =bf.Header(os.path.join(hid_path,"header")).Read()
+    header =bf.Header(os.path.join(ihid_path,"header")).Read()
     dtype = header["DTYPE"]
     nmemb = header["NMEMB"]
     nfile = header["NFILE"]
     filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(nfile)]
     pstart = []
     for fn in filenames:
-        blob_path = os.path.join(hid_path,fn)
-        blob_HaloID=bf.Blob(blob_path,dtype).Read()
+        blob_path = os.path.join(ihid_path,fn)
+        blob_InternalHaloIDs=bf.Blob(blob_path,dtype).Read()
 
-        val,start,count = numpy.unique(blob_HaloID,return_index=True,return_counts=True)
-        pstart.append(start)
+        val,start,count = numpy.unique(blob_InternalHaloIDs,return_index=True,return_counts=True)
+        rows = numpy.column_stack((val.astype('int64'),start.astype('int64'),count.astype('int64')))
+        pstart.append(rows)
 
-    psi = bf.Column(os.path.join(snap_path,"RKSHalos/PP_ParticleStartIndex"))
+    psi = bf.Column(os.path.join(snap_path,"RKSHalos/PP_ParticleQuery"))
     psi.Write(pstart,"Overwrite")
