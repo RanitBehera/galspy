@@ -190,7 +190,7 @@ def _Process_Headers(snap_path:str,verbose:bool=False):
                 os.remove(head)
 
 def _DumpParticleStart(snap_path:str):
-    ihid_path = os.path.join(snap_path,"RKSParticles/HaloID")
+    ihid_path = os.path.join(snap_path,"RKSParticles/InternalHaloID")
 
     header =bf.Header(os.path.join(ihid_path,"header")).Read()
     dtype = header["DTYPE"]
@@ -200,9 +200,9 @@ def _DumpParticleStart(snap_path:str):
     pstart = []
     for fn in filenames:
         blob_path = os.path.join(ihid_path,fn)
-        blob_InternalHaloIDs=bf.Blob(blob_path,dtype).Read()
+        blob_ihids=bf.Blob(blob_path).Read()
 
-        val,start,count = numpy.unique(blob_InternalHaloIDs,return_index=True,return_counts=True)
+        val,start,count = numpy.unique(blob_ihids,return_index=True,return_counts=True)
         rows = numpy.column_stack((val.astype('int64'),start.astype('int64'),count.astype('int64')))
         pstart.append(rows)
 

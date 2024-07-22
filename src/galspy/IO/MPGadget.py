@@ -14,17 +14,14 @@ class _Node(_Folder):
     def __init__(self, path: str) -> None:
         super().__init__(path)
     
-    def _ReadWithNumpy(self):
+    def ReadColumn(self):
         return bf.Column(self.path).Read()
     
-    def _ReadWithBigFile(self):
-        raise NotImplementedError
-    
-    def Read(self):
-        return self._ReadWithNumpy()
-    
+    def ReadBlob(self,blobname):
+        return bf.Blob(os.path.join(self.path,blobname)).Read()
+
     def __call__(self, *args: Any, **kwds: Any) -> Any:
-        return self.Read()
+        return self.ReadColumn()
 
 class _NodeGroup(_Folder):
     def __init__(self,path):
@@ -196,6 +193,7 @@ class _RSGParticle(_NodeGroup):
         super().__init__(path)
 
         self.HaloID                     = self.AddNode("HaloID")
+        self.InternalHaloID             = self.AddNode("InternalHaloID")
         self.ID                         = self.AddNode("ID")
         self.Mass                       = self.AddNode("Mass")
         self.Position                   = self.AddNode("Position")

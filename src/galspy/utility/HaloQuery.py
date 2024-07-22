@@ -118,9 +118,20 @@ class RSGQuery:
         return numpy.array(ancenstors[:-1][::-1])
     
 
-    def get_child_indices(self,internal_halo_ids,blobname):
-        query = bf.Blob(os.path.join(self.halos.PP_ParticleQuery.path,blobname)).Read()
-        print(query)
-
-        pass
+    def get_child_particle_rows(self,internal_halo_ids,blobname):
+        blob_ihids,blob_pstart,blob_nump = bf.Blob(os.path.join(self.halos.PP_ParticleQuery.path,blobname)).Read().T
+        pstart=[]
+        nump=[]
+        for i,blob_ihid in enumerate(blob_ihids):
+            if blob_ihid not in internal_halo_ids: continue
+            pstart.append(blob_pstart[i])
+            nump.append(blob_nump[i])
+            
+        return numpy.column_stack((pstart,nump))
+    
+    def get_child_particle_positions(self,internal_halo_ids,blobname):
+        rkspos = self.particles.Position.ReadBlob(blobname)
+        pstart,nump = self.get_child_particle_rows(internal_halo_ids,blobname).T
+        pos = numpy.concatenate([rkspos[pstart[i]:pstart[i]+nump[i],:] for i in range(len(pstart))])
+        return pos
 
