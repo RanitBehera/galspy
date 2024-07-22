@@ -1,8 +1,8 @@
 #!/mnt/home/student/cranit/Repo/galspy/gsconda/bin/python
-import galspy.console.terminal as pyterm
+import galterm.terminal as pyterm
 
 term = pyterm.Terminal()
-term.AddPath("/mnt/home/student/cranit/Repo/galspy/commands",True)
+term.AddPath("/mnt/home/student/cranit/Repo/galspy/console/commands",True)
 term.AddPath("/mnt/home/student/cranit/Repo/galspy/temp/sims")
 
 
@@ -23,9 +23,4 @@ def set_rprompt(env:dict):
     return rp
 
 term.rprompt=set_rprompt
-
-# term.env["HALO"] = 2212
-# term.env["SNAP"] = 191
-# term.env["SIM"] = "L250N2048"
-
 term.Start()
