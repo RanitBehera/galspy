@@ -2,6 +2,22 @@ import numpy, struct, os, sys
 from typing import Literal
 from multiprocessing import Pool
 
+
+def Get_DTYPE(variable):
+    variable = numpy.array(variable)
+    dt = str(variable.dtype)
+    bo = sys.byteorder
+    dtype = ""
+    if bo=="little":dtype+="<"
+    elif bo=="big":dtype+=">"
+    else:dtype+="="
+    if "int" in dt:dtype+="i" + str(int(int(dt[3:])/8))
+    elif "float" in dt:dtype+="f" + str(int(int(dt[5:])/8))
+    return dtype
+
+
+
+
 class Attribute:
     def __init__(self,path:str) -> None:
         self.path = path
@@ -116,11 +132,11 @@ class Column:
     def __init__(self,path:str) -> None:
         self.path = path
     
-    def Read(self):
-        header = Header(os.path.join(self.path,"header")).Read()
-        nfile = header["NFILE"]
-        filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(nfile)]
-        column = numpy.concatenate([Blob(os.path.join(self.path,fn)).Read() for fn in filenames])
+    def Read(self,blobnames:list[str]=None):
+        if blobnames==None:
+            nfile = Header(os.path.join(self.path,"header")).Read()["NFILE"]
+            blobnames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(nfile)]
+        column = numpy.concatenate([Blob(os.path.join(self.path,fn)).Read() for fn in blobnames])
         return column
 
 
@@ -140,17 +156,7 @@ class Column:
 
             
 
-def Get_DTYPE(variable):
-    variable = numpy.array(variable)
-    dt = str(variable.dtype)
-    bo = sys.byteorder
-    dtype = ""
-    if bo=="little":dtype+="<"
-    elif bo=="big":dtype+=">"
-    else:dtype+="="
-    if "int" in dt:dtype+="i" + str(int(int(dt[3:])/8))
-    elif "float" in dt:dtype+="f" + str(int(int(dt[5:])/8))
-    return dtype
+
 
 
 

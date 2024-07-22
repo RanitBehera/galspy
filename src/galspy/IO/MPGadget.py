@@ -14,14 +14,13 @@ class _Node(_Folder):
     def __init__(self, path: str) -> None:
         super().__init__(path)
     
-    def ReadColumn(self):
-        return bf.Column(self.path).Read()
+    def Read(self,blobnames:list[str]=None):
+        return bf.Column(self.path,blobnames).Read()
     
-    def ReadBlob(self,blobname):
-        return bf.Blob(os.path.join(self.path,blobname)).Read()
-
     def __call__(self, *args: Any, **kwds: Any) -> Any:
-        return self.ReadColumn()
+        if args:args=list[args]
+        else:args=None
+        return self.Read(args)
 
 class _NodeGroup(_Folder):
     def __init__(self,path):
@@ -268,21 +267,22 @@ class _RSG(_Folder):
         self.RKSHalos      = _RKSGroups(os.path.join(self.path,"RKSHalos"))
 
 
-class _Sim(_Folder):
-    def __init__(self, path: str) -> None:
-        super().__init__(path)
+class _Sim:
+    def __init__(self, mpgadget_outdir: str,rockstar_outbase:str=None) -> None:
+        self.mpgadget_outdir = mpgadget_outdir
+        self.rockstar_outbase = rockstar_outbase
 
     def PART(self,snap_num:int):
         if not isinstance(snap_num,int):raise TypeError
-        return _PART(os.path.join(self.path,"PART_" + self._FixedFormatSnapNumber(snap_num)))
+        return _PART(os.path.join(self.mpgadget_outdir,"PART_" + self._FixedFormatSnapNumber(snap_num)))
 
     def PIG(self,snap_num:int):
         if not isinstance(snap_num,int):raise TypeError
-        return _PIG(os.path.join(self.path,"PIG_" + self._FixedFormatSnapNumber(snap_num)))
+        return _PIG(os.path.join(self.mpgadget_outdir,"PIG_" + self._FixedFormatSnapNumber(snap_num)))
     
     def RSG(self,snap_num:int):
         if not isinstance(snap_num,int):raise TypeError
-        return _RSG(os.path.join(self.path,"RSG_" + self._FixedFormatSnapNumber(snap_num)))
+        return _RSG(os.path.join(self.rockstar_outbase,"RSG_" + self._FixedFormatSnapNumber(snap_num)))
     
     def _FixedFormatSnapNumber(self, snap_num):
         return '{:03}'.format(snap_num)
@@ -291,8 +291,3 @@ def NavigationRoot(path:str):
     if not os.path.isdir(path):
         print("ERROR : Navigation Root Directory")
     return _Sim(path)
-
-def RSGRoot(path:str):
-    if not os.path.isdir(path):
-        print("ERROR : RSG Root Directory")
-    return _RSG(path)
