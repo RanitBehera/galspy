@@ -8,17 +8,17 @@ import os,numpy
 
 
 
-root = mp.NavigationRoot("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64").RSG(17)
+root = mp.NavigationRoot("/mnt/home/student/cranit/Work/test_para_rock/L10N64").RSG(17)
 cv = vis.CubeVisualizer()
-BLOB = "000004"
+BLOB = "000006"
 
 
-particle_pos    = root.RKSParticles.Position.ReadBlob(BLOB)
+particle_pos    = root.RKSParticles.Position(BLOB)
 cv.add_points(particle_pos,points_color='magenta',points_alpha=0.5)
 
-halo_cen        = root.RKSHalos.Position.ReadBlob(BLOB) 
-hid             = root.RKSHalos.HaloID.ReadBlob(BLOB)
-ihid            = root.RKSHalos.InternalHaloID.ReadBlob(BLOB)
+halo_cen        = root.RKSHalos.Position(BLOB) 
+hid             = root.RKSHalos.HaloID(BLOB)
+ihid            = root.RKSHalos.InternalHaloID(BLOB)
 
 hcen = halo_cen[hid!=-1]
 ihid = ihid[hid!=-1]

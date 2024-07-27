@@ -132,6 +132,7 @@ def _rockstar_galaxies_postprocess(env:dict,search_dir:str,verbose:bool=False):
         # print(f"\nWorking on : {snap}")
         _Process_Headers(snap,verbose)
         _DumpParticleStart(snap)
+        _HID_To_Blobname_and_IHID(snap)
 
 
                 
@@ -193,18 +194,39 @@ def _DumpParticleStart(snap_path:str):
     ihid_path = os.path.join(snap_path,"RKSParticles/InternalHaloID")
 
     header =bf.Header(os.path.join(ihid_path,"header")).Read()
-    dtype = header["DTYPE"]
-    nmemb = header["NMEMB"]
     nfile = header["NFILE"]
     filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(nfile)]
-    pstart = []
+    data = []
     for fn in filenames:
         blob_path = os.path.join(ihid_path,fn)
         blob_ihids=bf.Blob(blob_path).Read()
 
         val,start,count = numpy.unique(blob_ihids,return_index=True,return_counts=True)
         rows = numpy.column_stack((val.astype('int64'),start.astype('int64'),count.astype('int64')))
-        pstart.append(rows)
+        data.append(rows)
 
-    psi = bf.Column(os.path.join(snap_path,"RKSHalos/PP_ParticleQuery"))
-    psi.Write(pstart,"Overwrite")
+    # convert to blobwise write
+    bf.Column(os.path.join(snap_path,"RKSHalos/PP_ParticleQuery")).Write(data,"Overwrite")
+
+
+
+def _HID_To_Blobname_and_IHID(snap_path:str):
+    hid_path = os.path.join(snap_path,"RKSHalos/HaloID")
+    ihid_path = os.path.join(snap_path,"RKSHalos/InternalHaloID")
+
+    nfile = bf.Header(hid_path + os.sep + "header").Read()["NFILE"]
+    filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(nfile)]
+    data=[]
+    for fn in filenames:
+        blobnum = int(fn,16) 
+        hids = bf.Blob(hid_path+os.sep+fn).Read()
+        ihids = bf.Blob(ihid_path+os.sep+fn).Read()
+        mask = ~(hids==-1)
+        hids = numpy.array(hids[mask],dtype=numpy.int64)
+        blobname = blobnum*numpy.ones(len(hids),dtype=numpy.int64)
+        ihids = numpy.array(ihids[mask],dtype=numpy.int64)
+
+        blobdata = numpy.column_stack((hids,blobname,ihids))
+        data.append(blobdata)
+    
+    bf.Column(snap_path+os.sep+"RKSHalos/PP_HaloIDLinked").Write(data,"Overwrite")

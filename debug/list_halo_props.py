@@ -1,7 +1,7 @@
 import galspy.IO.MPGadget as mp
 import galspy.utility.HaloQuery as rs
 
-path = "/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64"
+path = "/mnt/home/student/cranit/Work/test_para_rock/L10N64"
 root = mp.NavigationRoot(path)
 
 snap = 17

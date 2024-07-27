@@ -130,7 +130,7 @@ class RSGQuery:
         return numpy.column_stack((pstart,nump))
     
     def get_child_particle_positions(self,internal_halo_ids,blobname):
-        rkspos = self.particles.Position.ReadBlob(blobname)
+        rkspos = self.particles.Position(blobname)
         pstart,nump = self.get_child_particle_rows(internal_halo_ids,blobname).T
         pos = numpy.concatenate([rkspos[pstart[i]:pstart[i]+nump[i],:] for i in range(len(pstart))])
         return pos

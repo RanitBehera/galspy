@@ -6,7 +6,6 @@ import inspect
 import traceback
 import shlex
 import argparse
-from galterm.ansi import ANSI
 
 from prompt_toolkit import prompt, PromptSession
 from prompt_toolkit.completion import Completer, Completion
@@ -20,6 +19,7 @@ from prompt_toolkit.formatted_text import ANSI as PT_ANSI
 from prompt_toolkit.key_binding import KeyBindings
 
 
+from galterm.ansi import ANSI
 
 
 
@@ -240,7 +240,8 @@ class Terminal:
             (ANSI.BOLD,"@"),
             (ANSI.BOLD+ANSI.fg_256(184),self.env["HOSTNAME"]),
             (ANSI.BOLD," : "),
-            (ANSI.BOLD+ANSI.fg_256(33),self.env["PWD"].replace(self.env["HOME"],"~")),
+            # (ANSI.BOLD+ANSI.fg_256(33),self.env["PWD"].replace(self.env["HOME"],"~")),
+            (ANSI.BOLD+ANSI.fg_256(33),os.path.basename(self.env["PWD"])),
             (ANSI.BOLD,"$ ")
         ]
         self.env["PS"]= "".join([val for _,val in prompt_fragmenets])
@@ -314,6 +315,11 @@ def env(env:dict,args:list[str]):
 
         print(f"{key} = {value}")
         
+
+# import subprocess
+# def ls(env:dict,args:list[str]):
+#     out = subprocess.run(['ls']+args,stdout=subprocess.PIPE).stdout.decode()
+#     print(out)
 
 
 def ls(env:dict,args:list[str]):

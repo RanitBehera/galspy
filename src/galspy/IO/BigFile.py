@@ -97,22 +97,25 @@ class Header:
 class Blob:
     def __init__(self,path:str) -> None:
         self.path   = path
-        parent_dir  = os.path.abspath(os.path.join(path, os.pardir))
+
+    def Read(self):
+        parent_dir  = os.path.abspath(os.path.join(self.path, os.pardir))
         blobname    = os.path.basename(self.path)
         header_path = os.path.join(parent_dir,"header")
         header      = Header(header_path).Read()
-        self.dtype  = header["DTYPE"]
-        self.nmemb  = header["NMEMB"]
-        self.rowlen = header[blobname]
-
-    def Read(self):
+        dtype  = header["DTYPE"]
+        nmemb  = header["NMEMB"]
+        rowlen = header[blobname]
         with open(self.path,mode="rb") as file:
-            blob_data = numpy.fromfile(file,dtype=self.dtype)
-        if self.nmemb>1: blob_data = blob_data.reshape(self.rowlen,self.nmemb)
+            blob_data = numpy.fromfile(file,dtype=dtype)
+        if nmemb>1: blob_data = blob_data.reshape(rowlen,nmemb)
         return blob_data
             
         
     def Write(self,variable,mode:Literal["Overwrite","Skip"]="Skip"):
+        # parent_dir  = os.path.abspath(os.path.join(self.path, os.pardir))
+        # os.makedirs(parent_dir,exist_ok=True)
+
         variable = numpy.array(variable)
 
         try:
@@ -136,6 +139,7 @@ class Column:
         if blobnames==None:
             nfile = Header(os.path.join(self.path,"header")).Read()["NFILE"]
             blobnames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(nfile)]
+        
         column = numpy.concatenate([Blob(os.path.join(self.path,fn)).Read() for fn in blobnames])
         return column
 

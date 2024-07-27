@@ -15,10 +15,10 @@ class _Node(_Folder):
         super().__init__(path)
     
     def Read(self,blobnames:list[str]=None):
-        return bf.Column(self.path,blobnames).Read()
+        return bf.Column(self.path).Read(blobnames)
     
     def __call__(self, *args: Any, **kwds: Any) -> Any:
-        if args:args=list[args]
+        if args:args=list(args)
         else:args=None
         return self.Read(args)
 
@@ -290,4 +290,11 @@ class _Sim:
 def NavigationRoot(path:str):
     if not os.path.isdir(path):
         print("ERROR : Navigation Root Directory")
-    return _Sim(path)
+    
+    folder = _Folder(path)
+    rsg_path = folder.parent_path + os.sep + "OUT_" + folder.name
+
+    return _Sim(path,rsg_path)
+
+def RSGRoot(rsg_path):
+    return _RSG(rsg_path)
