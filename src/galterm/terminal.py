@@ -19,7 +19,7 @@ from prompt_toolkit.formatted_text import ANSI as PT_ANSI
 from prompt_toolkit.key_binding import KeyBindings
 
 
-from galterm.ansi import ANSI
+import galterm.ansi as ANSI
 
 
 
@@ -127,23 +127,21 @@ class Terminal:
         print(f"\33]0;{title}\a",end="") 
 
     def AddPath(self,path:str,recursive:bool=False):
-        def Add_If_New(new_path:str):
+        def add_if_new(new_path:str):
             if not new_path in self.env["PATH"]:
                 self.env["PATH"].append(new_path)
 
-        Add_If_New(path)
+        add_if_new(path)
         
         if recursive:
             MAX_RECURSION_DEPTH = 2
-            
-            def AddSubDir(path:str,recursion_level:int=1):
+            def add_sub_dir(path:str,recursion_level:int=1):
                 if recursion_level>MAX_RECURSION_DEPTH:return
                 childs = [os.path.join(path,c) for c in os.listdir(path) if os.path.isdir(os.path.join(path,c)) and not c.startswith((".","_"))]
                 for child in childs:
-                    Add_If_New(child)
-                    AddSubDir(child,recursion_level+1)
-            
-            AddSubDir(path)
+                    add_if_new(child)
+                    add_sub_dir(child,recursion_level+1)
+            add_sub_dir(path)
 
     def Start(self,clear_prev = False):
         self.SetTitle("GalSpy")
@@ -212,6 +210,7 @@ class Terminal:
                 sys.path.insert(0,exec_dir)
                 sys.argv    +=cmd_args
                 target=importlib.import_module(cmd_name)
+                target=importlib.reload(target)
                 target.main(self.env)
                 sys.argv    = sys.argv[:len(sys.argv)-len(cmd_args)]
                 sys.path.pop(0)

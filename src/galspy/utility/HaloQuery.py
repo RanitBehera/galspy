@@ -11,45 +11,30 @@ class RSGQuery:
         self.halos = RSG.RKSHalos
         self.particles = RSG.RKSParticles
 
-    def get_blobname_of_halo_id(self,halo_id:int) -> str:
-        header = bf.Header(os.path.join(self.halos.path,"HaloID/header")).Read()
-        del header["DTYPE"]        
-        del header["NMEMB"]        
-        del header["NFILE"]
-        header = dict(sorted(header.items()))
-        filenames = numpy.array([key for key,val in header.items()])
+    def get_blobname(self,halo_id:int) -> str:
+        """
+        Gets blobname given as 'HaloID'.
+        """
+        row=bf.Column(self.path+os.sep+"RKSHalos/PP_HaloIDLinked").Read()[halo_id]
+        if row[0]==halo_id:return "{:0X}".format(row[1]).rjust(6,'0')
+        else:raise Exception("ERROR : row halo id not matching with given halo id.")
 
-        for blobname in filenames:
-            blobpath = os.path.join(self.halos.path,"HaloID"+os.sep+blobname)
-            halo_ids = bf.Blob(blobpath).Read()
-            halo_ids = halo_ids[halo_ids> -1]
-            if halo_id in halo_ids:
-                return blobname
-            
-        # print(f"Halo ID {halo_id} not in any blob.")
-        return None
+    def get_internal_halo_id(self,halo_id:int) -> int:
+        """
+        Gets 'InternalHaloID' given 'HaloID'.
+        """
+        row=bf.Column(self.path+os.sep+"RKSHalos/PP_HaloIDLinked").Read()[halo_id]
+        if row[0]==halo_id:return row[2]
+        else:raise Exception("ERROR : row halo id not matching with given halo id.")
 
+    # def get_halo_id_of(self,internal_halo_id,blobname):
+    #     if internal_halo_id<0:return None
 
-    def get_internal_halo_id_of(self,halo_id:int,blobname:str=None):
-        if halo_id==-1 : return None
-        if blobname==None: 
-            blobname = self.get_blobname_of_halo_id(halo_id)
-        if blobname==None : return None
-
-        halo_ids = bf.Blob(os.path.join(self.halos.path,"HaloID"+os.sep+blobname)).Read()
-        internal_halo_ids = bf.Blob(os.path.join(self.halos.path,"InternalHaloID"+os.sep+blobname)).Read()
-        internal_halo_id = internal_halo_ids[numpy.where(halo_ids==halo_id)][0]
+    #     blob_halo_id = bf.Blob(os.path.join(self.halos.HaloID.path,blobname)).Read() 
+    #     blob_inthalo_id = bf.Blob(os.path.join(self.halos.InternalHaloID.path,blobname)).Read() 
         
-        return internal_halo_id
-
-    def get_halo_id_of(self,internal_halo_id,blobname):
-        if internal_halo_id<0:return None
-
-        blob_halo_id = bf.Blob(os.path.join(self.halos.HaloID.path,blobname)).Read() 
-        blob_inthalo_id = bf.Blob(os.path.join(self.halos.InternalHaloID.path,blobname)).Read() 
-        
-        halo_id = blob_halo_id[numpy.where(blob_inthalo_id==internal_halo_id)] 
-        return halo_id[0]
+    #     halo_id = blob_halo_id[numpy.where(blob_inthalo_id==internal_halo_id)] 
+    #     return halo_id[0]
 
 
     def get_massive_halos(self,number:int=10):
@@ -115,7 +100,7 @@ class RSGQuery:
         while not ancenstors[-1]==-1:
             ancenstors+=list(blob_subof[blob_ihid==ancenstors[-1]])
 
-        return numpy.array(ancenstors[:-1][::-1])
+        return numpy.array(ancenstors[:-1])
     
 
     def get_child_particle_rows(self,internal_halo_ids,blobname):

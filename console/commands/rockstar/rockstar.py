@@ -4,6 +4,9 @@ import tqdm,numpy
 
 import galspy.IO.BigFile as bf
 
+import galterm.ansi as ANSI
+import galterm.utfsym as UTF8
+
 def completion(env:dict):
     iodir = {"-d":None,"--dir":None}
     return {
@@ -131,13 +134,13 @@ def _rockstar_galaxies_postprocess(env:dict,search_dir:str,verbose:bool=False):
     for snap in tqdm.tqdm(snap_list):
         # print(f"\nWorking on : {snap}")
         _Process_Headers(snap,verbose)
-        _DumpParticleStart(snap)
+        _DumpParticleBlock(snap)
         _HID_To_Blobname_and_IHID(snap)
 
 
                 
-CWL = 40     
 def _Process_Headers(snap_path:str,verbose:bool=False):
+    CWL = 40     
     childs = [os.path.join(snap_path,child) for child in os.listdir(snap_path) if os.path.isdir(os.path.join(snap_path,child))]
     for child in childs:
         grands = [os.path.join(child,grand) for grand in os.listdir(child) if os.path.isdir(os.path.join(child,grand))]
@@ -185,29 +188,53 @@ def _Process_Headers(snap_path:str,verbose:bool=False):
                     fp.write(dl+"\n")
 
             if verbose:
-                print(f"  Cleaning Header Chunks :".ljust(CWL)+f"{os.path.basename(child)}/{os.path.basename(grand)}")
             
+                print(f"  Cleaning Header Chunks :".ljust(  CWL)+f"{os.path.basename(child)}/{os.path.basename(grand)}")
             for head in headers:
                 os.remove(head)
 
-def _DumpParticleStart(snap_path:str):
-    ihid_path = os.path.join(snap_path,"RKSParticles/InternalHaloID")
 
-    header =bf.Header(os.path.join(ihid_path,"header")).Read()
-    nfile = header["NFILE"]
+
+
+# ========== POST PROCESS FUNCTIONS
+PP_STAGE_COLOR  = ANSI.FG_YELLOW
+PP_HLINE_LENGTH = 40
+PP_HLINE_CHAR   = UTF8.DOUBLE_HORIZONTAL
+
+def _head_start(header_name):
+    print(PP_STAGE_COLOR + f"{header_name} ".ljust(PP_HLINE_LENGTH,PP_HLINE_CHAR) + ANSI.RESET)
+
+def _cross_check(msg:str,success:bool,prestring:str):
+    print( prestring + f" {msg} - ",end="")
+    if success: print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
+    else:       print(ANSI.FG_RED   + "FAILED"  + ANSI.RESET)
+
+def _DumpParticleBlock(snap_path:str):
+    _head_start("PP_ParticleBlock")
+
+    halo_ihid_path = snap_path + os.sep + "RKSParticles/InternalHaloID"
+    nfile =bf.Header(halo_ihid_path + os.sep + "header").Read()["NFILE"]
     filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(nfile)]
-    data = []
+    part_ihid_path = snap_path + os.sep + "RKSParticles/InternalHaloID"
     for fn in filenames:
-        blob_path = os.path.join(ihid_path,fn)
-        blob_ihids=bf.Blob(blob_path).Read()
+        print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" BLOB",fn)
+        halo_ihids=bf.Blob(part_ihid_path + os.sep + fn).Read()
+        outblob_data = -1 * numpy.ones((len(halo_ihids),3))
+        outblob_data[:,0] = halo_ihids
 
-        val,start,count = numpy.unique(blob_ihids,return_index=True,return_counts=True)
-        rows = numpy.column_stack((val.astype('int64'),start.astype('int64'),count.astype('int64')))
-        data.append(rows)
+        part_ihids=bf.Blob(part_ihid_path + os.sep + fn).Read()
+        val,start,count = numpy.unique(part_ihids,return_index=True,return_counts=True)
+        _cross_check("CHECK 1",max(val)<len(halo_ihids),UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL)
+        _cross_check("CHECK 2",all(start>=0),UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL)
+        
+        for i,v in enumerate(val):
+            outblob_data[v,1:3] = start[i],count[i]
+        # rows = numpy.column_stack((val.astype('int64'),start.astype('int64'),count.astype('int64')))
+        
 
     # convert to blobwise write
-    bf.Column(os.path.join(snap_path,"RKSHalos/PP_ParticleQuery")).Write(data,"Overwrite")
-
+    # bf.Column(os.path.join(snap_path,"RKSHalos/PP_ParticleBlock")).Write(data,"Overwrite")
+    print(UTF8.LIGHT_UP_RIGHT + UTF8.LIGHT_HORIZONTAL + " Finished")
 
 
 def _HID_To_Blobname_and_IHID(snap_path:str):
@@ -230,3 +257,32 @@ def _HID_To_Blobname_and_IHID(snap_path:str):
         data.append(blobdata)
     
     bf.Column(snap_path+os.sep+"RKSHalos/PP_HaloIDLinked").Write(data,"Overwrite")
+
+
+def _Length_by_Type(snap_path:str):
+    print(ANSI.FG_YELLOW + "PP_LengthByType " + UTF8.DOUBLE_HORIZONTAL*20 + ANSI.RESET)
+    ihid_path = os.path.join(snap_path,"RKSHalos/InternalHaloID")
+    pquery_path = os.path.join(snap_path,"RKSHalos/PP_ParticleQuery") 
+
+    nfile = bf.Header(ihid_path + os.sep + "header").Read()["NFILE"]
+    filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(nfile)]
+
+    for fn in filenames:
+        print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" Working On :",fn)
+        ihids = bf.Blob(ihid_path + os.sep + fn).Read()
+        pquerys = bf.Blob(pquery_path + os.sep + fn).Read()
+
+        print(len(ihids),len(pquerys))
+
+        print(UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL + " Crosscheck 1 : ",end="")
+        if len(ihids)==len(pquerys):print(ANSI.FG_GREEN+"SUCCESS"+ANSI.RESET)
+        else:print(ANSI.FG_RED+"FAILED"+ANSI.RESET);continue
+
+    print(UTF8.LIGHT_UP_RIGHT + UTF8.LIGHT_HORIZONTAL + ANSI.FG_GREEN+" Done"+ANSI.RESET)
+
+
+if __name__=="__main__":
+
+
+    _DumpParticleBlock("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
+    # _Length_by_Type("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
