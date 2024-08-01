@@ -136,6 +136,8 @@ def _rockstar_galaxies_postprocess(env:dict,search_dir:str,verbose:bool=False):
         _Process_Headers(snap,verbose)
         _DumpParticleBlock(snap)
         _HID_To_Blobname_and_IHID(snap)
+        _Length_by_Type(snap)
+        _Mass_by_Type(snap)
 
 
                 
@@ -258,7 +260,6 @@ def _DumpParticleBlock(snap_path:str):
     _log_finish()
     
 
-
 def _HID_To_Blobname_and_IHID(snap_path:str):
     hid_path = os.path.join(snap_path,"RKSHalos/HaloID")
     ihid_path = os.path.join(snap_path,"RKSHalos/InternalHaloID")
@@ -303,7 +304,7 @@ def _Length_by_Type(snap_path:str):
 
         outblob_data = numpy.zeros((len(ihids),6),'int64')
         parttype = bf.Blob(ptype_path + os.sep + fn).Read()
-        for i,qr in enumerate(pquerys):
+        for qr in pquerys:
             ihid,start,count = qr
             part_block = parttype[start:start+count]
             ptype,pcount = numpy.unique(part_block,return_counts=True)
@@ -334,9 +335,64 @@ def _Length_by_Type(snap_path:str):
 
 
 
+def _Mass_by_Type(snap_path:str):
+    _log_start("PP_MassByType")
+    ihid_path   = snap_path + os.sep + "RKSHalos/InternalHaloID"
+    pquery_path = snap_path + os.sep + "RKSHalos/PP_ParticleBlock"
+    ptype_path  = snap_path + os.sep + "RKSParticles/Type"
+    pmass_path  = snap_path + os.sep + "RKSParticles/Mass"
+
+    header = bf.Header(ihid_path + os.sep + "header").Read()
+    filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(header["NFILE"])]
+
+    perblob_datalen = [header[fn] for fn in filenames]
+    perblob_status  = numpy.zeros(len(filenames))
+    for n,fn in enumerate(filenames):
+        print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" BLOB",fn)
+        ihids = bf.Blob(ihid_path + os.sep + fn).Read()
+        pquerys = bf.Blob(pquery_path + os.sep + fn).Read()
+
+        okay = len(ihids)==len(pquerys)
+        _log_cross_check("Check 1",okay,UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL)
+        if not okay : continue
+
+        outblob_data = numpy.zeros((len(ihids),6))
+        parttype = bf.Blob(ptype_path + os.sep + fn).Read()
+        partmass = bf.Blob(pmass_path + os.sep + fn).Read()
+        for qr in pquerys:
+            ihid,start,count = qr
+            parttype_block = parttype[start:start+count]
+            partmass_block = partmass[start:start+count]
+            
+            dm_mass = numpy.sum(partmass_block[parttype_block==0])           
+            gas_mass = numpy.sum(partmass_block[parttype_block==1])           
+            star_mass = numpy.sum(partmass_block[parttype_block==2])           
+            bh_mass = numpy.sum(partmass_block[parttype_block==3])
+
+            outblob_data[ihid,[0,1,4,5]] = numpy.array([gas_mass,dm_mass,star_mass,bh_mass])/1e10
+
+
+        print(UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_UP_RIGHT + UTF8.LIGHT_HORIZONTAL + " Dumping Data - ",end="")
+        status = bf.Blob(snap_path + os.sep + "RKSHalos/PP_MassByType" + os.sep + fn).Write(outblob_data,'Overwrite') 
+        if status == 0:print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
+        elif status == 1: print(ANSI.FG_YELLOW + "SKIPPED" + ANSI.RESET)
+        else: print(ANSI.RED + " ERROR" + ANSI.RESET)
+        perblob_status[n]=status
+
+    print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" HEADER - ",end="")
+    if all(not s for s in perblob_status):
+        bf.Header(snap_path + os.sep + "RKSHalos/PP_MassByType" + os.sep + "header").WriteFromArg(bf.Get_DTYPE(outblob_data[0]),6,header["NFILE"],perblob_datalen)
+        print(ANSI.FG_GREEN + "CREATED" + ANSI.RESET)
+    else:
+        print(ANSI.FG_RED + "FAILED" + ANSI.RESET)
+
+    _log_finish()
+
+
+
 
 if __name__=="__main__":
 
-
     # _DumpParticleBlock("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
-    _Length_by_Type("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
+    # _Length_by_Type("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
+    _Mass_by_Type("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
