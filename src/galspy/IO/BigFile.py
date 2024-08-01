@@ -62,7 +62,7 @@ class Header:
         return header_dict
     
 
-    def Write(self,data_column):
+    def WriteFromVar(self,data_column):
         filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(len(data_column))]
         
         # Per Blob
@@ -89,8 +89,20 @@ class Header:
         for i,fn in enumerate(filenames):
             header+= f"{filenames[i]}: {pb_datalen[i]} : :\n"
 
-        with open(self.path,"w") as f:f.write(header)      
-        
+        with open(self.path,"w") as f:f.write(header)
+
+    def WriteFromArg(self,dtype,nmemb:int,nfile:int,perblob_datalen:list[int]):
+        if not nfile == len(perblob_datalen): raise ValueError
+        header = ""
+        header += f"DTYPE: {dtype}\n"
+        header += f"NMEMB: {str(nmemb)}\n"
+        header += f"NFILE: {str(nfile)}\n"
+
+        filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(nfile)]
+        for i,fn in enumerate(filenames):
+            header+= f"{filenames[i]}: {perblob_datalen[i]} : :\n"
+
+        with open(self.path,"w") as f:f.write(header)
 
 
 # -----------------------------------------------------
@@ -113,19 +125,22 @@ class Blob:
             
         
     def Write(self,variable,mode:Literal["Overwrite","Skip"]="Skip"):
-        # parent_dir  = os.path.abspath(os.path.join(self.path, os.pardir))
-        # os.makedirs(parent_dir,exist_ok=True)
+        parent_dir  = os.path.abspath(os.path.join(self.path, os.pardir))
+        os.makedirs(parent_dir,exist_ok=True)
 
         variable = numpy.array(variable)
 
         try:
             if mode=="Skip":
                 with open(self.path,'xb') as file: variable.tofile(file)
+                return 0
             elif mode=="Overwrite":
                 with open(self.path,'wb') as file: variable.tofile(file)
+                return 0
         except FileExistsError:
-            print("Following file already exist. Skipping writing data.")
-            print(self.path)
+            return 1
+        except:
+            return -1
         
 
 
@@ -156,7 +171,7 @@ class Column:
         # Headers
         head_path = os.path.join(self.path,"header") 
         if os.path.exists(head_path) and mode=="Skip":return
-        Header(head_path).Write(data_column)      
+        Header(head_path).WriteFromVar(data_column)      
 
             
 

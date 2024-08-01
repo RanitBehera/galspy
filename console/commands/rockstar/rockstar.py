@@ -197,44 +197,66 @@ def _Process_Headers(snap_path:str,verbose:bool=False):
 
 
 # ========== POST PROCESS FUNCTIONS
-PP_STAGE_COLOR  = ANSI.FG_YELLOW
+PP_STAGE_COLOR  = ANSI.FG_MAGENTA
 PP_HLINE_LENGTH = 40
 PP_HLINE_CHAR   = UTF8.DOUBLE_HORIZONTAL
 
-def _head_start(header_name):
-    print(PP_STAGE_COLOR + f"{header_name} ".ljust(PP_HLINE_LENGTH,PP_HLINE_CHAR) + ANSI.RESET)
+def _log_start(header_name):
+    print(ANSI.BOLD + PP_STAGE_COLOR + f"{header_name} ".ljust(PP_HLINE_LENGTH,PP_HLINE_CHAR) + ANSI.RESET)
 
-def _cross_check(msg:str,success:bool,prestring:str):
+def _log_cross_check(msg:str,success:bool,prestring:str):
     print( prestring + f" {msg} - ",end="")
-    if success: print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
+    if success: print(ANSI.FG_GREEN + "PASSED" + ANSI.RESET)
     else:       print(ANSI.FG_RED   + "FAILED"  + ANSI.RESET)
 
-def _DumpParticleBlock(snap_path:str):
-    _head_start("PP_ParticleBlock")
+def _log_finish():
+    print(UTF8.LIGHT_UP_RIGHT + UTF8.LIGHT_HORIZONTAL + " FINISHED")
 
-    halo_ihid_path = snap_path + os.sep + "RKSParticles/InternalHaloID"
-    nfile =bf.Header(halo_ihid_path + os.sep + "header").Read()["NFILE"]
-    filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(nfile)]
+
+def _DumpParticleBlock(snap_path:str):
+    _log_start("PP_ParticleBlock")
+
+    halo_ihid_path = snap_path + os.sep + "RKSHalos/InternalHaloID"
+    header =bf.Header(halo_ihid_path + os.sep + "header").Read()
+    filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(header["NFILE"])]
     part_ihid_path = snap_path + os.sep + "RKSParticles/InternalHaloID"
-    for fn in filenames:
+
+    perblob_datalen = [header[fn] for fn in filenames]
+    perblob_status  = numpy.zeros(len(filenames))
+    for n,fn in enumerate(filenames):
         print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" BLOB",fn)
-        halo_ihids=bf.Blob(part_ihid_path + os.sep + fn).Read()
-        outblob_data = -1 * numpy.ones((len(halo_ihids),3))
-        outblob_data[:,0] = halo_ihids
+        halo_ihids=bf.Blob(halo_ihid_path + os.sep + fn).Read()
+        outblob_data = -1 * numpy.ones((len(halo_ihids),3),dtype='int64')
+        outblob_data[:,0] = halo_ihids.astype('int64')
 
         part_ihids=bf.Blob(part_ihid_path + os.sep + fn).Read()
         val,start,count = numpy.unique(part_ihids,return_index=True,return_counts=True)
-        _cross_check("CHECK 1",max(val)<len(halo_ihids),UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL)
-        _cross_check("CHECK 2",all(start>=0),UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL)
+        _log_cross_check("Check 1",max(val)<len(halo_ihids),UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL)
+        _log_cross_check("Check 2",all(start>=0),UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL)
         
-        for i,v in enumerate(val):
-            outblob_data[v,1:3] = start[i],count[i]
-        # rows = numpy.column_stack((val.astype('int64'),start.astype('int64'),count.astype('int64')))
-        
+        start = start.astype('int64')
+        count = count.astype('int64')
 
-    # convert to blobwise write
-    # bf.Column(os.path.join(snap_path,"RKSHalos/PP_ParticleBlock")).Write(data,"Overwrite")
-    print(UTF8.LIGHT_UP_RIGHT + UTF8.LIGHT_HORIZONTAL + " Finished")
+        for v,s,c in zip(val,start,count):
+            outblob_data[v,1:3] = s,c
+
+        print(UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_UP_RIGHT + UTF8.LIGHT_HORIZONTAL + " Dumping Data - ",end="")
+        status = bf.Blob(snap_path + os.sep + "RKSHalos/PP_ParticleBlock" + os.sep + fn).Write(outblob_data,'Overwrite') 
+        if status == 0:print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
+        elif status == 1: print(ANSI.FG_YELLOW + "SKIPPED" + ANSI.RESET)
+        else: print(ANSI.RED + " ERROR" + ANSI.RESET)
+        perblob_status[n]=status
+
+
+    print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" HEADER - ",end="")
+    if all(not s for s in perblob_status):
+        bf.Header(snap_path + os.sep + "RKSHalos/PP_ParticleBlock" + os.sep + "header").WriteFromArg(bf.Get_DTYPE(outblob_data[0]),3,header["NFILE"],perblob_datalen)
+        print(ANSI.FG_GREEN + "CREATED" + ANSI.RESET)
+    else:
+        print(ANSI.FG_RED + "FAILED" + ANSI.RESET)
+
+    _log_finish()
+    
 
 
 def _HID_To_Blobname_and_IHID(snap_path:str):
@@ -260,29 +282,61 @@ def _HID_To_Blobname_and_IHID(snap_path:str):
 
 
 def _Length_by_Type(snap_path:str):
-    print(ANSI.FG_YELLOW + "PP_LengthByType " + UTF8.DOUBLE_HORIZONTAL*20 + ANSI.RESET)
-    ihid_path = os.path.join(snap_path,"RKSHalos/InternalHaloID")
-    pquery_path = os.path.join(snap_path,"RKSHalos/PP_ParticleQuery") 
+    _log_start("PP_LengthByType")
+    ihid_path   = snap_path + os.sep + "RKSHalos/InternalHaloID"
+    pquery_path = snap_path + os.sep + "RKSHalos/PP_ParticleBlock"
+    ptype_path  = snap_path + os.sep + "RKSParticles/Type"
 
-    nfile = bf.Header(ihid_path + os.sep + "header").Read()["NFILE"]
-    filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(nfile)]
+    header = bf.Header(ihid_path + os.sep + "header").Read()
+    filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(header["NFILE"])]
 
-    for fn in filenames:
-        print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" Working On :",fn)
+    perblob_datalen = [header[fn] for fn in filenames]
+    perblob_status  = numpy.zeros(len(filenames))
+    for n,fn in enumerate(filenames):
+        print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" BLOB",fn)
         ihids = bf.Blob(ihid_path + os.sep + fn).Read()
         pquerys = bf.Blob(pquery_path + os.sep + fn).Read()
 
-        print(len(ihids),len(pquerys))
+        okay = len(ihids)==len(pquerys)
+        _log_cross_check("Check 1",okay,UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL)
+        if not okay : continue
 
-        print(UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL + " Crosscheck 1 : ",end="")
-        if len(ihids)==len(pquerys):print(ANSI.FG_GREEN+"SUCCESS"+ANSI.RESET)
-        else:print(ANSI.FG_RED+"FAILED"+ANSI.RESET);continue
+        outblob_data = numpy.zeros((len(ihids),6),'int64')
+        parttype = bf.Blob(ptype_path + os.sep + fn).Read()
+        for i,qr in enumerate(pquerys):
+            ihid,start,count = qr
+            part_block = parttype[start:start+count]
+            ptype,pcount = numpy.unique(part_block,return_counts=True)
 
-    print(UTF8.LIGHT_UP_RIGHT + UTF8.LIGHT_HORIZONTAL + ANSI.FG_GREEN+" Done"+ANSI.RESET)
+            # Rockstar types to Mpgadget type conversion
+            rock_to_mpg = {0:1,1:0,2:4,3:5}
+            ptype = numpy.array([rock_to_mpg[t] for t in ptype])
+
+            for ptype,pcount in zip(ptype,pcount):
+                outblob_data[ihid,ptype] = pcount
+
+
+        print(UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_UP_RIGHT + UTF8.LIGHT_HORIZONTAL + " Dumping Data - ",end="")
+        status = bf.Blob(snap_path + os.sep + "RKSHalos/PP_LengthByType" + os.sep + fn).Write(outblob_data,'Overwrite') 
+        if status == 0:print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
+        elif status == 1: print(ANSI.FG_YELLOW + "SKIPPED" + ANSI.RESET)
+        else: print(ANSI.RED + " ERROR" + ANSI.RESET)
+        perblob_status[n]=status
+
+    print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" HEADER - ",end="")
+    if all(not s for s in perblob_status):
+        bf.Header(snap_path + os.sep + "RKSHalos/PP_LengthByType" + os.sep + "header").WriteFromArg(bf.Get_DTYPE(outblob_data[0]),6,header["NFILE"],perblob_datalen)
+        print(ANSI.FG_GREEN + "CREATED" + ANSI.RESET)
+    else:
+        print(ANSI.FG_RED + "FAILED" + ANSI.RESET)
+
+    _log_finish()
+
+
 
 
 if __name__=="__main__":
 
 
-    _DumpParticleBlock("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
-    # _Length_by_Type("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
+    # _DumpParticleBlock("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
+    _Length_by_Type("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")

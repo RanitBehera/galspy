@@ -256,7 +256,7 @@ class _RKSGroups(_NodeGroup):
         self.Vrms                       = self.AddNode("Vrms")
 
         # Post-Processed
-        self.PP_ParticleQuery          = self.AddNode("PP_ParticleQuery")
+        self.PP_ParticleBlock          = self.AddNode("PP_ParticleBlock")
 
 class _RSG(_Folder):
     def __init__(self,path):
