@@ -27,7 +27,7 @@ def main(env:dict):
     qr = hq.RSGQuery(RSG_PATH)
     # IHID = qr.get_internal_halo_id(HID)
     BLOBNAME = qr.get_blobname(HID)
-    anc_data = qr.get_ancenstor_track_of(HID,BLOBNAME)
+    anc_data = qr.get_ancestor_track_of(HID,BLOBNAME)
 
     render_string = f" {utfsym.ARROW} ".join([str(a) for a in anc_data[::-1]])
 

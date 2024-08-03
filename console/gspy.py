@@ -27,7 +27,7 @@ def set_rprompt(env:dict):
 term.rprompt=set_rprompt
 
 # ---- SIMFILE CACHE
-term.env["SIMFILE_CACHE"] = get_available_sim(term.env["PATH"])
+term.env["SIMFILES_CACHE"] = get_available_sim(term.env["PATH"])
 
 
 term.Start()

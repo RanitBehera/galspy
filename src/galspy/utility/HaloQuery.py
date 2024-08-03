@@ -80,7 +80,8 @@ class RSGQuery:
             for ch in childs:
                 node_dict[ch]=get_node_dict(ch)
             return node_dict
-    
+
+        print(self.get_descendant_halos_of(internal_halo_id,blobname))
         return {internal_halo_id:get_node_dict(internal_halo_id)}
         
 
@@ -92,15 +93,33 @@ class RSGQuery:
         if parent[0]==-1: return None
         return numpy.array(parent[0])
 
-    def get_ancenstor_track_of(self,internal_halo_id,blobname):
+    def get_ancestor_track_of(self,internal_halo_id,blobname):
         blob_subof = bf.Blob(os.path.join(self.halos.Sub_of.path,blobname)).Read()
-        blob_ihid = bf.Blob(os.path.join(self.halos.InternalHaloID.path,blobname)).Read()
-        ancenstors = [internal_halo_id]
 
-        while not ancenstors[-1]==-1:
-            ancenstors+=list(blob_subof[blob_ihid==ancenstors[-1]])
+        # Method 1 : Slow but independent of ihid order
+        # blob_ihid = bf.Blob(os.path.join(self.halos.InternalHaloID.path,blobname)).Read()
+        # ancestors = [internal_halo_id]
+        # while not ancestors[-1]==-1:
+        #     ancestors+=list(blob_subof[blob_ihid==ancestors[-1]])
 
-        return numpy.array(ancenstors[:-1])
+        # Method 1 : Fast but needs ihid to be order with zero based
+        ancestors=[internal_halo_id]
+        while not blob_subof[ancestors[-1]]==-1:
+            ancestors+=[blob_subof[ancestors[-1]]]
+
+        print(self.get_ancestor_origin(internal_halo_id,blobname))
+        return numpy.array(ancestors)
+
+
+    def get_ancestor_origin(self,internal_halo_id,blobname):
+        blob_subof = bf.Blob(os.path.join(self.halos.Sub_of.path,blobname)).Read()
+
+        # Using fast method of ancestor track with less memeory requirement
+        prev_ancestor = internal_halo_id
+        while not blob_subof[prev_ancestor]==-1:
+            prev_ancestor=blob_subof[prev_ancestor]
+
+        return prev_ancestor
     
 
     def get_child_particle_rows(self,internal_halo_ids,blobname):

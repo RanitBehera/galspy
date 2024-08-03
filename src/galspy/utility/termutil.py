@@ -33,5 +33,5 @@ def get_available_sim(serach_paths:list[str],filters:list[str]=None):
 
 
 
-def get_available_snaps(part_path,rsg_path):
-    pass
+def get_available_snaps(serach_dir,prefix):
+    return [str(d) for d in os.listdir(serach_dir) if os.path.isdir(serach_dir + os.sep + d) and str(d).startswith(prefix)]

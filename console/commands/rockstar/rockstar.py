@@ -3,9 +3,12 @@ from galspy.IO.ConfigFile import ReadAsDictionary
 import tqdm,numpy
 
 import galspy.IO.BigFile as bf
+import galspy.utility.HaloQuery as hq
 
 import galterm.ansi as ANSI
 import galterm.utfsym as UTF8
+
+
 
 def completion(env:dict):
     iodir = {"-d":None,"--dir":None}
@@ -131,80 +134,29 @@ def _rockstar_galaxies_postprocess(env:dict,search_dir:str,verbose:bool=False):
 
     print(f"Found {len(snap_list)} snapshots.")
 
-    for snap in tqdm.tqdm(snap_list):
+
+    # Use tqdm when no-verbose ... function print needs to be modified
+    # for snap in tqdm.tqdm(snap_list):
+    for snap in snap_list:
         # print(f"\nWorking on : {snap}")
-        _Process_Headers(snap,verbose)
-        _DumpParticleBlock(snap)
-        _HID_To_Blobname_and_IHID(snap)
-        _Length_by_Type(snap)
-        _Mass_by_Type(snap)
+        _post_process_snap(snap)    
 
-
-                
-def _Process_Headers(snap_path:str,verbose:bool=False):
-    CWL = 40     
-    childs = [os.path.join(snap_path,child) for child in os.listdir(snap_path) if os.path.isdir(os.path.join(snap_path,child))]
-    for child in childs:
-        grands = [os.path.join(child,grand) for grand in os.listdir(child) if os.path.isdir(os.path.join(child,grand))]
-        for grand in grands:
-            headers = [os.path.join(grand,head) for head in os.listdir(grand) if head.startswith("header_")]
-            nfile = len(headers)
-            if nfile==0:continue
-
-            if verbose:
-                print(f"  Joining Header :".ljust(40) +f"{os.path.basename(child)}/{os.path.basename(grand)}")
-
-            dtype_list = []
-            nmemb_list = []
-            datalen_list = []
-            
-            for head in headers:
-                with open(head) as h:
-                    text = h.read()
-                    lines = text.split("\n")
-                    dtype = lines[0].split(":")[1].strip()
-                    nmemb = int(lines[1].split(":")[1].strip())
-                    datalen = lines[2].strip()
-                    dtype_list.append(dtype)
-                    nmemb_list.append(nmemb)
-                    datalen_list.append(datalen)
-
-            # Crosscheck
-            check_dtype = all(el==dtype_list[0] for el in dtype_list)
-            check_nmemb = all(el==nmemb_list[0] for el in nmemb_list)
-
-            if not check_dtype:
-                print(f"CROSSCHECK ERROR : All dtypes are not same for {grand}")
-                continue
-            if not check_nmemb:
-                print(f"CROSSCHECK ERROR : All nmembs are not same for {grand}")
-                continue
-            
-            datalen_list.sort()
-
-            with open(os.path.join(grand,"header"),"w") as fp:
-                fp.write(f"DTYPE: {dtype_list[0]}\n")
-                fp.write(f"NMEMB: {nmemb_list[0]}\n")
-                fp.write(f"NFILE: {nfile}\n")
-                for dl in datalen_list:
-                    fp.write(dl+"\n")
-
-            if verbose:
-            
-                print(f"  Cleaning Header Chunks :".ljust(  CWL)+f"{os.path.basename(child)}/{os.path.basename(grand)}")
-            for head in headers:
-                os.remove(head)
-
-
+def _post_process_snap(snap):
+    _Process_Headers(snap)
+    _DumpParticleBlock(snap)
+    _HID_To_Blobname_and_IHID(snap)
+    _Length_by_Type(snap)
+    _Mass_by_Type(snap)
+    _Length_And_Mass_By_Type_With_Sub(snap)
 
 
 # ========== POST PROCESS FUNCTIONS
 PP_STAGE_COLOR  = ANSI.FG_MAGENTA
-PP_HLINE_LENGTH = 40
+PP_HLINE_LENGTH = 72
 PP_HLINE_CHAR   = UTF8.DOUBLE_HORIZONTAL
 
 def _log_start(header_name):
-    print(ANSI.BOLD + PP_STAGE_COLOR + f"{header_name} ".ljust(PP_HLINE_LENGTH,PP_HLINE_CHAR) + ANSI.RESET)
+    print(ANSI.BOLD + PP_STAGE_COLOR + f"\n{header_name} ".ljust(PP_HLINE_LENGTH,PP_HLINE_CHAR) + ANSI.RESET)
 
 def _log_cross_check(msg:str,success:bool,prestring:str):
     print( prestring + f" {msg} - ",end="")
@@ -213,6 +165,60 @@ def _log_cross_check(msg:str,success:bool,prestring:str):
 
 def _log_finish():
     print(UTF8.LIGHT_UP_RIGHT + UTF8.LIGHT_HORIZONTAL + " FINISHED")
+
+
+def _Process_Headers(snap_path:str):
+    _log_start("Headers Merging")
+    CWL = 40     
+    childs = [snap_path+os.sep+child for child in os.listdir(snap_path) if os.path.isdir(snap_path+os.sep+child)]
+    for child in childs:
+        grands = [child+os.sep+grand for grand in os.listdir(child) if os.path.isdir(child+os.sep+grand)]
+        for grand in grands:
+            headers = [grand+os.sep+head for head in os.listdir(grand) if head.startswith("header_")]
+            nfile = len(headers)
+
+            print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL + f" {os.path.basename(child)}/{os.path.basename(grand)}")
+            if nfile==0:
+                print(UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_UP_RIGHT + UTF8.LIGHT_HORIZONTAL + " No headers chunk found.")
+                continue
+
+            dtype_list = []
+            nmemb_list = []
+            dataline_list = []
+            
+            for head in headers:
+                with open(head) as h:
+                    text = h.read()
+                    lines = text.split("\n")
+                    dtype = lines[0].split(":")[1].strip()
+                    nmemb = int(lines[1].split(":")[1].strip())
+                    dtype_list.append(dtype)
+                    nmemb_list.append(nmemb)
+                    dataline_list.append(lines[2].strip())
+
+            # Crosscheck
+            check_dtype = all(el==dtype_list[0] for el in dtype_list)
+            check_nmemb = all(el==nmemb_list[0] for el in nmemb_list)
+            _log_cross_check("Check 1",check_dtype,UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL)
+            _log_cross_check("Check 2",check_nmemb,UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL)
+            
+            dataline_list.sort()
+
+            print(UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL + " Merging - ",end="")
+            with open(os.path.join(grand,"header"),"w") as fp:
+                fp.write(f"DTYPE: {dtype_list[0]}\n")
+                fp.write(f"NMEMB: {nmemb_list[0]}\n")
+                fp.write(f"NFILE: {nfile}\n")
+                for dl in dataline_list:
+                    fp.write(dl+"\n")
+            print(ANSI.FG_GREEN + "DONE" + ANSI.RESET)
+            
+            print(UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_UP_RIGHT + UTF8.LIGHT_HORIZONTAL + " Cleaning headers chunks - ",end="")
+            for head in headers:os.remove(head)
+            print(ANSI.FG_GREEN + "DONE" + ANSI.RESET)
+            
+    _log_finish()
+
 
 
 def _DumpParticleBlock(snap_path:str):
@@ -261,6 +267,7 @@ def _DumpParticleBlock(snap_path:str):
     
 
 def _HID_To_Blobname_and_IHID(snap_path:str):
+    _log_start("PP_HaloIDLinked")
     hid_path = os.path.join(snap_path,"RKSHalos/HaloID")
     ihid_path = os.path.join(snap_path,"RKSHalos/InternalHaloID")
 
@@ -268,6 +275,7 @@ def _HID_To_Blobname_and_IHID(snap_path:str):
     filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(nfile)]
     data=[]
     for fn in filenames:
+        print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" BLOB",fn)
         blobnum = int(fn,16) 
         hids = bf.Blob(hid_path+os.sep+fn).Read()
         ihids = bf.Blob(ihid_path+os.sep+fn).Read()
@@ -279,8 +287,11 @@ def _HID_To_Blobname_and_IHID(snap_path:str):
         blobdata = numpy.column_stack((hids,blobname,ihids))
         data.append(blobdata)
     
+    print(UTF8.LIGHT_VERTICAL + UTF8.LIGHT_HORIZONTAL + " Dumping Data - ",end="")
     bf.Column(snap_path+os.sep+"RKSHalos/PP_HaloIDLinked").Write(data,"Overwrite")
+    print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
 
+    _log_finish()
 
 def _Length_by_Type(snap_path:str):
     _log_start("PP_LengthByType")
@@ -390,9 +401,54 @@ def _Mass_by_Type(snap_path:str):
 
 
 
+def _Length_And_Mass_By_Type_With_Sub(snap_path):
+    _log_start("PP_LengthByTypeWithSub & PP_MassByTypeWithSub")
+
+    ihid_path = snap_path + os.sep + "RKSHalos/InternalHaloID"
+    lbt_path = snap_path + os.sep + "RKSHalos/PP_LengthByType"
+    mbt_path = snap_path + os.sep + "RKSHalos/PP_MassByType"
+
+    qr = hq.RSGQuery(snap_path)
+    header = bf.Header(ihid_path + os.sep + "header").Read()
+    filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(header["NFILE"])]
+
+    outcolumn_length = []
+    outcolumn_mass = []
+    for fn in filenames:
+        print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" BLOB",fn)
+        blob_ihid = bf.Blob(ihid_path + os.sep + fn).Read()
+        blob_lbt = bf.Blob(lbt_path + os.sep + fn).Read()
+        blob_mbt = bf.Blob(mbt_path + os.sep + fn).Read()
+
+        desc_with_ihid = list(map(lambda ihid:[ihid] + list(qr.get_descendant_halos_of(ihid,fn)),blob_ihid))
+        
+        outblob_length = numpy.zeros((len(blob_ihid),6),dtype='int64')
+        outblob_mass = numpy.zeros((len(blob_ihid),6),dtype='int64')
+        for ihid,desc in zip(blob_ihid,desc_with_ihid):
+            outblob_length[ihid]=numpy.sum(blob_lbt[desc],axis=0)
+            outblob_mass[ihid]=numpy.sum(blob_mbt[desc],axis=0)
+        
+        outcolumn_length.append(outblob_length)
+        outcolumn_mass.append(outblob_mass)
+    
+    print(UTF8.LIGHT_VERTICAL + UTF8.LIGHT_HORIZONTAL + " Dumping Data Length - ",end="")
+    bf.Column(snap_path+os.sep+"RKSHalos/PP_LengthByTypeWithSub").Write(outcolumn_length,"Overwrite")
+    print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
+
+    print(UTF8.LIGHT_VERTICAL + UTF8.LIGHT_HORIZONTAL + " Dumping Data Mass - ",end="")
+    bf.Column(snap_path+os.sep+"RKSHalos/PP_MassByTypeWithSub").Write(outcolumn_mass,"Overwrite")
+    print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
+
+    _log_finish()
+
+
+
+
 
 if __name__=="__main__":
-
+    _post_process_snap("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
     # _DumpParticleBlock("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
     # _Length_by_Type("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
-    _Mass_by_Type("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
+    # _Mass_by_Type("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
+    # _Length_By_Type_With_Sub("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
+    
