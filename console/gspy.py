@@ -1,5 +1,6 @@
 #!/mnt/home/student/cranit/Repo/galspy/gsconda/bin/python
 import galterm.terminal as pyterm
+from galspy.utility.termutil import get_available_sim
 
 term = pyterm.Terminal()
 term.AddPath("/mnt/home/student/cranit/Repo/galspy/console/commands",True)
@@ -24,4 +25,9 @@ def set_rprompt(env:dict):
     return rp
 
 term.rprompt=set_rprompt
+
+# ---- SIMFILE CACHE
+term.env["SIMFILE_CACHE"] = get_available_sim(term.env["PATH"])
+
+
 term.Start()

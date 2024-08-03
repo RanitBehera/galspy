@@ -37,3 +37,7 @@ def fg_256(n):return f"\033[38;5;{n}m"
 def bg_256(n):return f"\033[48;5;{n}m"
 def fg_rgb(r,g,b):return f"\033[38;2;{r};{g};{b}m"
 def bg_rgb(r,g,b):return f"\033[48;2;{r};{g};{b}m"
+
+
+def fmt_error(message:str): return FG_RED + "ERROR : " + RESET + message
+def fmt_warning(message:str): return FG_YELLOW + "WARNING : " + RESET + message

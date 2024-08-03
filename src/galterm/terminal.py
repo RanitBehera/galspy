@@ -310,6 +310,7 @@ def env(env:dict,args:list[str]):
         key = ANSI.FG_MAGENTA + key.rjust(max_len) + ANSI.RESET
         if type(value)==str: value=f'"{value}"'
         if type(value)==list: value="[ " + ",\n".ljust(max_len+7).join([f'"{v}"' if type(v)==str else v for v in value]) + " ]"
+        if type(value)==dict: value="{ " + ",\n".ljust(max_len+7).join([f'{k} : "{v}"' if type(v)==str else f'{k} : {v}' for k,v in value.items()]) + " }"
         
 
         print(f"{key} = {value}")
