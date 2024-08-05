@@ -4,20 +4,29 @@ ARROW = "\u27F6"
 
 
 # BOX DRAWINGS
-LIGHT_HORIZONTAL                = "\u2500"      # ─
+LIGHT_HORIZONTAL                        = "\u2500"      # ─
 
-HEAVY_HORIZONTAL                = "\u2501"      # ━
+HEAVY_HORIZONTAL                        = "\u2501"      # ━
 
-LIGHT_VERTICAL                  = "\u2502"      # │
+LIGHT_VERTICAL                          = "\u2502"      # │
 
-HEAVY_VERTICAL                  = "\u2503"      # ┃
+HEAVY_VERTICAL                          = "\u2503"      # ┃
 
-LIGHT_UP_RIGHT                  = "\u2514"      # └
+LIGHT_UP_RIGHT                          = "\u2514"      # └
 
-DOUBLE_HORIZONTAL               = "\u2550"      # ═
+DOUBLE_HORIZONTAL                       = "\u2550"      # ═
 
-DOUBLE_VERTICAL                 = "\u2551"      # ║
+DOUBLE_VERTICAL                         = "\u2551"      # ║
 
-LIGHT_VERTICAL_RIGHT            = "\u251C"      # ├
+LIGHT_VERTICAL_RIGHT                    = "\u251C"      # ├
 
-VERTICAL_SINGLE_RIGHT_DOUBLE    = "\u255E"      # ╞
+VERTICAL_SINGLE_RIGHT_DOUBLE            = "\u255E"      # ╞
+
+LIGHT_VERTICAL_AND_HORIZONTAL           = "\u253C"      # ┼
+
+VERTICAL_SINGLE_AND_HORIZONTAL_DOUBLE   = "\u256A"      # ╪
+
+
+
+
+

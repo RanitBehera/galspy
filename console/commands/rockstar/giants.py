@@ -1,8 +1,34 @@
 import argparse, os
 import galterm.ansi as ANSI
-import galspy.utility.HaloQuery as hq
+import galterm.utfsym as UTF8
 from galspy.utility.termutil import get_available_sim, get_available_snaps
 from galspy.IO.ConfigFile import ReadAsDictionary
+
+import galspy.IO.BigFile as bf
+import numpy
+
+
+
+def completion(env:dict):
+    return {
+        "-s" : None,
+        "--sim" : None,
+        "-n" : None,
+        "--snap" : None,
+        "-e" : None,
+        "--exclude-sub" : None,
+        "-c" : None,
+        "--by-count" : None,
+        "-m" : None,
+        "--by-mass" : None,
+        "--with-dm" : None,
+        "--with-gas" : None,
+        "--with-star" : None,
+        "--with-bh" : None
+    }
+
+
+
 
 def main(env:dict):
     # ---- Get Arguments
@@ -10,15 +36,15 @@ def main(env:dict):
     ap.add_argument("-s","--sim",help="Target SIMFILE name.",default=env.get("SIM"))
     ap.add_argument("-n","--snap",help="Target snapsort number.",type=int,default=env.get("SNAP"))
     
-    ap.add_argument("-e","--exclude-childs",help="Exclude childs and descendants",action="store_true")
+    ap.add_argument("-e","--exclude-sub",help="Exclude all descendants",action="store_true")
     gp1 = ap.add_mutually_exclusive_group()
+    gp1.add_argument("-c","--by-count",help="Lists giant halos by particle count.",action="store_true",default=True)
     gp1.add_argument("-m","--by-mass",help="Lists giant halos by mass.",action='store_true')
-    gp1.add_argument("-c","--by-count",help="Lists giant halos by particle count.",action="store_true")
-    # gp2 = ap.add_mutually_exclusive_group()
-    # gp2.add_argument("--dm")
-    # gp2.add_argument("--gas")
-    # gp2.add_argument("--star")
-    # gp2.add_argument("--bh")
+    gp2 = ap.add_mutually_exclusive_group()
+    gp2.add_argument("--with-dm",help="Sort with dark matter.",default=True)
+    gp2.add_argument("--with-gas",help="Sort with gas.")
+    gp2.add_argument("--with-star",help="Sort with stars.")
+    gp2.add_argument("--with-bh",help="Sort with blackhole.")
 
     args = ap.parse_args()
 
@@ -35,10 +61,46 @@ def main(env:dict):
 
     # ---- Logic
     SNAP_PATH = SIMFILE["ROCKSTAR_GALAXIES_OUTBASE"] + os.sep + target_snap
-    qr = hq.RSGQuery(SNAP_PATH)
-    
-    # print
-    # 
-    #  HID |       DM     |   GAS   |   STAR  | BH  |
-    #      | COUNT | MASS |
-    
+    fields_path = SNAP_PATH + os.sep + "RKSHalos" + os.sep
+
+
+
+    table = None
+    if args.by_mass:
+        if args.exclude_sub:
+            table = bf.Column(fields_path + "PP_MassByType").Read()
+        else:
+            table = bf.Column(fields_path + "PP_MassByTypeWithSub").Read()
+    else:
+        if args.exclude_sub:
+            table = bf.Column(fields_path + "PP_LengthByType").Read()
+        else:
+            table = bf.Column(fields_path + "PP_LengthByTypeWithSub").Read()
+
+    # Mask for valid HID
+    hid = bf.Column(fields_path + "HaloID").Read()
+    hidmask = (hid>=0)
+
+    hid = hid[hidmask]
+    table = table[hidmask]
+
+    # Sort
+    if args.with_dm:order = numpy.argsort(table[:,1])
+    elif args.with_gas:order = numpy.argsort(table[:,0])
+    elif args.with_star:order = numpy.argsort(table[:,4])
+    elif args.with_bh:order = numpy.argsort(table[:,5])
+    # Decreasing Sort
+    order = order[::-1]
+    table = table[order]
+    hid   = hid[order]
+    # Head
+    table = table[:10]
+    hid = hid[:10]
+
+    # Print
+    CW = 12 # Cell Width
+    print("HID".center(CW),"DM".center(CW),"GAS".center(CW),"STAR".center(CW),"BH".center(CW),sep=UTF8.LIGHT_VERTICAL)
+    print(UTF8.VERTICAL_SINGLE_AND_HORIZONTAL_DOUBLE.join([UTF8.DOUBLE_HORIZONTAL * CW for _ in range(5)]))
+    for ihid,row in zip(hid,table):
+        print(str(ihid).center(CW),str(row[1]).center(CW),str(row[0]).center(CW),str(row[4]).center(CW),str(row[5]).center(CW),sep=UTF8.LIGHT_VERTICAL)
+

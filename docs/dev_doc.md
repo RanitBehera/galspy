@@ -29,3 +29,9 @@ This will look for sibling directory `src` for source files.
 
 ### Hide unwanted files in VS Code sidebar.
 Right click on sidebar explorer pane > open folder settings > Serach for "exclude" and look for "Files:exclude". Add pattern there. Note to add corresponding pattern in git ignore too, otherwise the invisible files might get synched.
+
+
+### Install wxPython as
+```shell
+pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04/ wxPython
+```

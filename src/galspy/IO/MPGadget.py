@@ -256,7 +256,12 @@ class _RKSGroups(_NodeGroup):
         self.Vrms                       = self.AddNode("Vrms")
 
         # Post-Processed
-        self.PP_ParticleBlock          = self.AddNode("PP_ParticleBlock")
+        self.PP_ParticleBlock           = self.AddNode("PP_ParticleBlock")
+        self.PP_LengthByType            = self.AddNode("PP_LengthByType")
+        self.PP_MassByType              = self.AddNode("PP_MassByType")
+        self.PP_LengthByTypeWithSub     = self.AddNode("PP_LengthByTypeWithSub")
+        self.PP_MassByTypeWithSub       = self.AddNode("PP_MassByTypeWithSub")
+   
 
 class _RSG(_Folder):
     def __init__(self,path):

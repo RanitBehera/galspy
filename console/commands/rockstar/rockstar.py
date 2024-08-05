@@ -423,7 +423,7 @@ def _Length_And_Mass_By_Type_With_Sub(snap_path):
         desc_with_ihid = list(map(lambda ihid:[ihid] + list(qr.get_descendant_halos_of(ihid,fn)),blob_ihid))
         
         outblob_length = numpy.zeros((len(blob_ihid),6),dtype='int64')
-        outblob_mass = numpy.zeros((len(blob_ihid),6),dtype='int64')
+        outblob_mass = numpy.zeros((len(blob_ihid),6))
         for ihid,desc in zip(blob_ihid,desc_with_ihid):
             outblob_length[ihid]=numpy.sum(blob_lbt[desc],axis=0)
             outblob_mass[ihid]=numpy.sum(blob_mbt[desc],axis=0)
