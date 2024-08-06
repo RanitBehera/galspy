@@ -38,13 +38,13 @@ def main(env:dict):
     
     ap.add_argument("-e","--exclude-sub",help="Exclude all descendants",action="store_true")
     gp1 = ap.add_mutually_exclusive_group()
-    gp1.add_argument("-c","--by-count",help="Lists giant halos by particle count.",action="store_true",default=True)
+    gp1.add_argument("-c","--by-count",help="Lists giant halos by particle count.",action="store_true")
     gp1.add_argument("-m","--by-mass",help="Lists giant halos by mass.",action='store_true')
     gp2 = ap.add_mutually_exclusive_group()
-    gp2.add_argument("--with-dm",help="Sort with dark matter.",default=True)
-    gp2.add_argument("--with-gas",help="Sort with gas.")
-    gp2.add_argument("--with-star",help="Sort with stars.")
-    gp2.add_argument("--with-bh",help="Sort with blackhole.")
+    gp2.add_argument("--dm",help="Sort with dark matter.",action='store_true')
+    gp2.add_argument("--gas",help="Sort with gas.",action='store_true')
+    gp2.add_argument("--star",help="Sort with stars.",action='store_true')
+    gp2.add_argument("--bh",help="Sort with blackhole.",action='store_true')
 
     args = ap.parse_args()
 
@@ -58,6 +58,9 @@ def main(env:dict):
     avail_snaps = get_available_snaps(SIMFILE["ROCKSTAR_GALAXIES_OUTBASE"],"RSG_")
     target_snap = "RSG_"+str(args.snap).rjust(3,'0')
     if target_snap not in avail_snaps : print(ANSI.fmt_error(f"Could not find target snap {target_snap}"));return
+
+    # if all()
+
 
     # ---- Logic
     SNAP_PATH = SIMFILE["ROCKSTAR_GALAXIES_OUTBASE"] + os.sep + target_snap
@@ -85,10 +88,10 @@ def main(env:dict):
     table = table[hidmask]
 
     # Sort
-    if args.with_dm:order = numpy.argsort(table[:,1])
-    elif args.with_gas:order = numpy.argsort(table[:,0])
-    elif args.with_star:order = numpy.argsort(table[:,4])
-    elif args.with_bh:order = numpy.argsort(table[:,5])
+    if args.gas:order = numpy.argsort(table[:,0])
+    elif args.star:order = numpy.argsort(table[:,4])
+    elif args.bh:order = numpy.argsort(table[:,5])
+    else:order = numpy.argsort(table[:,1])
     # Decreasing Sort
     order = order[::-1]
     table = table[order]
@@ -98,9 +101,23 @@ def main(env:dict):
     hid = hid[:10]
 
     # Print
+    if args.by_mass : table = table * 1e10
     CW = 12 # Cell Width
     print("HID".center(CW),"DM".center(CW),"GAS".center(CW),"STAR".center(CW),"BH".center(CW),sep=UTF8.LIGHT_VERTICAL)
     print(UTF8.VERTICAL_SINGLE_AND_HORIZONTAL_DOUBLE.join([UTF8.DOUBLE_HORIZONTAL * CW for _ in range(5)]))
     for ihid,row in zip(hid,table):
-        print(str(ihid).center(CW),str(row[1]).center(CW),str(row[0]).center(CW),str(row[4]).center(CW),str(row[5]).center(CW),sep=UTF8.LIGHT_VERTICAL)
+        if args.by_mass:
+            print(str(ihid).center(CW),
+                "{:.2e}".format(row[1]).center(CW),
+                "{:.2e}".format(row[0]).center(CW),
+                "{:.2e}".format(row[4]).center(CW),
+                "{:.2e}".format(row[5]).center(CW),
+                sep=UTF8.LIGHT_VERTICAL)
+        else:
+            print(str(ihid).center(CW),
+                  str(row[1]).center(CW),
+                  str(row[0]).center(CW),
+                  str(row[4]).center(CW),
+                  str(row[5]).center(CW),
+                  sep=UTF8.LIGHT_VERTICAL)
 

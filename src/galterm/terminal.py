@@ -57,6 +57,7 @@ class _CommandCompleter(Completer):
         self.env = env
         self.path_completer = PathCompleter()
         self.nest_completer = NestedCompleter.from_nested_dict(self.get_nest_dict())
+        self.nest_dict = self.get_nest_dict()
 
     def get_nest_dict(self):
         completion_dict = {"exit":None,"quit":None}
@@ -93,10 +94,17 @@ class _CommandCompleter(Completer):
                 for key in self.env.keys() if key.startswith(word_bc)
             )
         else:
-            yield from (
-                Completion(comp.text,comp.start_position,display=comp.display)
-                for comp in self.nest_completer.get_completions(Document(document.text),complete_event)
-            )
+            word_bc = document.get_word_before_cursor(True)
+            # yield from (
+            #     Completion(comp.text,comp.start_position,display=comp.display)
+            #     for comp in self.nest_completer.get_completions(Document(document.text),complete_event)
+            # )
+            yield from self.nest_completer.get_completions(document,complete_event)
+            # document.
+            # yield from(
+            #     Completion(comp.text,comp.start_position,display=comp.display)
+            #     for comp in self.nest_completer.get_completions(Document(document.text),complete_event)
+            # )
 #endregion
         
 
@@ -160,6 +168,7 @@ class Terminal:
                                 history=hist_file,
                                 auto_suggest=AutoSuggestFromHistory(),
                                 key_bindings=_kb
+                                # complete_style=CompleteStyle.READLINE_LIKE
                                )
         
         # Run main loop

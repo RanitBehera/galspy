@@ -3,7 +3,7 @@ import galspy.utility.HaloQuery as hq
 from galspy.IO.ConfigFile import ReadAsDictionary
 from treelib import Tree, Node
 import galterm.ansi as ANSI
-
+import galspy.IO.BigFile as bf
 
 def main(env:dict):
     if "SIM" not in env.keys():     print("No SIM environment variable set.");return
@@ -30,15 +30,23 @@ def main(env:dict):
     BLOBNAME = qr.get_blobname(HID)
     des_data = qr.get_descendant_tree_of(IHID,BLOBNAME)
 
+    HIDS = bf.Blob(RSG_PATH + os.sep + "RKSHalos" + os.sep + "HaloID" + os.sep + BLOBNAME).Read()
+
     t=Tree()
     def AddNode(tree:Tree,parent:int,childs:dict):
         for node,subnode in childs.items():
-            tree.create_node(f"{node}",node,parent=parent)
+            if HIDS[node]>=0:
+                tree.create_node(ANSI.FG_GREEN + f"{node}" + ANSI.RESET,node,parent=parent)
+            else:
+                tree.create_node(ANSI.FG_RED + f"{node}"+ANSI.RESET ,node,parent=parent)
+                # pass
+
             if type(subnode)==dict:
                 AddNode(tree,node,subnode)
+
             # if subnode==None: return
     
-    t.create_node(f"HaloID : {HID}",-1)
+    t.create_node(f"HaloID : {HID} in BLOB \"{BLOBNAME}\"",-1)
     AddNode(t,-1,des_data)
     print(t.show(stdout=False))
     print("NOTE : Desendant IDs are internal.")

@@ -15,7 +15,9 @@ class RSGQuery:
         """
         Gets blobname given as 'HaloID'.
         """
-        row=bf.Column(self.path+os.sep+"RKSHalos/PP_HaloIDLinked").Read()[halo_id]
+        data=bf.Column(self.path+os.sep+"RKSHalos/PP_HaloIDLinked").Read()
+        data=data[numpy.argsort(data[:,0])]             # Sort and store in post-process?? That will filldle with blob wise.
+        row = data[halo_id]
         if row[0]==halo_id:return "{:0X}".format(row[1]).rjust(6,'0')
         else:raise Exception("ERROR : row halo id not matching with given halo id.")
 
@@ -23,9 +25,12 @@ class RSGQuery:
         """
         Gets 'InternalHaloID' given 'HaloID'.
         """
-        row=bf.Column(self.path+os.sep+"RKSHalos/PP_HaloIDLinked").Read()[halo_id]
+        data=bf.Column(self.path+os.sep+"RKSHalos/PP_HaloIDLinked").Read()
+        data=data[numpy.argsort(data[:,0])]             # Sort and store in post-process?? That will filldle with blob wise.
+        row = data[halo_id]
         if row[0]==halo_id:return row[2]
         else:raise Exception("ERROR : row halo id not matching with given halo id.")
+
 
     # def get_halo_id_of(self,internal_halo_id,blobname):
     #     if internal_halo_id<0:return None
@@ -81,7 +86,6 @@ class RSGQuery:
                 node_dict[ch]=get_node_dict(ch)
             return node_dict
 
-        print(self.get_descendant_halos_of(internal_halo_id,blobname))
         return {internal_halo_id:get_node_dict(internal_halo_id)}
         
 
