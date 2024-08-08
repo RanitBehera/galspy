@@ -126,8 +126,19 @@ class RSGQuery:
         return prev_ancestor
     
 
+    def check_if_valid_sub(self,ihids,blobname):
+        hids = self.halos.HaloID(blobname)
+        query_hids = hids[ihids]
+        is_valid = (query_hids>=0)
+        return is_valid
+
+
+
+
+
+
     def get_child_particle_rows(self,internal_halo_ids,blobname):
-        blob_ihids,blob_pstart,blob_nump = bf.Blob(os.path.join(self.halos.PP_ParticleQuery.path,blobname)).Read().T
+        blob_ihids,blob_pstart,blob_nump = bf.Blob(os.path.join(self.halos.PP_ParticleBlock.path,blobname)).Read().T
         pstart=[]
         nump=[]
         for i,blob_ihid in enumerate(blob_ihids):
@@ -143,3 +154,20 @@ class RSGQuery:
         pos = numpy.concatenate([rkspos[pstart[i]:pstart[i]+nump[i],:] for i in range(len(pstart))])
         return pos
 
+
+    def get_centre_position(self,internal_halo_id,blobname):
+        cpos = self.halos.Position(blobname)
+        return cpos[internal_halo_id]
+    
+    def get_virial_radius(self,internal_halo_id,blobname):
+        vrad = self.halos.VirialRadius(blobname)
+        return vrad[internal_halo_id]
+    
+
+    def get_position_offset(self,internal_halo_id,blobname):
+        po = self.halos.PositionUncertainty(blobname)
+        return po[internal_halo_id]
+    
+    def get_vmax_r(self,internal_halo_id,blobname):
+        po = self.halos.vmax_r(blobname)
+        return po[internal_halo_id]

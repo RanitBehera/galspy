@@ -431,11 +431,11 @@ def _Length_And_Mass_By_Type_With_Sub(snap_path):
         outcolumn_length.append(outblob_length)
         outcolumn_mass.append(outblob_mass)
     
-    print(UTF8.LIGHT_VERTICAL + UTF8.LIGHT_HORIZONTAL + " Dumping Data Length - ",end="")
+    print(UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL + " Dumping Data Length - ",end="")
     bf.Column(snap_path+os.sep+"RKSHalos/PP_LengthByTypeWithSub").Write(outcolumn_length,"Overwrite")
     print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
 
-    print(UTF8.LIGHT_VERTICAL + UTF8.LIGHT_HORIZONTAL + " Dumping Data Mass - ",end="")
+    print(UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL + " Dumping Data Mass - ",end="")
     bf.Column(snap_path+os.sep+"RKSHalos/PP_MassByTypeWithSub").Write(outcolumn_mass,"Overwrite")
     print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
 

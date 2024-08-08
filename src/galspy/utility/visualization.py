@@ -12,6 +12,8 @@ class CubeVisualizer:
         self.axis3d = ax
         self.points_bank = []
         self.use_max_bound = False
+        self.text_bank = []
+        self.sphere_wire_bank =[]
 
         self.viewangle()
 
@@ -26,6 +28,13 @@ class CubeVisualizer:
         })
         self._need_bound_update = True
     
+    def add_text(self,pos:list[list[float]],text:str,clr:str):
+        self.text_bank.append({"POS":pos,"TEXT":text,"CLR":clr})
+
+
+    def add_sphere_wire(self,center_pos:list[float],radius:float,wireclr:str):
+        self.sphere_wire_bank.append({"CENTER":center_pos,"RADIUS":radius,"WIRECLR":wireclr})
+
 
     def update_axis_range(self):
         if not self._need_bound_update: return
@@ -84,19 +93,37 @@ class CubeVisualizer:
         ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
         
         # Draw Cube Edge
-        alp=1
-        ax_cx=numpy.array([OX,LX,LX,OX,OX,OX,LX,LX,OX,OX])
-        ax_cy=numpy.array([OY,OY,LY,LY,OY,OY,OY,LY,LY,OY])
-        ax_cz=numpy.array([OZ,OZ,OZ,OZ,OZ,LZ,LZ,LZ,LZ,LZ])
-        ax.plot(ax_cx,ax_cy,ax_cz,'k-',alpha=alp,lw=1)
-        ax.plot([LX,LX],[OY,OY],[OZ,LZ],'k-',alpha=alp,lw=1)
-        ax.plot([OX,OX],[LY,LY],[OZ,LZ],'k-',alpha=alp,lw=1)
-        ax.plot([LX,LX],[LY,LY],[OZ,LZ],'k-',alpha=alp,lw=1)
+        if True:
+            alp=1
+            ax_cx=numpy.array([OX,LX,LX,OX,OX,OX,LX,LX,OX,OX])
+            ax_cy=numpy.array([OY,OY,LY,LY,OY,OY,OY,LY,LY,OY])
+            ax_cz=numpy.array([OZ,OZ,OZ,OZ,OZ,LZ,LZ,LZ,LZ,LZ])
+            ax.plot(ax_cx,ax_cy,ax_cz,'k-',alpha=alp,lw=1)
+            ax.plot([LX,LX],[OY,OY],[OZ,LZ],'k-',alpha=alp,lw=1)
+            ax.plot([OX,OX],[LY,LY],[OZ,LZ],'k-',alpha=alp,lw=1)
+            ax.plot([LX,LX],[LY,LY],[OZ,LZ],'k-',alpha=alp,lw=1)
     
         # Set equal aspect
         ax.set_aspect('equal', adjustable='box')
         # ax.tight_layout()
+
+    def draw_annotate(self):
+        ax = self.axis3d
+        for text in self.text_bank:
+            X,Y,Z = text["POS"]
+            ax.text(X,Y,Z,text["TEXT"],size=16,zorder=100,color=text["CLR"])
     
+    def draw_wire(self):
+        ax=self.axis3d
+        for sphere in self.sphere_wire_bank:
+            r=sphere["RADIUS"]
+            ox,oy,oz = sphere["CENTER"]
+            u, v = numpy.mgrid[0:2*numpy.pi:20j, 0:numpy.pi:10j]
+            x = r*numpy.cos(u)*numpy.sin(v)
+            y = r*numpy.sin(u)*numpy.sin(v)
+            z = r*numpy.cos(v)
+            ax.plot_wireframe(ox+x, oy+y, oz+z, color=sphere["WIRECLR"],lw=0.5)
+
     def viewangle(self,elv=20,azim=40+35):
         self.axis3d.view_init(elv,azim)
 
@@ -112,4 +139,6 @@ class CubeVisualizer:
     def show(self):
         self.beautify_axis()
         self.plot()
+        self.draw_annotate()
+        self.draw_wire()
         plt.show()
