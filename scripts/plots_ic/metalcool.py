@@ -1,4 +1,3 @@
-# %%
 import numpy as np
 import matplotlib.pyplot as plt
 import galspy.IO.BigFile as bf
@@ -24,13 +23,21 @@ Temperature_bins = ReadField("Temperature_bins")
 NetCoolingRate = ReadField("NetCoolingRate")
 
 
-# plt.plot(N_Redshift,N_HydrogenNumberDensity)
+# Plot between NetCoolingRate vs Temperature_bins
+# However length mismatch 520200 vs 200, factor of 2601
+# Then length of HydrogenNumberDesnity_bin and Redshift_bins are 51 and 51.
+# and 51x51=2601, so chnage shape to (51,51,200)
+# First dimension is redshift
+# Second dimension is HydrogneDensity
 
-# print(N_HydrogenNumberDensity)
-# print(MetallicityInSolar_bins)
-print(N_MetallicityInSolar)
-# print(N_Redshift)
-# print(N_Temperature)
+
+NetCoolingRate=NetCoolingRate.reshape((51,51,200))
+NetCoolingRate=np.log10(NetCoolingRate)
+
+for i in range(51):
+    plt.plot(Temperature_bins,NetCoolingRate[50,i])
+plt.show()
 
 
-# %%
+
+
