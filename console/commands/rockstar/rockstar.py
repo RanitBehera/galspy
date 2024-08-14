@@ -134,6 +134,7 @@ def _rockstar_galaxies_postprocess(env:dict,search_dir:str,verbose:bool=False):
 
     print(f"Found {len(snap_list)} snapshots.")
 
+    snap_list.sort()
 
     # Use tqdm when no-verbose ... function print needs to be modified
     # for snap in tqdm.tqdm(snap_list):
@@ -151,12 +152,15 @@ def _post_process_snap(snap):
 
 
 # ========== POST PROCESS FUNCTIONS
-PP_STAGE_COLOR  = ANSI.FG_MAGENTA
+PP_SNAP_COLOR  = ANSI.FG_CYAN
+PP_STEP_COLOR  = ANSI.FG_MAGENTA
 PP_HLINE_LENGTH = 72
 PP_HLINE_CHAR   = UTF8.DOUBLE_HORIZONTAL
 
-def _log_start(header_name):
-    print(ANSI.BOLD + PP_STAGE_COLOR + f"\n{header_name} ".ljust(PP_HLINE_LENGTH,PP_HLINE_CHAR) + ANSI.RESET)
+def _log_start(header_name,snap_path):
+    print("\n" + ANSI.BOLD + PP_SNAP_COLOR + os.path.basename(snap_path) + ANSI.RESET,end="")
+    print(" " + UTF8.LEFT_ANGLE_ORNAMENT + " ",end="")
+    print(ANSI.BOLD + PP_STEP_COLOR + f"{header_name} ".ljust(PP_HLINE_LENGTH,PP_HLINE_CHAR) + ANSI.RESET)
 
 def _log_cross_check(msg:str,success:bool,prestring:str):
     print( prestring + f" {msg} - ",end="")
@@ -168,7 +172,7 @@ def _log_finish():
 
 
 def _Process_Headers(snap_path:str):
-    _log_start("Headers Merging")
+    _log_start("Headers Merging",snap_path)
     CWL = 40     
     childs = [snap_path+os.sep+child for child in os.listdir(snap_path) if os.path.isdir(snap_path+os.sep+child)]
     for child in childs:
@@ -222,52 +226,47 @@ def _Process_Headers(snap_path:str):
 
 
 def _DumpParticleBlock(snap_path:str):
-    _log_start("PP_ParticleBlock")
+    _log_start("PP_ParticleBlock",snap_path)
 
     halo_ihid_path = snap_path + os.sep + "RKSHalos/InternalHaloID"
     header =bf.Header(halo_ihid_path + os.sep + "header").Read()
     filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(header["NFILE"])]
     part_ihid_path = snap_path + os.sep + "RKSParticles/InternalHaloID"
 
-    perblob_datalen = [header[fn] for fn in filenames]
-    perblob_status  = numpy.zeros(len(filenames))
+    outcolumn_data = []
     for n,fn in enumerate(filenames):
         print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" BLOB",fn)
         halo_ihids=bf.Blob(halo_ihid_path + os.sep + fn).Read()
         outblob_data = -1 * numpy.ones((len(halo_ihids),3),dtype='int64')
         outblob_data[:,0] = halo_ihids.astype('int64')
 
-        part_ihids=bf.Blob(part_ihid_path + os.sep + fn).Read()
-        val,start,count = numpy.unique(part_ihids,return_index=True,return_counts=True)
-        _log_cross_check("Check 1",max(val)<len(halo_ihids),UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL)
-        _log_cross_check("Check 2",all(start>=0),UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL)
+        if len(halo_ihids)==0:
+            print(UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_UP_RIGHT + UTF8.LIGHT_HORIZONTAL + " Empty Blob - " + ANSI.FG_YELLOW + "YES" + ANSI.RESET)
+        else:
+            print(UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL + " Empty Blob - " + ANSI.FG_GREEN + "NO" + ANSI.RESET)
+            part_ihids=bf.Blob(part_ihid_path + os.sep + fn).Read()
+            val,start,count = numpy.unique(part_ihids,return_index=True,return_counts=True)
+            _log_cross_check("Check 1",max(val)<len(halo_ihids),UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL)
+            _log_cross_check("Check 2",all(start>=0),UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL)
         
-        start = start.astype('int64')
-        count = count.astype('int64')
+            start = start.astype('int64')
+            count = count.astype('int64')
 
-        for v,s,c in zip(val,start,count):
-            outblob_data[v,1:3] = s,c
-
-        print(UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_UP_RIGHT + UTF8.LIGHT_HORIZONTAL + " Dumping Data - ",end="")
-        status = bf.Blob(snap_path + os.sep + "RKSHalos/PP_ParticleBlock" + os.sep + fn).Write(outblob_data,'Overwrite') 
-        if status == 0:print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
-        elif status == 1: print(ANSI.FG_YELLOW + "SKIPPED" + ANSI.RESET)
-        else: print(ANSI.RED + " ERROR" + ANSI.RESET)
-        perblob_status[n]=status
+            for v,s,c in zip(val,start,count):
+                outblob_data[v,1:3] = s,c
+        
+        outcolumn_data.append(outblob_data)
 
 
-    print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" HEADER - ",end="")
-    if all(not s for s in perblob_status):
-        bf.Header(snap_path + os.sep + "RKSHalos/PP_ParticleBlock" + os.sep + "header").WriteFromArg(bf.Get_DTYPE(outblob_data[0]),3,header["NFILE"],perblob_datalen)
-        print(ANSI.FG_GREEN + "CREATED" + ANSI.RESET)
-    else:
-        print(ANSI.FG_RED + "FAILED" + ANSI.RESET)
+    print(UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL + " Dumping Data - ",end="")
+    bf.Column(snap_path+os.sep+"RKSHalos/PP_ParticleBlock").Write(outcolumn_data,"Overwrite")
+    print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
 
     _log_finish()
     
 
 def _HID_To_Blobname_and_IHID(snap_path:str):
-    _log_start("PP_HaloIDLinked")
+    _log_start("PP_HaloIDLinked",snap_path)
     hid_path = os.path.join(snap_path,"RKSHalos/HaloID")
     ihid_path = os.path.join(snap_path,"RKSHalos/InternalHaloID")
 
@@ -287,14 +286,14 @@ def _HID_To_Blobname_and_IHID(snap_path:str):
         blobdata = numpy.column_stack((hids,blobname,ihids))
         data.append(blobdata)
     
-    print(UTF8.LIGHT_VERTICAL + UTF8.LIGHT_HORIZONTAL + " Dumping Data - ",end="")
+    print(UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL + " Dumping Data - ",end="")
     bf.Column(snap_path+os.sep+"RKSHalos/PP_HaloIDLinked").Write(data,"Overwrite")
     print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
 
     _log_finish()
 
 def _Length_by_Type(snap_path:str):
-    _log_start("PP_LengthByType")
+    _log_start("PP_LengthByType",snap_path)
     ihid_path   = snap_path + os.sep + "RKSHalos/InternalHaloID"
     pquery_path = snap_path + os.sep + "RKSHalos/PP_ParticleBlock"
     ptype_path  = snap_path + os.sep + "RKSParticles/Type"
@@ -302,8 +301,7 @@ def _Length_by_Type(snap_path:str):
     header = bf.Header(ihid_path + os.sep + "header").Read()
     filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(header["NFILE"])]
 
-    perblob_datalen = [header[fn] for fn in filenames]
-    perblob_status  = numpy.zeros(len(filenames))
+    outcolumn_data=[]
     for n,fn in enumerate(filenames):
         print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" BLOB",fn)
         ihids = bf.Blob(ihid_path + os.sep + fn).Read()
@@ -327,27 +325,19 @@ def _Length_by_Type(snap_path:str):
             for ptype,pcount in zip(ptype,pcount):
                 outblob_data[ihid,ptype] = pcount
 
+        outcolumn_data.append(outblob_data)
 
-        print(UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_UP_RIGHT + UTF8.LIGHT_HORIZONTAL + " Dumping Data - ",end="")
-        status = bf.Blob(snap_path + os.sep + "RKSHalos/PP_LengthByType" + os.sep + fn).Write(outblob_data,'Overwrite') 
-        if status == 0:print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
-        elif status == 1: print(ANSI.FG_YELLOW + "SKIPPED" + ANSI.RESET)
-        else: print(ANSI.RED + " ERROR" + ANSI.RESET)
-        perblob_status[n]=status
-
-    print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" HEADER - ",end="")
-    if all(not s for s in perblob_status):
-        bf.Header(snap_path + os.sep + "RKSHalos/PP_LengthByType" + os.sep + "header").WriteFromArg(bf.Get_DTYPE(outblob_data[0]),6,header["NFILE"],perblob_datalen)
-        print(ANSI.FG_GREEN + "CREATED" + ANSI.RESET)
-    else:
-        print(ANSI.FG_RED + "FAILED" + ANSI.RESET)
+    
+    print(UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL + " Dumping Data - ",end="")
+    bf.Column(snap_path+os.sep+"RKSHalos/PP_LengthByType").Write(outcolumn_data,"Overwrite")
+    print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
 
     _log_finish()
 
 
 
 def _Mass_by_Type(snap_path:str):
-    _log_start("PP_MassByType")
+    _log_start("PP_MassByType",snap_path)
     ihid_path   = snap_path + os.sep + "RKSHalos/InternalHaloID"
     pquery_path = snap_path + os.sep + "RKSHalos/PP_ParticleBlock"
     ptype_path  = snap_path + os.sep + "RKSParticles/Type"
@@ -356,8 +346,7 @@ def _Mass_by_Type(snap_path:str):
     header = bf.Header(ihid_path + os.sep + "header").Read()
     filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(header["NFILE"])]
 
-    perblob_datalen = [header[fn] for fn in filenames]
-    perblob_status  = numpy.zeros(len(filenames))
+    outcolumn_data = []
     for n,fn in enumerate(filenames):
         print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" BLOB",fn)
         ihids = bf.Blob(ihid_path + os.sep + fn).Read()
@@ -383,26 +372,18 @@ def _Mass_by_Type(snap_path:str):
             outblob_data[ihid,[0,1,4,5]] = numpy.array([gas_mass,dm_mass,star_mass,bh_mass])/1e10
 
 
-        print(UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_UP_RIGHT + UTF8.LIGHT_HORIZONTAL + " Dumping Data - ",end="")
-        status = bf.Blob(snap_path + os.sep + "RKSHalos/PP_MassByType" + os.sep + fn).Write(outblob_data,'Overwrite') 
-        if status == 0:print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
-        elif status == 1: print(ANSI.FG_YELLOW + "SKIPPED" + ANSI.RESET)
-        else: print(ANSI.RED + " ERROR" + ANSI.RESET)
-        perblob_status[n]=status
+        outcolumn_data.append(outblob_data)
 
-    print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" HEADER - ",end="")
-    if all(not s for s in perblob_status):
-        bf.Header(snap_path + os.sep + "RKSHalos/PP_MassByType" + os.sep + "header").WriteFromArg(bf.Get_DTYPE(outblob_data[0]),6,header["NFILE"],perblob_datalen)
-        print(ANSI.FG_GREEN + "CREATED" + ANSI.RESET)
-    else:
-        print(ANSI.FG_RED + "FAILED" + ANSI.RESET)
+    print(UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL + " Dumping Data - ",end="")
+    bf.Column(snap_path+os.sep+"RKSHalos/PP_MassByType").Write(outcolumn_data,"Overwrite")
+    print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
 
     _log_finish()
 
 
 
 def _Length_And_Mass_By_Type_With_Sub(snap_path):
-    _log_start("PP_LengthByTypeWithSub & PP_MassByTypeWithSub")
+    _log_start("PP_LengthByTypeWithSub & PP_MassByTypeWithSub",snap_path)
 
     ihid_path = snap_path + os.sep + "RKSHalos/InternalHaloID"
     lbt_path = snap_path + os.sep + "RKSHalos/PP_LengthByType"
@@ -445,9 +426,10 @@ def _Length_And_Mass_By_Type_With_Sub(snap_path):
 
 
 
-if __name__=="__main__":
-    _post_process_snap("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
-    # _DumpParticleBlock("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
+# if __name__=="__main__":
+    # _post_process_snap("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
+    # _Process_Headers("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_000")
+    # _DumpParticleBlock("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_000")
     # _Length_by_Type("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
     # _Mass_by_Type("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
     # _Length_By_Type_With_Sub("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")

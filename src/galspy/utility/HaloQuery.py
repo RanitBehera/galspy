@@ -145,7 +145,7 @@ class RSGQuery:
             if blob_ihid not in internal_halo_ids: continue
             pstart.append(blob_pstart[i])
             nump.append(blob_nump[i])
-            
+        
         return numpy.column_stack((pstart,nump))
     
     def get_child_particle_positions(self,internal_halo_ids,blobname):
@@ -154,6 +154,7 @@ class RSGQuery:
         pos = numpy.concatenate([rkspos[pstart[i]:pstart[i]+nump[i],:] for i in range(len(pstart))])
         return pos
 
+    # def get_child_particle_types()
 
     def get_centre_position(self,internal_halo_id,blobname):
         cpos = self.halos.Position(blobname)
@@ -171,3 +172,6 @@ class RSGQuery:
     def get_vmax_r(self,internal_halo_id,blobname):
         po = self.halos.vmax_r(blobname)
         return po[internal_halo_id]
+    
+    def get_peak_density_position(self,ihid,blobname):
+        pass

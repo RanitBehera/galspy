@@ -1,4 +1,4 @@
-# %%
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -34,4 +34,5 @@ for ax in axs:
 axs[-1].set_xlabel("Redshift")
 axs[0].set_ylabel("PhotoIonisation Rate\nin s$^{-1}$")
 axs[1].set_ylabel("Heating Rate\nin ergs s$^{-1}$")
-# %%
+
+plt.show()

@@ -69,7 +69,7 @@ LMF_OPTIONS = Literal["Press-Schechter","Seith-Tormen","Comparat(z=0)"]
 
 def MassFunctionLiterature(
         model_name : LMF_OPTIONS,
-        cosmology,
+        cosmology:dict,
         redshift,
         mass_range,
         output : Literal["dn/dlnM","(M2/rho0)*(dn/dm)"]
@@ -82,3 +82,7 @@ def MassFunctionLiterature(
 
 
     return _mass_function_literature(cosmology, model,redshift,mass_range,q_out,mdef)
+
+
+def CosmologyDict(isflat:bool,H0:float,Om0:float,Ob0:float,sig8:float,ns:float):
+    return {'flat': isflat,'H0': H0,'Om0': Om0,'Ob0': Ob0,'sigma8': sig8,'ns': ns}

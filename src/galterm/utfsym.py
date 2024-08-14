@@ -26,7 +26,6 @@ LIGHT_VERTICAL_AND_HORIZONTAL           = "\u253C"      # ┼
 
 VERTICAL_SINGLE_AND_HORIZONTAL_DOUBLE   = "\u256A"      # ╪
 
-
-
+LEFT_ANGLE_ORNAMENT                     = "\u276f"            # ❯
 
 

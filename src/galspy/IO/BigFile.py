@@ -81,6 +81,11 @@ class Header:
         if not all([nm==pb_nmemb[0] for nm in pb_nmemb]):
             print("WARNING : NMEMB in all blob are not same.\nNMEMB of first blob will be used in header.")
 
+
+        # dtype
+        # print(data_column)
+        # dtype = 
+
         header = ""
         header += f"DTYPE: {Get_DTYPE(data_column[0])}\n"
         header += f"NMEMB: {str(pb_nmemb[0])}\n"
