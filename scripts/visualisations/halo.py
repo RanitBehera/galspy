@@ -84,10 +84,10 @@ def plot_all_sub(ihid,clr='r',with_child=False):
 #endregion
 
 #region HID 250
-# plot_all_sub(16)      #DM Halo
+plot_all_sub(16)      #DM Halo
 # plot_all_sub(31,'y')  #Gas Halo, but no HID??
-plot_all_sub(32,'m')  #Galaxy 1
-plot_all_sub(33,'g')  #Galaxy 2
+# plot_all_sub(32,'m')  #Galaxy 1
+# plot_all_sub(33,'g')  #Galaxy 2
 #endregion
 
 #region HID 2

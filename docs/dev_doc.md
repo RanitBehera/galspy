@@ -35,3 +35,6 @@ Right click on sidebar explorer pane > open folder settings > Serach for "exclud
 ```shell
 pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04/ wxPython
 ```
+
+### For classylss
+Install a cython version less than 3. (version 0.29.37).

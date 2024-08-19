@@ -30,12 +30,22 @@ NetCoolingRate = ReadField("NetCoolingRate")
 # First dimension is redshift
 # Second dimension is HydrogneDensity
 
+print(Redshift_bins)
+print(HydrogenNumberDensity_bins)
 
 NetCoolingRate=NetCoolingRate.reshape((51,51,200))
 NetCoolingRate=np.log10(NetCoolingRate)
 
 for i in range(51):
-    plt.plot(Temperature_bins,NetCoolingRate[50,i])
+    plt.plot(Temperature_bins,NetCoolingRate[50,20],'r')
+    plt.plot(Temperature_bins,NetCoolingRate[50,50],'b')
+    plt.plot(Temperature_bins,NetCoolingRate[0,20],'r--')
+    plt.plot(Temperature_bins,NetCoolingRate[0,50],'b--')
+    # plt.plot(Temperature_bins,NetCoolingRate[i,49])
+    # plt.plot(Temperature_bins,NetCoolingRate[i,20])
+
+plt.xlabel("log T")
+plt.ylabel("Cooling Rate")
 plt.show()
 
 
