@@ -119,16 +119,61 @@ class _BlackHole(_NodeGroup):
         self.Swallowed                   = self.AddNode("Swallowed")
         self.Velocity                    = self.AddNode("Velocity")
 
-class _SnapHeader(_Folder):
-    def __init__(self, path: str) -> None:
-        super().__init__(path)
 
-    def Read(self):
-        return bf.Attribute(os.path.join(self.path,"attr-v2")).Read()
-    
-    def __call__(self, *args: Any, **kwds: Any) -> Any:
-        return self.Read()
+class _PARTHeader:
+    def __init__(self, path: str) -> None:
+        self.path = os.path.join(path,"Header/attr-v2")
+        self._header = bf.Attribute(self.path).Read()
         
+    def BoxSize(self):                    return self._header["BoxSize"]
+    def CMBTemperature(self):             return self._header["CMBTemperature"]
+    def CodeVersion(self):                return self._header["CodeVersion"]
+    def CompilerSettings(self):           return self._header["CompilerSettings"]
+    def DensityKernel(self):              return self._header["DensityKernel"]
+    def HubbleParam(self):                return self._header["HubbleParam"]
+    def MassTable(self):                  return self._header["MassTable"]
+    def Omega0(self):                     return self._header["Omega0"]
+    def OmegaBaryon(self):                return self._header["OmegaBaryon"]
+    def OmegaLambda(self):                return self._header["OmegaLambda"]
+    def RSDFactor(self):                  return self._header["RSDFactor"]
+    def Time(self):                       return self._header["Time"]
+    def TimeIC(self):                     return self._header["TimeIC"]
+    def TotNumPart(self):                 return self._header["TotNumPart"]
+    def TotNumPartInit(self):             return self._header["TotNumPartInit"]
+    def UnitLength_in_cm(self):           return self._header["UnitLength_in_cm"]
+    def UnitMass_in_g(self):              return self._header["UnitMass_in_g"]
+    def UnitVelocity_in_cm_per_s(self):   return self._header["UnitVelocity_in_cm_per_s"]
+    def UsePeculiarVelocity(self):        return self._header["UsePeculiarVelocity"]
+    # ----- Extra
+    def Redshift(self):                   return (1/self.Time()) - 1
+
+    def __call__(self):
+        return self._header
+
+class _PIGHeader(_Folder):
+    def __init__(self, path: str) -> None:
+        self.path = os.path.join(path,"Header/attr-v2")
+        self._header = bf.Attribute(self.path).Read()
+
+    def BoxSize(self):                    return self._header["BoxSize"]
+    def CMBTemperature(self):             return self._header["CMBTemperature"]
+    def HubbleParam(self):                return self._header["HubbleParam"]
+    def MassTable(self):                  return self._header["MassTable"]
+    def NumFOFGroupsTotal(self):          return self._header["NumFOFGroupsTotal"]
+    def NumPartInGroupTotal(self):        return self._header["NumPartInGroupTotal"]
+    def Omega0(self):                     return self._header["Omega0"]
+    def OmegaBaryon(self):                return self._header["OmegaBaryon"]
+    def OmegaLambda(self):                return self._header["OmegaLambda"]
+    def RSDFactor(self):                  return self._header["RSDFactor"]
+    def Time(self):                       return self._header["Time"]
+    def UsePeculiarVelocity(self):        return self._header["UsePeculiarVelocity"]
+    # ----- Extra
+    def Redshift(self):                   return (1/self.Time()) - 1
+
+    def __call__(self):
+        return self._header
+
+
 class _PART(_Folder):
     def __init__(self,path):
         super().__init__(path)
@@ -144,7 +189,7 @@ class _PART(_Folder):
         self._4         = self.Star
         self._5         = self.BlackHole
 
-        self.Header     = _SnapHeader(os.path.join(self.path,"Header"))
+        self.Header     = _PARTHeader(self.path)
 
 class _FOFGroups(_NodeGroup):
     def __init__(self,path):
@@ -184,7 +229,7 @@ class _PIG(_Folder):
         self._4         = self.Star
         self._5         = self.BlackHole
 
-        self.Header     = _SnapHeader(os.path.join(self.path,"Header"))
+        self.Header     = _PIGHeader(self.path)
         self.FOFGroups  = _FOFGroups(os.path.join(self.path,"FOFGroups"))
 
 class _RSGParticle(_NodeGroup):
@@ -268,7 +313,7 @@ class _RSG(_Folder):
         super().__init__(path)
 
         self.RKSParticles   = _RSGParticle(os.path.join(self.path,"RKSParticles"))
-        self.Header         = _SnapHeader(os.path.join(self.path,"Header"))
+        # self.Header         = _SnapHeader(os.path.join(self.path,"Header"))
         self.RKSHalos      = _RKSGroups(os.path.join(self.path,"RKSHalos"))
 
 
@@ -291,6 +336,18 @@ class _Sim:
     
     def _FixedFormatSnapNumber(self, snap_num):
         return '{:03}'.format(snap_num)
+    
+    def GetCosmology(self):
+        COSMOLOGY   = {
+                # Get these from simulation run files
+                'flat': True,
+                'H0': 67.36,
+                'Om0': 0.3153,
+                'Ob0': 0.0493,
+                'sigma8': 0.811,
+                'ns': 0.9649
+                }
+        return COSMOLOGY
 
 def NavigationRoot(path:str):
     if not os.path.isdir(path):

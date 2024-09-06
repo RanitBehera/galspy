@@ -1,6 +1,7 @@
 import yt
+import yt.units
 import galspy.IO.MPGadget as mp
-
+import numpy as np
 
 
 PATH = "/mnt/home/student/cranit/Data/MP_Gadget/Nishi/L10N64/output"
@@ -29,17 +30,20 @@ dens      = SNAP.Gas.Density()
 # ======================
 # ----- Feed to YT -----
 # ======================
-data = {
+data_gas = {
     # GAS
-    ("gas", "particle_position_x"): ppxg,
-    ("gas", "particle_position_y"): ppyg,
-    ("gas", "particle_position_z"): ppzg,
-    ("gas", "particle_velocity_x"): pvxg,
-    ("gas", "particle_velocity_y"): pvyg,
-    ("gas", "particle_velocity_z"): pvzg,
-    ("gas", "particle_mass"): mg,
-    ("gas", "smoothing_length"): sml,
-    ("gas", "density"): dens,
+    ("io", "particle_position_x"): ppxg,
+    ("io", "particle_position_y"): ppyg,
+    ("io", "particle_position_z"): ppzg,
+    ("io", "particle_velocity_x"): pvxg,
+    ("io", "particle_velocity_y"): pvyg,
+    ("io", "particle_velocity_z"): pvzg,
+    ("io", "particle_mass"): mg,
+    ("io", "smoothing_length"): np.double(sml),
+    ("io", "density"): np.double(dens)
+}
+
+data_dm={
     # DM
     ("dm", "particle_position_x"): ppxd,
     ("dm", "particle_position_y"): ppyd,
@@ -47,7 +51,10 @@ data = {
     ("dm", "particle_velocity_x"): pvxd,
     ("dm", "particle_velocity_y"): pvyd,
     ("dm", "particle_velocity_z"): pvzd,
-    ("dm", "particle_mass"): md,
+    ("dm", "particle_mass"): md
+}
+
+data_star={
     # STAR
     ("star", "particle_position_x"): ppxs,
     ("star", "particle_position_y"): ppys,
@@ -55,12 +62,23 @@ data = {
     ("star", "particle_velocity_x"): pvxs,
     ("star", "particle_velocity_y"): pvys,
     ("star", "particle_velocity_z"): pvzs,
-    ("star", "particle_mass"): ms,
+    ("star", "particle_mass"): ms
 }
 
+
+BoxSize=10000
+
+UnitLength_in_cm = 3.08568e21
+UnitMass_in_g = 1.989e43
+UnitVelocity_in_cm_per_s = 100000
+
 ds = yt.load_particles(
-        data,
-        bbox=[[0,10000],[0,10000],[0,10000]]
+        data_gas,
+        bbox=[[0,BoxSize],[0,BoxSize],[0,BoxSize]],
+        length_unit= UnitLength_in_cm,
+        mass_unit=UnitMass_in_g,
+        velocity_unit=UnitVelocity_in_cm_per_s,
+        periodicity=(True,True,True)
     )
 
 
@@ -69,22 +87,22 @@ ds = yt.load_particles(
 # ================ 
 # Setup YT
 # ================ 
-yt.toggle_interactivity()
-# ds_dm.add_sph_fields()
+# ds.add_sph_fields()
 
+
+# ------ PARTICLE PLOT
+# pt = yt.ParticlePlot(ds,
+#                     ("all", "particle_position_x"), ("all", "particle_position_z"),
+#                     color="b")
+
+# # pt.set_center((7000,3000))
+# pt.set_origin(['lower','left','domain'])
+# # pt.set_width(2, "Mpc")
+# pt.save("/mnt/home/student/cranit/Repo/galspy/temp/plots/yt.png")
+
+# ----- 
+# slc = yt.SlicePlot(ds,'z',("io","density"),center=[7000,3000,600],width=(10000,'kpc'))
+# # slc.set_origin(['lower','left','domain'])
+# # slc.set_width(100, "kpc")
 
 # slc.save("/mnt/home/student/cranit/Repo/galspy/temp/plots/yt.png")
-
-p = yt.ParticlePlot(ds, ("all", "particle_position_x"), ("all", "particle_position_y"), color="b")
-
-p.set_unit(("all", "particle_position_x"), "kpc")
-# p.set_unit(("all", "particle_velocity_z"), "km/s")
-# p.set_unit(("all", "particle_mass"), "Msun")
-
-# p.set_width(500, "kpc")
-
-
-
-
-# p.show()
-p.save("/mnt/home/student/cranit/Repo/galspy/temp/plots/yt.png")

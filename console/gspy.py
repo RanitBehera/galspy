@@ -1,10 +1,12 @@
-#!/mnt/home/student/cranit/Repo/galspy/gsconda/bin/python
+#!/usr/bin/env python
+import os
 import galterm.terminal as pyterm
 from galspy.utility.termutil import get_available_sim
 
 term = pyterm.Terminal()
-term.AddPath("/mnt/home/student/cranit/Repo/galspy/console/commands",True)
-term.AddPath("/mnt/home/student/cranit/Repo/galspy/temp/sims")
+HOME=os.environ["HOME"]
+term.AddPath(HOME + os.sep + "RANIT/Repo/galspy/console/commands",True)
+term.AddPath(HOME + os.sep + "RANIT/Repo/galspy/temp/sims")
 
 
 # UTF-8 Symbols
