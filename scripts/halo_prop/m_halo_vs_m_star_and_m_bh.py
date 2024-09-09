@@ -5,15 +5,15 @@ matplotlib.rcParams["font.size"]=16
 
 
 SNAP_PATH = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS"
-SNAP_PATH = "/mnt/home/student/cranit/Data/MP_Gadget/Nishi/L50N640"
+# SNAP_PATH = "/mnt/home/student/cranit/Data/MP_Gadget/Nishi/L50N640"
 root = galspy.NavigationRoot(SNAP_PATH)
 
 MASS_UNIT = 1e10 
 
-hm  = root.PIG(20).FOFGroups.Mass()*MASS_UNIT
-mbt = root.PIG(20).FOFGroups.MassByType().T * MASS_UNIT
+hm  = root.PIG(11).FOFGroups.Mass()*MASS_UNIT
+mbt = root.PIG(11).FOFGroups.MassByType().T * MASS_UNIT
 sm = mbt[4]
-bm = root.PIG(20).FOFGroups.BlackholeMass() * MASS_UNIT
+bm = root.PIG(11).FOFGroups.BlackholeMass() * MASS_UNIT
 
 plt.plot(hm,sm,'r*',ms=4,label="Star")
 plt.plot(hm,bm,'k.',ms=10,label="Blackhole")

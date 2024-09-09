@@ -10,6 +10,7 @@ ids = root.PART(17).Gas.ID()
 dens = root.PART(17).Gas.Density()
 pos = root.PART(17).Gas.Position()
 sml = root.PART(17).Gas.SmoothingLength()
+# root.PART(17).Gas.
 
 
 # Create kd-Tree
@@ -31,6 +32,7 @@ print("In data :",dens[tid])
 # quintic kernel
 ngb_ids=kdt.query_ball_point(tpos,tsml)
 
+print("Neighbour Length",len(ngb_ids))
 
 ngb_mass = [mass[nid] for nid in ngb_ids]
 ngb_pos = [pos[nid] for nid in ngb_ids]

@@ -1,6 +1,7 @@
 import os
 from typing import Any
 import galspy.IO.BigFile as bf
+import galspy.IO.ConfigFile as cf
 import galspy.utility.HaloQuery as rs
 
 
@@ -315,6 +316,217 @@ class _RSG(_Folder):
         self.RKSParticles   = _RSGParticle(os.path.join(self.path,"RKSParticles"))
         # self.Header         = _SnapHeader(os.path.join(self.path,"Header"))
         self.RKSHalos      = _RKSGroups(os.path.join(self.path,"RKSHalos"))
+
+
+class _Param_GenIC:
+    def __init__(self,path) -> None:
+        genic = cf.ReadAsDictionary(path)
+        # ===== RESOLUTION =====
+        self.BoxSize                    = genic["BoxSize"]
+        self.Ngrid                      = genic["Ngrid"]
+        self.ProduceGas                 = genic["ProduceGas"]
+        # ===== COSMOLOGY =====
+        self.HubbleParam                = genic["HubbleParam"]
+        self.OmegaLambda                = genic["OmegaLambda"]
+        self.Omega0                     = genic["Omega0"]
+        self.OmegaBaryon                = genic["OmegaBaryon"]
+        self.CMBTemperature             = genic["CMBTemperature"]
+        # ===== CLASS =====
+        self.WhichSpectrum              = genic["WhichSpectrum"]
+        self.FileWithInputSpectrum      = genic["FileWithInputSpectrum"]
+        self.DifferentTransferFunctions = genic["DifferentTransferFunctions"]
+        self.FileWithTransferFunction   = genic["FileWithTransferFunction"]
+        self.Redshift                   = genic["Redshift"]
+        self.Sigma8                     = genic["Sigma8"]
+        self.PrimordialAmp              = genic["PrimordialAmp"]
+        self.PrimordialIndex            = genic["PrimordialIndex"]
+        # ===== OUTPUT =====
+        self.Seed                       = genic["Seed"]
+        self.OutputDir                  = genic["OutputDir"]
+        self.FileBase                   = genic["FileBase"]
+        # ===== UNITS =====
+        self.UnitLength_in_cm           = genic["UnitLength_in_cm"]
+        self.UnitMass_in_g              = genic["UnitMass_in_g"]
+        self.UnitVelocity_in_cm_per_s   = genic["UnitVelocity_in_cm_per_s"]
+        # ===== RESOURCE =====
+        self.MaxMemSizePerNode          = genic["MaxMemSizePerNode"]
+
+
+class _Param_Gadget:
+    def __init__(self,path) -> None:
+        gadget = cf.ReadAsDictionary(path)
+
+        # ===== COSMOLOGY =====
+        # HubbleParam
+        # OmegaLambda
+        # Omega0
+        # OmegaBaryon
+        # CMBTemperature
+
+        # RadiationOn
+        # MassiveNuLinRespOn
+
+
+        # =================
+        # ===== INPUT =====
+        # =================
+        # InitCondFile
+
+
+        # ==================
+        # ===== OUTPUT =====
+        # ==================
+        # TimeMax
+        # OutputList
+
+        # OutputDir
+        # # SnapshotFileBase
+        # # FOFFileBase
+        # EnergyFile =
+        # CpuFile =
+
+
+        # ====================
+        # ===== RESOURCE =====
+        # ====================
+        # TimeLimitCPU
+        # MaxMemSizePerNode
+        # SlotsIncreaseFactor
+
+        # ===================
+        # ===== GRAVITY =====
+        # ===================
+        # # TreeGravOn
+        # # GravitySoftening
+
+
+        # ===============
+        # ===== SPH =====
+        # ===============
+        # HydroOn
+        # # DensityOn
+        # DensityIndependentSphOn
+        # SplitGravityTimestepsOn
+        # DensityKernelType
+
+
+        # ==================
+        # ===== COOLING ====
+        # ==================
+        # CoolingOn
+        # TreeCoolFile
+        # MetalCoolFile
+        # # CoolingRates
+        # # RecombRates
+        # # SelfShieldingOn
+        # MinGasTemp
+
+        # ----- PhotoIonization -----
+        # # PhotoIonizationOn
+        # # PhotoIonizeFactor
+
+        # ----- Reionization -----
+        # ReionHistFile =
+        # UVFluctuationFile =
+        # HIReionTemp =
+        # UVRedshiftThreshold =
+
+
+        # ==========================
+        # ===== STAR FORMATION =====
+        # ==========================
+        # StarformationOn
+        # StarformationCriterion
+        # CritOverDensity
+        # CritPhysDensity
+        # # FactorSN
+        # # FactorEVP
+        # # TempSupernova
+        # # TempClouds
+        # # Generations
+        # MetalReturnOn
+        # QuickLymanAlphaProbability
+
+
+        # =================
+        # ===== WINDS =====
+        # =================
+        # WindOn
+        # WindModel
+        # WindEfficiency
+        # WindEnergyFraction
+        # WindSpeedFactor
+        # WindSigma0
+        # WindFreeTravelLength
+        # WindFreeTravelDensFac
+        # MaxWindFreeTravelTime
+        # MinWindVelocity =
+        # WindThermalFactor =
+
+
+        # =====================
+        # ===== BLACKHOLE =====
+        # =====================
+        # BlackHoleOn
+        # BlackHoleFeedbackMethod
+        # BlackHoleNgbFactor
+
+        # ----- Seeding ------
+        # MinFoFMassForNewSeed
+        # MinMStarForNewSeed
+        # SeedBlackHoleMass
+        # MaxSeedBlackHoleMass
+        # SeedBlackHoleMassIndex
+
+        # ----- Dynamical Friction ------
+        # BH_DynFrictionMethod
+        # SeedBHDynMass
+
+        # ----- Accretion ------
+        # BlackHoleAccretionFactor
+        # BlackHoleEddingtonFactor
+
+        # ----- Feedback (Thermal) -----
+        # BlackHoleFeedbackFactor
+        # TimeBetweenSeedingSearch
+
+        # ----- Feedback (Kinetic) -----
+        # BlackHoleKineticOn
+        # BHKE_EddingtonThrFactor
+        # BHKE_EddingtonMFactor
+        # BHKE_EddingtonMPivot
+        # BHKE_EddingtonMIndex
+        # BHKE_EffRhoFactor
+        # BHKE_EffCap
+        # BHKE_InjEnergyThr
+
+        # ----- Extra -----
+        # WriteBlackHoleDetails
+
+
+        # =====================
+        # ===== FOF Halos =====
+        # =====================
+        # SnapshotWithFOF
+        # FOFHaloLinkingLength
+        # FOFHaloMinLength
+        # # FOFSaveParticles
+
+
+
+
+class _Run(_Folder):
+    def __init__(self,path):
+        super().__init__(path)
+
+
+
+
+class _IC(_Folder):
+    def __init__(self,path):
+        super().__init__(path)
+
+
 
 
 class _Sim:

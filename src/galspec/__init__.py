@@ -1,1 +1,1 @@
-from .bpass import BPASS
+# from .bpass import BPASS

@@ -1,3 +1,5 @@
+from typing import Literal
+
 def ansi(n):return f"\033[{n}m"
 
 RESET           = ansi(0)
@@ -41,3 +43,17 @@ def bg_rgb(r,g,b):return f"\033[48;2;{r};{g};{b}m"
 
 def fmt_error(message:str): return FG_RED + "ERROR : " + RESET + message
 def fmt_warning(message:str): return FG_YELLOW + "WARNING : " + RESET + message
+
+
+def move_cursor(row:int,clm:int):print(f"\033[{row};{clm}H",end="",flush=True)
+    
+def erase_line(mode:Literal["TO_LINE_END","FROM_LINE_START","ENTIRE_LINE"]="ENTIRE_LINE"):
+    if mode=="TO_LINE_END":         print("\033[0K",end="",flush=True)
+    elif mode=="FROM_LINE_START":   print("\033[1K",end="",flush=True)
+    elif mode=="ENTIRE_LINE":       print("\033[2K",end="",flush=True)
+
+
+
+if __name__=="__main__":
+    move_cursor(1,1)
+    erase_line()
