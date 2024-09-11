@@ -105,6 +105,7 @@ class CubeVisualizer:
     
         # Set equal aspect
         ax.set_aspect('equal', adjustable='box')
+        # ax.set_aspect('equal', adjustable='datalim')
         # ax.tight_layout()
 
     def draw_annotate(self):

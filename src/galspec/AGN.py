@@ -60,7 +60,7 @@ class ThinDisk:
         # print("Tc=",Tc)
         # print("inner=",self.InnerEdge_SI)
         r_SI = r* self.SchwarzschildRadius_SI
-        Q = Tc  * (1-((self.InnerEdge_SI/r_SI)**0.5)) / (r_SI**3)
+        Q = Tc  * ( (1-(self.InnerEdge_SI/r_SI))**0.5 ) / (r_SI**3)
         return Q**0.25
 
     # def SpectralBrightness(self,r,freq):
@@ -81,15 +81,17 @@ class ThinDisk:
         Rs_SI = self.SchwarzschildRadius_SI
 
         def integrand(r_SI,f):
-            return (r_SI)/(numpy.exp((h*f)/(k_B*self.Temperature(r_SI/Rs_SI)))-1)
+            return r_SI/(numpy.exp(h*f/(k_B*self.Temperature(r_SI/Rs_SI)))-1)
 
 
         # r=numpy.logspace(numpy.log10(1.01*self.InnerEdge_SI),numpy.log10(self.OuterEdge_SI),1000)
-        # I=integrand(r,freq)
+        # for_fre_ind=999
+        # print("tf=",freq[for_fre_ind])
+        # I=integrand(r,freq[for_fre_ind])
         # plt.plot(r,I)
         # plt.xscale('log')
         # plt.yscale('log')
-        # plt.ylim(1e18,1e22)
+        # # plt.ylim(1e18,1e22)
         # plt.grid()
         # plt.show()
 
