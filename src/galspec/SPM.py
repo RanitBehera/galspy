@@ -17,6 +17,7 @@ class SpectroPhotoMetry:
         self._PART = SNAPDIR.PART(snap_num)
         self._PIG  = SNAPDIR.PIG(snap_num)
 
+        self.contrast_exponent=1
 
     # =========================
     # ===== TARGET REGION =====
@@ -39,6 +40,7 @@ class SpectroPhotoMetry:
         target_group_span   = max([target_group_span_x,target_group_span_y,target_group_span_z])
         size = span_multiplier * target_group_span
         # print(size)
+        # location += numpy.array([0,-35,20])
         self.target_region(*location,size)
 
     def gather_stars_in_region(self):
@@ -57,11 +59,9 @@ class SpectroPhotoMetry:
         snapshot_redshift        = (1/snapshot_scale_factor) -1
         star_formation_redshift = (1/star_formation_scale_factor) -1
 
-        snapshot_lookback_time = cosmo.lookback_time(snapshot_redshift)
-
-        print(snapshot_lookback_time)
-        # self.target_star_age    = 
-
+        snapshot_lookback_time = cosmo.lookback_time(snapshot_redshift).value
+        star_formation_lookback_time = cosmo.lookback_time(star_formation_redshift).value
+        self.target_star_age_in_Myr = (star_formation_lookback_time - snapshot_lookback_time)*1000
 
     def show_region(self):
         cv=CubeVisualizer()
@@ -77,58 +77,80 @@ class SpectroPhotoMetry:
         self.proj_plane_theta=theta
         self.proj_plane_phi=phi
         # TODO : Project to (U,V) coordinate
-        self._Up=self.target_star_pos[:,1]
-        self._Vp=self.target_star_pos[:,2]
+        self._Up=self.target_star_pos[:,0]
+        self._Vp=self.target_star_pos[:,1]
     
 
     def show_projected_points(self):
-        plt.plot(self._Up,self._Vp,'.r',ms=5)
+        plt.plot(self._Up,self._Vp,'.r',ms=5,alpha=0.3)
         plt.axis('equal')
         plt.show()
 
-    def interpolate_mass_to_grid(self,grid_resolution:tuple,mode=Literal["NGB","CIC"]):
+    def generate_grid(self,grid_resolution:tuple,mode=Literal["NGB","CIC"]):
         assert mode in ["NGB", "CIC"]
-        if mode=="NGB":
-            grid_deltaX=self._target_size/(grid_resolution[0]-1)
-            grid_deltaY=self._target_size/(grid_resolution[1]-1)
-            
-            grid_UV = numpy.zeros(grid_resolution)
+        grid_deltaX=self._target_size/(grid_resolution[0]-1)
+        grid_deltaY=self._target_size/(grid_resolution[1]-1)
 
+        grid_mass = numpy.zeros(grid_resolution)
+        grid_age = numpy.empty(grid_resolution, dtype=object)
+        for i in range(grid_resolution[0]):
+            for j in range(grid_resolution[1]):
+                grid_age[i, j] = []
+        
+        if mode=="NGB":    
             tmass=self.target_star_mass
             tUp=self._Up+(self._target_size/2)
             tVp=self._Vp+(self._target_size/2)
-
-            for m,up,vp in zip(tmass,tUp,tVp):
+            tage=self.target_star_age_in_Myr
+            for m,up,vp,ta in zip(tmass,tUp,tVp,tage):
                 ind_u = int((up/grid_deltaX)+0.5)
                 ind_v = int((vp/grid_deltaY)+0.5)
-                grid_UV[ind_u,ind_v] += m
+                grid_mass[ind_u,ind_v] += m
+                grid_age[ind_u,ind_v].append(ta)
             
             MASS_UNIT=1e10  #<---- Hard coded
-            self.interpolated_mass_grid=grid_UV*MASS_UNIT
+            self.grid_mass_interpolated=(grid_mass)*MASS_UNIT
+            self.grid_age_distributed = grid_age
 
-            # print(self.interpolated_mass_grid)
+
+
+            # print(self.grid_mass_interpolated)
         elif mode=="CIC":
             raise NotImplementedError()
         
     
     def show_interpolated_mass_grid_image(self):
-        img=plt.imshow(self.interpolated_mass_grid.T,cmap='grey')
-        plt.colorbar(img)
+
+        img=plt.imshow(self.grid_mass_interpolated.T**self.contrast_exponent,cmap='grey',origin='lower')
+        plt.colorbar(img,label="$M_\odot$")
+        plt.xlabel("kpc")
+        plt.ylabel("kpc")
         plt.show()
 
     def show_age_distribution(self):
         fig,axes = plt.subplots(1,2,figsize=(10, 5))
         ax1,ax2 = axes
-        img=ax1.imshow(self.interpolated_mass_grid.T,cmap='grey')
+        img=ax1.imshow(self.grid_mass_interpolated.T**self.contrast_exponent,cmap='grey',origin='lower')
 
         divider = make_axes_locatable(ax1)
         cax = divider.append_axes("right", size="5%", pad=0.1)
-        cbar = fig.colorbar(img,cax=cax)
+        cbar = fig.colorbar(img,cax=cax,label="$M_\odot$")
+
+        # ax1.set_xlabel("kpc")
+        # ax1.set_ylabel("kpc")
+
+        def ShowHistogramForAges(ages):
+            ax2.hist(ages,bins=20)
+            ax2.set_xlabel("Myr")
+            ax2.set_ylabel("count")
+
 
         def onclick(event):
             ix, iy = round(event.xdata), round(event.ydata)
-
-            print (f'x = {ix}, y = {iy}')
+            ages = self.grid_age_distributed[ix,iy]
+            # ax2.clear()
+            ShowHistogramForAges(ages)
+            fig.canvas.draw()
 
 
         fig.canvas.mpl_connect('button_press_event', onclick)
