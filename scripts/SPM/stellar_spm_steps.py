@@ -20,12 +20,12 @@ spm.target_PIG_Group(1+GROUP_OFFSET,0.5)
 # spm.show_region()
 
 spm.projection_plane_orientation()
-spm.show_projected_points()
+# spm.show_projected_points()
 
 spm.generate_grid(grid_resolution=(50,50),mode="NGB")
 # spm.show_interpolated_mass_grid_image()
-spm.show_age_distribution()
-
+# spm.show_age_distribution()
+spm.show_spectra()
 
 
 # target_group_id = PIG.FOFGroups.GroupID()[GROUP_OFFSET]

@@ -96,8 +96,7 @@ class BPASS:
         metal_str = str(self.metallicity)
         if metal_str=="0.0001":metal_str="em4"
         elif metal_str=="0.00001":metal_str="em5"
-        else:
-            metal_str=str(metal_str).split(".")[-1].ljust(3,"0")
+        else:metal_str=str(metal_str).split(".")[-1].ljust(3,"0")
     
         filepath = BPASS_DIR + os.sep
         filepath += f"bpass_v{BPASS_VERSION}_{imf_str}" + os.sep

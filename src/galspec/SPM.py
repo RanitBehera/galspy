@@ -4,9 +4,14 @@ import numpy
 import matplotlib.pyplot as plt
 from typing import Literal
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import galspec.bpass as bp
 
 from astropy.cosmology import FlatLambdaCDM
 cosmo = FlatLambdaCDM(H0=67.36, Om0=0.3153)
+
+BPASS = bp.BPASS("CHABRIER_UPTO_300M","Binary",0.02)
+waves=[5e2,5e4]
+FLUX=BPASS.Spectra.GetFlux(waves[0],waves[-1])
 
 
 class SpectroPhotoMetry:
@@ -140,7 +145,8 @@ class SpectroPhotoMetry:
         # ax1.set_ylabel("kpc")
 
         def ShowHistogramForAges(ages):
-            ax2.hist(ages,bins=20)
+            log10_ages=numpy.log10(ages)+6
+            ax2.hist(log10_ages,bins=numpy.arange(6,10,0.1))
             ax2.set_xlabel("Myr")
             ax2.set_ylabel("count")
 
@@ -148,8 +154,51 @@ class SpectroPhotoMetry:
         def onclick(event):
             ix, iy = round(event.xdata), round(event.ydata)
             ages = self.grid_age_distributed[ix,iy]
-            # ax2.clear()
+            ax2.clear()
             ShowHistogramForAges(ages)
+            fig.canvas.draw()
+
+
+        fig.canvas.mpl_connect('button_press_event', onclick)
+        plt.show()
+
+
+    def show_spectra(self):
+        fig,axes = plt.subplots(1,2,figsize=(10, 5))
+        ax1,ax2 = axes
+        img=ax1.imshow(self.grid_mass_interpolated.T**self.contrast_exponent,cmap='grey',origin='lower')
+
+        divider = make_axes_locatable(ax1)
+        cax = divider.append_axes("right", size="5%", pad=0.1)
+        cbar = fig.colorbar(img,cax=cax,label="$M_\odot$")
+
+        # ax1.set_xlabel("kpc")
+        # ax1.set_ylabel("kpc")
+
+        def ShowPixelSpectra(ages):
+            log10_ages=numpy.log10(ages)+6
+            bin_counts,age_bins=numpy.histogram(log10_ages,bins=numpy.arange(6,10,0.1))
+            
+
+            total_flux=0*FLUX.WL
+            for a,c in zip(age_bins,bin_counts):
+                if c==0:continue
+                aflux=FLUX[str(numpy.round(a,1))]
+                total_flux+=aflux
+
+                ax2.plot(FLUX.WL,aflux,'--')
+
+            ax2.plot(FLUX.WL,total_flux,'k')
+            ax2.set_yscale('log')
+            ax2.set_xscale('log')
+
+
+
+        def onclick(event):
+            ix, iy = round(event.xdata), round(event.ydata)
+            ages = self.grid_age_distributed[ix,iy]
+            ax2.clear()
+            ShowPixelSpectra(ages)
             fig.canvas.draw()
 
 
