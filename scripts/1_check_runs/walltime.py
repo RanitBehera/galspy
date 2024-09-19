@@ -11,22 +11,39 @@ matplotlib.rcParams['font.size']=12
 
 
 
-STDOUT_PATH = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/run/PBS/58553.hn1/stdout.txt"
+STDOUT_PATH = [
+        "/mnt/home/student/cranit/NINJA/simulations/L150N2040/run/PBS/58553.hn1/stdout.txt",
+        "/mnt/home/student/cranit/NINJA/simulations/L150N2040/run/PBS/64554.hn1/stdout.txt"
+    ]
 
-# SCRAPE DATA
-with open(STDOUT_PATH) as fp:stdout = fp.read()
-begin_step = [line for line in stdout.split("\n") if line[14:24]=="Begin Step"]
-num_part = [line for line in stdout.split("\n") if line[14:24]=="TotNumPart"]
-step_file = io.StringIO("\n".join(begin_step).replace(',',''))
-part_file = io.StringIO("\n".join(num_part).replace(',',''))
-wall_time,scale_factor,redshift = np.loadtxt(step_file,usecols=[1,7,10]).T
-count_bh,count_star = np.loadtxt(part_file,usecols=[8,10]).T
 
+# INITILAISE FIELDS
+all_wall_time = np.array([])
+all_redshift = np.array([])
+
+
+# SCRAPE TEXT
+last_job_walltime = 0
+for filepath in STDOUT_PATH: 
+    with open(filepath) as fp:stdout = fp.read()
+    begin_step = [line for line in stdout.split("\n") if line[14:24]=="Begin Step"]
+    num_part = [line for line in stdout.split("\n") if line[14:24]=="TotNumPart"]
+    step_file = io.StringIO("\n".join(begin_step).replace(',',''))
+    part_file = io.StringIO("\n".join(num_part).replace(',',''))
+    wall_time,scale_factor,redshift = np.loadtxt(step_file,usecols=[1,7,10]).T
+    count_bh,count_star = np.loadtxt(part_file,usecols=[8,10]).T
+
+    wall_time +=last_job_walltime
+    last_job_walltime = wall_time[-1]
+
+    all_wall_time = np.concatenate((all_wall_time,wall_time))
+    all_redshift = np.concatenate((all_redshift,redshift))
+    
 
 # PLOT
-wall_time_hr=wall_time/3600
+all_wall_time_hr=all_wall_time/3600
 fig,axs = plt.subplots(1,1)
-axs.plot(wall_time_hr,redshift,'k-')
+axs.plot(all_wall_time_hr,all_redshift,'k-')
 # axs.plot(wall_time/3600,scale_factor,'-')
 
 
@@ -48,22 +65,22 @@ BBOX_EDGECOLOR = (0,0,0,0.1)
 
 # First Star
 ind_first_star = np.where(count_star>0)[0][0]
-plt.plot(wall_time_hr[ind_first_star],redshift[ind_first_star],'k*',ms=16,markeredgecolor=(1,1,1))
-plt.annotate(f"First Star\n$z={round(redshift[ind_first_star],2)}$",(wall_time_hr[ind_first_star],redshift[ind_first_star]),
+plt.plot(all_wall_time_hr[ind_first_star],redshift[ind_first_star],'k*',ms=16,markeredgecolor=(1,1,1))
+plt.annotate(f"First Star\n$z={round(redshift[ind_first_star],2)}$",(all_wall_time_hr[ind_first_star],redshift[ind_first_star]),
              xytext=(0,100),textcoords="offset pixels",ha='center',
              bbox=dict(facecolor=BBOX_FACECOLOR, edgecolor=BBOX_EDGECOLOR, boxstyle='round,pad=0.5'),
              arrowprops=ARROW_STYLE)
 # First BH
 ind_first_bh = np.where(count_bh>0)[0][0]
-plt.plot(wall_time_hr[ind_first_bh],redshift[ind_first_bh],'k.',ms=16,markeredgecolor=(1,1,1))
-plt.annotate(f"First BH\n$z={round(redshift[ind_first_bh],2)}$",(wall_time_hr[ind_first_bh],redshift[ind_first_bh]),
+plt.plot(all_wall_time_hr[ind_first_bh],redshift[ind_first_bh],'k.',ms=16,markeredgecolor=(1,1,1))
+plt.annotate(f"First BH\n$z={round(redshift[ind_first_bh],2)}$",(all_wall_time_hr[ind_first_bh],redshift[ind_first_bh]),
              xytext=(0,100),textcoords="offset pixels",ha='center',
              bbox=dict(facecolor=BBOX_FACECOLOR, edgecolor=BBOX_EDGECOLOR, boxstyle='round,pad=0.5'),
              arrowprops=ARROW_STYLE)
 
 # Latest Redshift
-plt.plot(wall_time_hr[-1],redshift[-1],'ks',ms=4)
-plt.annotate(f"Latest\n$z={round(redshift[-1],2)}$",(wall_time_hr[-1],redshift[-1]),
+plt.plot(all_wall_time_hr[-1],redshift[-1],'ks',ms=4)
+plt.annotate(f"Latest\n$z={round(redshift[-1],2)}$",(all_wall_time_hr[-1],redshift[-1]),
              xytext=(0,100),textcoords="offset pixels",ha='center',
              bbox=dict(facecolor=BBOX_FACECOLOR, edgecolor=BBOX_EDGECOLOR, boxstyle='round,pad=0.5'),
              arrowprops=ARROW_STYLE)
@@ -75,7 +92,7 @@ SLOPE_START = 400
 SLOPE_END = 1600
 # print(len(wall_time_hr))
 # plt.plot([wall_time_hr[SLOPE_START],wall_time_hr[SLOPE_END]],[redshift[SLOPE_START],redshift[SLOPE_END]],'.',ms=10)
-lwt = np.log10(wall_time_hr)
+lwt = np.log10(all_wall_time_hr)
 lred = np.log10(redshift)
 slope = (lred[SLOPE_START]-lred[SLOPE_END])/(lwt[SLOPE_START]-lwt[SLOPE_END])
 xr = np.log10(np.linspace(50,192,200))
