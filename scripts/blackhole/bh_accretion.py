@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 PATH        =  "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS"
-SNAP_NUM    = 11
+SNAP_NUM    = 43
 
 
 # READ FIELDS
@@ -26,16 +26,23 @@ bh_seed_mass = SNAP.BlackHole.BlackholeMseed() * MASS_UNIT
 bh_gid  = SNAP.BlackHole.GroupID()
 
 
-print(bh_mass[2]+bh_mass[3])
-print(SNAP.FOFGroups.BlackholeMass()[2]*MASS_UNIT)
+# print(bh_mass[2]+bh_mass[3])
+# print(SNAP.FOFGroups.BlackholeMass()[2]*MASS_UNIT)
 
-# plt.plot(bh_seed_mass,bh_mass,'.',ms=10)
+print(len(bh_mass[bh_mass>5e6]))
+print(max(bh_mass/1e6))
 
-# plt.yscale('log')
-# plt.xscale('log')
-# plt.axis("equal")
-# plt.show()
+
+plt.plot(bh_seed_mass,bh_mass,'.',ms=5)
+
+plt.yscale('log')
+plt.xscale('log')
+plt.axis("equal")
+
 
 #
+
+
+
 
 

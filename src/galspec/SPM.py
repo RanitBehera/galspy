@@ -45,7 +45,7 @@ class SpectroPhotoMetry:
         target_group_span   = max([target_group_span_x,target_group_span_y,target_group_span_z])
         size = span_multiplier * target_group_span
         # print(size)
-        # location += numpy.array([0,-35,20])
+        # location += numpy.array([-30,0,-20])
         self.target_region(*location,size)
 
     def gather_stars_in_region(self):
@@ -83,7 +83,7 @@ class SpectroPhotoMetry:
         self.proj_plane_phi=phi
         # TODO : Project to (U,V) coordinate
         self._Up=self.target_star_pos[:,0]
-        self._Vp=self.target_star_pos[:,1]
+        self._Vp=self.target_star_pos[:,2]
     
 
     def show_projected_points(self):
@@ -175,7 +175,7 @@ class SpectroPhotoMetry:
         # ax1.set_xlabel("kpc")
         # ax1.set_ylabel("kpc")
 
-        def ShowPixelSpectra(ages):
+        def ShowPixelSpectra(ages,mass):
             log10_ages=numpy.log10(ages)+6
             bin_counts,age_bins=numpy.histogram(log10_ages,bins=numpy.arange(6,10,0.1))
             
@@ -186,7 +186,7 @@ class SpectroPhotoMetry:
                 aflux=FLUX[str(numpy.round(a,1))]
                 total_flux+=aflux
 
-                ax2.plot(FLUX.WL,aflux,'--')
+                # ax2.plot(FLUX.WL,aflux,'--')
 
             ax2.plot(FLUX.WL,total_flux,'k')
             ax2.set_yscale('log')
@@ -197,8 +197,9 @@ class SpectroPhotoMetry:
         def onclick(event):
             ix, iy = round(event.xdata), round(event.ydata)
             ages = self.grid_age_distributed[ix,iy]
+            proj_mass = self.grid_mass_interpolated[ix,iy]
             ax2.clear()
-            ShowPixelSpectra(ages)
+            ShowPixelSpectra(ages,proj_mass)
             fig.canvas.draw()
 
 
