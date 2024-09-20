@@ -1,4 +1,4 @@
-import galspy.IO.MPGadget as mp
+import galspy.MPGadget as mp
 import matplotlib.pyplot as plt
 import numpy as np
 

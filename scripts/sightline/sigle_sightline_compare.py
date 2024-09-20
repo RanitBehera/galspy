@@ -1,4 +1,4 @@
-import galspy.IO.MPGadget as mp
+import galspy.MPGadget as mp
 import matplotlib.pyplot as plt
 from galspy.utility.visualization import CubeVisualizer
 import numpy as np

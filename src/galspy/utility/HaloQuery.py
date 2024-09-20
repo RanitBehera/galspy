@@ -1,5 +1,5 @@
-import galspy.IO.MPGadget as mp
-import galspy.IO.BigFile as bf
+import galspy.MPGadget as mp
+import galspy.FileTypes.BigFile as bf
 import numpy,os
 
 

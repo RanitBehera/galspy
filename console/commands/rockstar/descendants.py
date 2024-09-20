@@ -4,7 +4,7 @@ from galspy.IO.ConfigFile import ReadAsDictionary
 from treelib import Tree, Node
 import galterm.ansi as ANSI
 import galspy.IO.BigFile as bf
-import galspy.IO.MPGadget as mp
+import galspy.MPGadget as mp
 
 def main(env:dict):
     if "SIM" not in env.keys():     print("No SIM environment variable set.");return

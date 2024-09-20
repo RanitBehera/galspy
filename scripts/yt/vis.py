@@ -1,6 +1,6 @@
 import yt
 import yt.units
-import galspy.IO.MPGadget as mp
+import galspy.MPGadget as mp
 import numpy as np
 
 

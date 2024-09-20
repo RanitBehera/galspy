@@ -1,6 +1,6 @@
 import numpy as np
 import galspy.IO.BigFile as bf
-import galspy.IO.MPGadget as mp
+import galspy.MPGadget as mp
 
 path = "/mnt/home/student/cranit/Work/test_para_rock/OUT_L50N640/RSG_036"
 snap = mp.RSGRoot(path).RKSHalos

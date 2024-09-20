@@ -1,9 +1,8 @@
 import os
-from typing import Any
-import galspy.IO.BigFile as bf
-import galspy.IO.ConfigFile as cf
-import galspy.utility.HaloQuery as rs
-
+from typing import Any, Literal
+import galspy.FileTypes.BigFile as bf
+import galspy.FileTypes.ConfigFile as cf
+import galspy.utility.PIGQuery as pq
 
 class _Folder:
     def __init__(self,path:str) -> None:
@@ -215,6 +214,7 @@ class _FOFGroups(_NodeGroup):
         self.StellarMetalElemMass        = self.AddNode("StellarMetalElemMass")
         self.StellarMetalMass            = self.AddNode("StellarMetalMass")
 
+
 class _PIG(_Folder):
     def __init__(self,path):
         super().__init__(path)
@@ -232,6 +232,8 @@ class _PIG(_Folder):
 
         self.Header     = _PIGHeader(self.path)
         self.FOFGroups  = _FOFGroups(os.path.join(self.path,"FOFGroups"))
+
+        self.Query    = pq._PIGQuery(self.path)
 
 class _RSGParticle(_NodeGroup):
     def __init__(self,path):

@@ -1,5 +1,5 @@
 import galspy
-import galspy.IO.MPGadget as mp
+import galspy.MPGadget as mp
 import numpy as np
 import matplotlib.pyplot as plt
 

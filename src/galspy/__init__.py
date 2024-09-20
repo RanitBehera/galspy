@@ -1,1 +1,1 @@
-from galspy.IO.MPGadget import NavigationRoot
+from galspy.MPGadget import NavigationRoot

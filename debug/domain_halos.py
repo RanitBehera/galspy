@@ -1,7 +1,7 @@
 # check all the particle positions dumped by rockstar
 
 
-import galspy.IO.MPGadget as mp
+import galspy.MPGadget as mp
 import galspy.utility.HaloQuery as hq
 import galspy.utility.visualization as vis
 import os,numpy

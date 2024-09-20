@@ -1,4 +1,4 @@
-import galspy.IO.MPGadget as mp
+import galspy.MPGadget as mp
 import galspy.utility.HaloQuery as rs
 import galspy.utility.visualization as vis
 import matplotlib.pyplot as plt
