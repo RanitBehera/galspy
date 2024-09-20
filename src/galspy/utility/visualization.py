@@ -1,19 +1,22 @@
 import numpy
 import matplotlib.pyplot as plt
+from typing import Literal
 
 
+_BOX_MODE = Literal["AxisWise","MaxAxis"]
 
 class CubeVisualizer:
-    def __init__(self,ax:plt.Axes=None) -> None:
+    def __init__(self,ax:plt.Axes=None,spanmode:_BOX_MODE="MaxAxis") -> None:
         if ax==None:
             ax=plt.axes(projection="3d")
         if not ax.name=="3d": raise Exception("ERROR : Axes type is not 3d")
         
         self.axis3d = ax
         self.points_bank = []
-        self.use_max_bound = False
         self.text_bank = []
         self.sphere_wire_bank =[]
+        
+        self.spanmode:_BOX_MODE=spanmode
 
         self.viewangle()
 
@@ -63,12 +66,9 @@ class CubeVisualizer:
     def beautify_axis(self):
         ax=self.axis3d
         self.update_axis_range()
+
         OX,OY,OZ = self.origin
         LX,LY,LZ = self.bound
-
-        if self.use_max_bound:
-            LX,LY,LZ = numpy.ones(3)*max([LX,LY,LZ])
-
 
         # Set Label
         ax.set_xlabel("X",fontsize=18)
@@ -76,8 +76,30 @@ class CubeVisualizer:
         ax.set_zlabel("Z",fontsize=18)
         
         # Limit Axis Range
+        if self.spanmode == "AxisWise":
+            pass
+        elif self.spanmode == "MaxAxis":
+            SX = LX - OX
+            SY = LY - OY
+            SZ = LZ - OZ
+
+            MaxSpan = max([SX,SY,SZ])
+            
+            CX = OX + SX/2
+            CY = OY + SY/2
+            CZ = OZ + SZ/2
+
+            OX = CX - MaxSpan/2
+            LX = CX + MaxSpan/2
+            OY = CY - MaxSpan/2
+            LY = CY + MaxSpan/2
+            OZ = CZ - MaxSpan/2
+            LZ = CZ + MaxSpan/2
+        else:
+            pass
+
         ax.set_xlim3d(OX,LX);ax.set_ylim3d(OY,LY);ax.set_zlim3d(OZ,LZ)
-        
+
         # Hide Axis Ticks
         # ax.set_xticks([]);ax.set_yticks([]);ax.set_zticks([])
         

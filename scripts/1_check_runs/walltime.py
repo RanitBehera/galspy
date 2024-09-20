@@ -2,48 +2,48 @@ import numpy as np
 import matplotlib.pyplot as plt
 import io
 
-
-# from matplotlib import rc
-# rc('font',**{'family':'serif','serif':['Roboto'],'size':16})
-# rc('text', usetex=True)
 import matplotlib
 matplotlib.rcParams['font.size']=12
 
 
+PBS_PATH = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/run/PBS"
+JOB_IDS = [58553,64554]
 
-STDOUT_PATH = [
-        "/mnt/home/student/cranit/NINJA/simulations/L150N2040/run/PBS/58553.hn1/stdout.txt",
-        "/mnt/home/student/cranit/NINJA/simulations/L150N2040/run/PBS/64554.hn1/stdout.txt"
-    ]
+# Get stdout filepaths
+STDOUTS = [f"{PBS_PATH}/{jid}.hn1/stdout.txt" for jid in JOB_IDS]
 
+# Initialise global variables
+wall_time = np.array([])
+redshift = np.array([])
+count_bh = np.array([])
+count_star = np.array([])
 
-# INITILAISE FIELDS
-all_wall_time = np.array([])
-all_redshift = np.array([])
-
-
-# SCRAPE TEXT
-last_job_walltime = 0
-for filepath in STDOUT_PATH: 
+# Read stdout and scrape text
+job_wall_time_offset = 0
+for filepath in STDOUTS: 
     with open(filepath) as fp:stdout = fp.read()
-    begin_step = [line for line in stdout.split("\n") if line[14:24]=="Begin Step"]
-    num_part = [line for line in stdout.split("\n") if line[14:24]=="TotNumPart"]
-    step_file = io.StringIO("\n".join(begin_step).replace(',',''))
-    part_file = io.StringIO("\n".join(num_part).replace(',',''))
-    wall_time,scale_factor,redshift = np.loadtxt(step_file,usecols=[1,7,10]).T
-    count_bh,count_star = np.loadtxt(part_file,usecols=[8,10]).T
+    line_begin_step = [line for line in stdout.split("\n") if line[14:24]=="Begin Step"]
+    line_num_part = [line for line in stdout.split("\n") if line[14:24]=="TotNumPart"]
+    # Buffer Files
+    bf_step = io.StringIO("\n".join(line_begin_step).replace(',',''))
+    bf_part = io.StringIO("\n".join(line_num_part).replace(',',''))
+    
+    job_wall_time,job_scale_factor,job_redshift = np.loadtxt(bf_step,usecols=[1,7,10]).T
+    job_count_bh,job_count_star = np.loadtxt(bf_part,usecols=[8,10]).T
 
-    wall_time +=last_job_walltime
-    last_job_walltime = wall_time[-1]
+    job_wall_time +=job_wall_time_offset
+    wall_time = np.concatenate((wall_time,job_wall_time))
+    job_wall_time_offset = wall_time[-1]
 
-    all_wall_time = np.concatenate((all_wall_time,wall_time))
-    all_redshift = np.concatenate((all_redshift,redshift))
+    redshift = np.concatenate((redshift,job_redshift))
+    count_bh = np.concatenate((count_bh,job_count_bh))
+    count_star = np.concatenate((count_star,job_count_star))
     
 
 # PLOT
-all_wall_time_hr=all_wall_time/3600
+wall_time_hr=wall_time/3600
 fig,axs = plt.subplots(1,1)
-axs.plot(all_wall_time_hr,all_redshift,'k-')
+axs.plot(wall_time_hr,redshift,'k-')
 # axs.plot(wall_time/3600,scale_factor,'-')
 
 
@@ -65,25 +65,31 @@ BBOX_EDGECOLOR = (0,0,0,0.1)
 
 # First Star
 ind_first_star = np.where(count_star>0)[0][0]
-plt.plot(all_wall_time_hr[ind_first_star],redshift[ind_first_star],'k*',ms=16,markeredgecolor=(1,1,1))
-plt.annotate(f"First Star\n$z={round(redshift[ind_first_star],2)}$",(all_wall_time_hr[ind_first_star],redshift[ind_first_star]),
+plt.plot(wall_time_hr[ind_first_star],redshift[ind_first_star],'k*',ms=16,markeredgecolor=(1,1,1))
+plt.annotate(f"First Star\n$z={round(redshift[ind_first_star],2)}$",(wall_time_hr[ind_first_star],redshift[ind_first_star]),
              xytext=(0,100),textcoords="offset pixels",ha='center',
              bbox=dict(facecolor=BBOX_FACECOLOR, edgecolor=BBOX_EDGECOLOR, boxstyle='round,pad=0.5'),
              arrowprops=ARROW_STYLE)
 # First BH
 ind_first_bh = np.where(count_bh>0)[0][0]
-plt.plot(all_wall_time_hr[ind_first_bh],redshift[ind_first_bh],'k.',ms=16,markeredgecolor=(1,1,1))
-plt.annotate(f"First BH\n$z={round(redshift[ind_first_bh],2)}$",(all_wall_time_hr[ind_first_bh],redshift[ind_first_bh]),
+plt.plot(wall_time_hr[ind_first_bh],redshift[ind_first_bh],'k.',ms=16,markeredgecolor=(1,1,1))
+plt.annotate(f"First BH\n$z={round(redshift[ind_first_bh],2)}$",(wall_time_hr[ind_first_bh],redshift[ind_first_bh]),
              xytext=(0,100),textcoords="offset pixels",ha='center',
              bbox=dict(facecolor=BBOX_FACECOLOR, edgecolor=BBOX_EDGECOLOR, boxstyle='round,pad=0.5'),
              arrowprops=ARROW_STYLE)
 
 # Latest Redshift
-plt.plot(all_wall_time_hr[-1],redshift[-1],'ks',ms=4)
-plt.annotate(f"Latest\n$z={round(redshift[-1],2)}$",(all_wall_time_hr[-1],redshift[-1]),
+plt.plot(wall_time_hr[-1],redshift[-1],'ks',ms=4)
+plt.annotate(f"Latest\n$z={round(redshift[-1],2)}$",(wall_time_hr[-1],redshift[-1]),
              xytext=(0,100),textcoords="offset pixels",ha='center',
              bbox=dict(facecolor=BBOX_FACECOLOR, edgecolor=BBOX_EDGECOLOR, boxstyle='round,pad=0.5'),
              arrowprops=ARROW_STYLE)
+
+
+# Stellar Count
+plt.plot(50*count_star/max(count_star),'-',label="stars")
+
+
 
 
 # CRUDE FITTING
@@ -92,7 +98,7 @@ SLOPE_START = 400
 SLOPE_END = 1600
 # print(len(wall_time_hr))
 # plt.plot([wall_time_hr[SLOPE_START],wall_time_hr[SLOPE_END]],[redshift[SLOPE_START],redshift[SLOPE_END]],'.',ms=10)
-lwt = np.log10(all_wall_time_hr)
+lwt = np.log10(wall_time_hr)
 lred = np.log10(redshift)
 slope = (lred[SLOPE_START]-lred[SLOPE_END])/(lwt[SLOPE_START]-lwt[SLOPE_END])
 xr = np.log10(np.linspace(50,192,200))
@@ -115,4 +121,5 @@ plt.ylabel("Redshift ($z$)")
 plt.ylim(1,100)
 plt.xlim(0,TIME_RANGE)
 plt.title("Run Time Log",fontsize=16)
+plt.legend()
 plt.show()

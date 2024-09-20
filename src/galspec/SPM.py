@@ -24,17 +24,16 @@ class SpectroPhotoMetry:
 
         self.contrast_exponent=1
 
-    # =========================
-    # ===== TARGET REGION =====
-    # =========================
-    def target_region(self,x,y,z,size):
-        # size in kpc
-        self._target_location = [x,y,z]
-        self._target_size = size
+
+    def target_region(self,x,y,z,size_in_kpc):
+        self._target_location   = [x,y,z]
+        self._target_size       = size_in_kpc
         self.gather_stars_in_region()
 
-    def target_PIG_Group(self,pig_groupid,span_multiplier=1):
-        location = self._PIG.FOFGroups.MassCenterPosition()[pig_groupid]     
+    def target_PIG_Group(self,pig_groupid,zoom=1):
+        # Center  
+        location = self._PIG.FOFGroups.MassCenterPosition()[pig_groupid]   
+        # Span  
         pig_stars_pos = self._PIG.Star.Position()
         pig_stars_gid = self._PIG.Star.GroupID()
         target_group_mask = (pig_stars_gid==pig_groupid)
@@ -43,7 +42,7 @@ class SpectroPhotoMetry:
         target_group_span_y = numpy.max(target_group_star_pos[:,1]) - numpy.min(target_group_star_pos[:,1])
         target_group_span_z = numpy.max(target_group_star_pos[:,2]) - numpy.min(target_group_star_pos[:,2])
         target_group_span   = max([target_group_span_x,target_group_span_y,target_group_span_z])
-        size = span_multiplier * target_group_span
+        size = target_group_span / zoom
         # print(size)
         # location += numpy.array([-30,0,-20])
         self.target_region(*location,size)
@@ -71,12 +70,7 @@ class SpectroPhotoMetry:
     def show_region(self):
         cv=CubeVisualizer()
         cv.add_points(self.target_star_pos,points_size=5,points_color='r',points_alpha=1)
-        cv.beautify_axis()
-        ax=cv.plot()
-        ax.set_xlim(-self._target_size/2,self._target_size/2)
-        ax.set_ylim(-self._target_size/2,self._target_size/2)
-        ax.set_zlim(-self._target_size/2,self._target_size/2)
-        plt.show()
+        cv.show()
 
     def projection_plane_orientation(self,theta=0,phi=0):
         self.proj_plane_theta=theta
