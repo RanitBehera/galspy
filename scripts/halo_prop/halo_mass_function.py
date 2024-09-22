@@ -115,8 +115,8 @@ def MF_from_PIG(PATH,SN,PLOT_LMF=True,COLOR='r',TEXT=""):
     # BOX MF
     def PlotBMF(M,dn_dlogM,error,min_mass,right_skip_count,include_deviation,color,leg,marker,box_text):
         # Filters
-        if right_skip_count>0:
-            M,dn_dlogM,error = M[:-right_skip_count],dn_dlogM[:-right_skip_count],error[:-right_skip_count]
+        # if right_skip_count>0:
+            # M,dn_dlogM,error = M[:-right_skip_count],dn_dlogM[:-right_skip_count],error[:-right_skip_count]
         mass_mask = (M>min_mass)
         num_mask = (dn_dlogM>1e-20)
         mask = mass_mask & num_mask
@@ -141,10 +141,14 @@ def MF_from_PIG(PATH,SN,PLOT_LMF=True,COLOR='r',TEXT=""):
     M_TOTAL = M_GAS+M_DM+M_STAR+M_BH
     
     M, dn_dlogM,error = MassFunction(M_DM,BOX_SIZE,BIN_SIZE)
+    mask=(M>32*MASS_TABLE[1]*MASS_UNIT)
+    M,dn_dlogM,error = M[mask],dn_dlogM[mask],error[mask]
     PlotBMF(M,dn_dlogM,error,HALO_DEF * MASS_TABLE[1] * MASS_UNIT,0,INCLUDE_DEVIATION,'r'," ",marker=" ",box_text=TEXT)
 
     M, dn_dlogM,error = MassFunction(M_GAS,BOX_SIZE,BIN_SIZE)
-    PlotBMF(M,dn_dlogM,error,HALO_DEF * MASS_TABLE[1] * MASS_UNIT,0,INCLUDE_DEVIATION,'r'," ",marker=" ",box_text=TEXT)
+    mask=(M>32*MASS_TABLE[0]*MASS_UNIT)
+    M,dn_dlogM,error = M[mask],dn_dlogM[mask],error[mask]
+    PlotBMF(M,dn_dlogM,error,HALO_DEF * MASS_TABLE[0] * MASS_UNIT,0,INCLUDE_DEVIATION,'r'," ",marker=" ",box_text=TEXT)
 
     M, dn_dlogM,error = MassFunction(M_STAR,BOX_SIZE,BIN_SIZE)
     PlotBMF(M,dn_dlogM,error,HALO_DEF * MASS_TABLE[1] * MASS_UNIT,0,INCLUDE_DEVIATION,'r'," ",marker=" ",box_text=TEXT)
@@ -204,8 +208,12 @@ def MF_from_PIG(PATH,SN,PLOT_LMF=True,COLOR='r',TEXT=""):
 
 
 
-MF_from_PIG(L150N2040,51,True,'r',"L150N2040") # 9:26, 8:34 , 7:43
-# MF_from_PIG(L50N640,20,True,'b',"L50N640")
+# MF_from_PIG(L150N2040,51,True,'r',"L150N2040") # 9:26, 8:34 , 7:43
+# MF_from_PIG(L150N2040,43,True,'b',"L150N2040") # 9:26, 8:34 , 7:43
+
+MF_from_PIG(L150N2040,34,True,'r',"L150N2040") # 9:26, 8:34 , 7:43
+
+MF_from_PIG(L50N640,36,True,'b',"L50N640")
 
 
 

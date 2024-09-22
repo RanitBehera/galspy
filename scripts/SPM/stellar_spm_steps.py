@@ -15,15 +15,15 @@ PIG = root.PIG(SNAP_NUM)
 
 
 spm=SpectroPhotoMetry(MPGADGET_OUTPUT_DIR,SNAP_NUM)
-spm.target_PIG_Group(1+GROUP_OFFSET,1)
+spm.target_PIG_Group(1+GROUP_OFFSET,20)
 # spm.show_region()
 
 
 spm.project_to_plane()
 spm.show_projected_points()
 
-# spm.generate_grid(grid_resolution=(50,50),mode="NGB")
-# spm.show_interpolated_masni Vs_grid_image()
+spm.generate_pixelwise_grid(grid_resolution=(50,50),mode="NGB")
+spm.show_star_mass_map()
 # spm.show_age_distribution()
 # spm.show_spectra()
 

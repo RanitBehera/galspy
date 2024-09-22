@@ -40,7 +40,7 @@ plt.xscale('log')
 plt.axis("equal")
 
 
-#
+plt.show()
 
 
 
