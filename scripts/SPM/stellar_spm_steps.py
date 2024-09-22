@@ -19,10 +19,8 @@ spm.target_PIG_Group(1+GROUP_OFFSET,1)
 # spm.show_region()
 
 
-
-
-# spm.projection_plane_orientation()
-# spm.show_projected_points()
+spm.project_to_plane()
+spm.show_projected_points()
 
 # spm.generate_grid(grid_resolution=(50,50),mode="NGB")
 # spm.show_interpolated_masni Vs_grid_image()

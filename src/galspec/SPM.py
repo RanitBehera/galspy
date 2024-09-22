@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from typing import Literal
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import galspec.bpass as bp
+from numpy.typing import NDArray
+
 
 from astropy.cosmology import FlatLambdaCDM
 cosmo = FlatLambdaCDM(H0=67.36, Om0=0.3153)
@@ -12,6 +14,23 @@ cosmo = FlatLambdaCDM(H0=67.36, Om0=0.3153)
 BPASS = bp.BPASS("CHABRIER_UPTO_300M","Binary",0.02)
 waves=[5e2,5e4]
 FLUX=BPASS.Spectra.GetFlux(waves[0],waves[-1])
+
+
+class _SPMPixel:
+    def __init__(self) -> None:
+        self.row=0
+        self.column=0
+        self.bank=[]
+
+    def AddStar(self,mass,age,metallicity=0.02):
+        self.bank.append((mass,age,metallicity))
+
+    def generate_grid(self):
+        for item in self.bank:
+            
+
+        
+
 
 
 class SpectroPhotoMetry:
@@ -46,14 +65,20 @@ class SpectroPhotoMetry:
         self.target_region(*location,size) 
 
     def gather_stars_in_region(self):
-        part_star_pos = self._PART.Star.Position()
+        part_star_pos   = self._PART.Star.Position()
+        part_star_vel   = self._PART.Star.Velocity()
+        part_star_mass  = self._PART.Star.Mass()
+        part_star_metallicity = self._PART.Star.Metallicity()
+
         mask_x = ((self._target_location[0] - (self._target_size/2)) <= part_star_pos[:,0]) & (part_star_pos[:,0] <=(self._target_location[0] + (self._target_size/2)))
         mask_y = ((self._target_location[1] - (self._target_size/2)) <= part_star_pos[:,1]) & (part_star_pos[:,1] <=(self._target_location[1] + (self._target_size/2)))
         mask_z = ((self._target_location[2] - (self._target_size/2)) <= part_star_pos[:,2]) & (part_star_pos[:,2] <=(self._target_location[2] + (self._target_size/2)))
         mask = mask_x & mask_y & mask_z
         
         self.target_star_pos    = part_star_pos[mask]
-        self.target_star_mass   = self._PART.Star.Mass()[mask]
+        self.target_star_vel    = part_star_vel[mask]
+        self.target_star_mass   = part_star_mass[mask]
+        self.target_star_metallicity = part_star_metallicity[mask]
 
         snapshot_scale_factor        = self._PART.Header.Time()
         star_formation_scale_factor = self._PART.Star.StarFormationTime()[mask]
@@ -66,50 +91,121 @@ class SpectroPhotoMetry:
         self.target_star_age_in_Myr = (star_formation_lookback_time - snapshot_lookback_time)*1000
 
         self.shift_origin()
-        # TODO : reorient
+        self.reorient()
+
+
 
     def shift_origin(self):
         self.target_star_pos = self.target_star_pos - self._target_location
 
-        plt.hist(self.target_star_pos[:,0],bins=100,label="X",alpha=0.5)
-        plt.hist(self.target_star_pos[:,1],bins=100,label="Y",alpha=0.5)
-        plt.hist(self.target_star_pos[:,2],bins=100,label="Z",alpha=0.5)
+        # self.get_angular_momentum_direction()
+
+        # plt.hist(self.target_star_pos[:,0],bins=100,label="X",alpha=0.5)
+        # plt.hist(self.target_star_pos[:,1],bins=100,label="Y",alpha=0.5)
+        # plt.hist(self.target_star_pos[:,2],bins=100,label="Z",alpha=0.5)
         
-        plt.yscale('log')
-        plt.legend()
-        plt.show()        
+        # plt.yscale('log')
+        # plt.legend()
+        # plt.show()        
 
     def reorient(self):
+        # TODO matrix logic
+        # self.get_angular_momentum_direction()
         pass
-
+        
+        
+        
+    # def get_angular_momentum_direction(self):
+    #     r   = self.target_star_pos
+    #     v   = self.target_star_vel - self._PIG.FOFGroups.MassCenterVelocity()[0]
+    #     m   = self.target_star_mass
+    #     p   = numpy.array([m[i]*v[i] for i in range(len(m))])
+    #     Ji  = numpy.cross(r,p,axis=1)
+    #     J   = numpy.sum(Ji.T,axis=1)
+    #     self.Jhat = J/numpy.linalg.norm(J)
 
 
 
 
     def show_region(self):
         cv=CubeVisualizer()
-        cv.add_points(self.target_star_pos,points_size=5,points_color='r',points_alpha=0.5)
-        cv.show()
+        cv.add_points(self.target_star_pos,points_size=5,points_color='r',points_alpha=0.1)
+        # cv.show()
+        cv.beautify_axis()
+        cv.draw_arrows()
+        ax:plt.axes=cv.plot()
+
+        plt.show()
 
 
 
-
-
-
-
-
-    # def projection_plane_orientation(self,theta=0,phi=0):
-    #     self.proj_plane_theta=theta
-    #     self.proj_plane_phi=phi
-    #     # TODO : Project to (U,V) coordinate
-    #     self._Up=self.target_star_pos[:,0]
-    #     self._Vp=self.target_star_pos[:,2]
+    def project_to_plane(self,theta=0,phi=0):
+        self.proj_plane_theta=theta
+        self.proj_plane_phi=phi
+        # TODO : Project to (U,V) coordinate
+        self._Up=self.target_star_pos[:,0]
+        self._Vp=self.target_star_pos[:,2]
     
 
-    # def show_projected_points(self):
-    #     plt.plot(self._Up,self._Vp,'.r',ms=5,alpha=0.3)
-    #     plt.axis('equal')
-    #     plt.show()
+    def show_projected_points(self):
+        plt.plot(self._Up,self._Vp,'.r',ms=5,alpha=0.3)
+        plt.axis('equal')
+        # ----- Bring target to center of projected plane
+        span_Up = numpy.max(self._Up) - numpy.min(self._Up)
+        span_Vp = numpy.max(self._Vp) - numpy.min(self._Vp)
+        span = max([span_Up,span_Vp])
+        plt.xlim(-span/2,span/2)
+        plt.ylim(-span/2,span/2)
+        # -----
+        plt.show()
+
+
+
+    def generate_pixelwise_grid(self,grid_resolution:tuple,mode=Literal["NGB","CIC"]):
+        assert mode in ["NGB", "CIC"]
+
+        grid=numpy.empty(grid_resolution,dtype=object)  
+        for row in range(grid_resolution[0]):
+            for clm in range(grid_resolution[1]):
+                grid[row, clm] = _SPMPixel()
+
+        span_Up = numpy.max(self._Up) - numpy.min(self._Up)
+        span_Vp = numpy.max(self._Vp) - numpy.min(self._Vp)
+        span = max([span_Up,span_Vp])
+
+        grid_drow = span/grid_resolution[0]
+        grid_dclm = span/grid_resolution[1] 
+
+        left_edge = -span/2
+        upper_edge = +span/2
+
+        prow = (upper_edge - self._Vp)/ grid_drow
+        pclm = (self._Up - left_edge)/ grid_dclm
+
+        mass    = self.target_star_mass
+        age     = self.target_star_age_in_Myr
+        Z       = self.target_star_metallicity
+
+        # Distribute Stars
+        for n in range(len(self.target_star_pos)):
+            pixel:_SPMPixel=grid[prow[n],pclm[n]]
+            pixel.AddStar(mass[n],age[n],Z[n])
+        
+        
+        # Pixelwise Generate grid
+        for row in range(grid_resolution[0]):
+            for clm in range(grid_resolution[1]):
+                pixel:_SPMPixel=grid[row, clm]
+                pixel.generate_grid()
+
+        self.SPMGrid = grid
+
+
+
+
+
+
+
 
     # def generate_grid(self,grid_resolution:tuple,mode=Literal["NGB","CIC"]):
     #     assert mode in ["NGB", "CIC"]
@@ -152,7 +248,7 @@ class SpectroPhotoMetry:
     #     plt.ylabel("kpc")
     #     plt.show()
 
-    # def show_age_distribution(self):
+    # def show_age_distribution(self):pass
     #     fig,axes = plt.subplots(1,2,figsize=(10, 5))
     #     ax1,ax2 = axes
     #     img=ax1.imshow(self.grid_mass_interpolated.T**self.contrast_exponent,cmap='grey',origin='lower')
