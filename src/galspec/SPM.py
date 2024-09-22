@@ -27,7 +27,8 @@ class _SPMPixel:
 
     def generate_grid(self):
         for item in self.bank:
-            
+            pass
+
 
         
 
