@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from typing import Literal
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import galspec.bpass as bp
-
+from matplotlib.gridspec import GridSpec
 
 from astropy.cosmology import FlatLambdaCDM
 cosmo = FlatLambdaCDM(H0=67.36, Om0=0.3153)
@@ -21,7 +21,7 @@ class _SPMPixel:
         self.column=clm
         # STAR
         self.star_bank=[]
-        self.grid=numpy.zeros((50,50,1))
+        self.grid=numpy.zeros((50,50,22))
         self.star_mass=0
         self.star_count=0
         # BH
@@ -40,14 +40,38 @@ class _SPMPixel:
         self.bh_count+=1
 
     def generate_grid(self):
-        # TODO
-        for mass,age,metallicitt in self.star_bank:
-            if self.star_count==0:break
+        # Find Bin Index (BID)
+        for mass,age,metallicity in self.star_bank:
             m_bid = int((numpy.log10(mass)-6)/0.1)
-            if age<1:T_bid=0
-            else:T_bid = int((numpy.log10(age))/0.1)
-            Z_bid = 0
+            # m_bid = int((numpy.log10(mass)-6)/0.05)
+            # m_bid = int((numpy.log10(mass)-6)/0.01)
+            
+            if age==0:T_bid=0
+            else:
+                T_bid = int((numpy.log10(age))/0.1)
+                if T_bid<0:T_bid=0
+            
+            Z_bid = int((numpy.log10(metallicity) - (-10))/0.5)
+            
             self.grid[m_bid,T_bid,Z_bid] +=1
+
+    def GetHistogram(self,hist_for=Literal["Age","Mass","Metallicity"]):
+        assert hist_for in ["Age","Mass","Metallicity"]
+        
+        if hist_for=="Mass":
+            hist_x = numpy.arange(6,11,0.1)
+            hist_y = numpy.array([numpy.sum(self.grid[i,:,:]) for i in range(50)])
+        elif hist_for=="Age":
+            hist_x = numpy.arange(6,11,0.1)
+            hist_y = numpy.array([numpy.sum(self.grid[:,i,:]) for i in range(50)])
+        elif hist_for=="Metallicity":
+            hist_x = numpy.arange(-11,0,0.5)
+            hist_y = numpy.array([numpy.sum(self.grid[:,:,i]) for i in range(22)])
+            
+        return hist_x,hist_y
+        
+
+
 
 
         
@@ -273,32 +297,83 @@ class SpectroPhotoMetry:
 
         self.SPMGrid = grid
 
-
-
-    def show_star_mass_map(self):
         mass_map = numpy.zeros(self.SPMGrid.shape)
-        # print(mass_map.shape[0])
         for row in range(mass_map.shape[0]):
             for clm in range(mass_map.shape[1]):
                 pixel:_SPMPixel=self.SPMGrid[row,clm]
                 mass_map[row,clm]=pixel.star_mass
         
-        img=plt.imshow(mass_map,cmap='grey')
+        self.mass_map = mass_map 
+
+
+
+    def show_star_mass_map(self):
+        # TODO : Transpose
+        img=plt.imshow(self.mass_map,cmap='grey')
         plt.colorbar(img)
         plt.show()
 
 
+    def show_pixelwise_grid(self):
+        fig = plt.figure(figsize=(10,5))
+        gs = GridSpec(3,2,figure=fig)
+
+        ax1 = fig.add_subplot(gs[:,0])
+
+        ax2 = fig.add_subplot(gs[0,1])
+        ax3 = fig.add_subplot(gs[1,1])
+        ax4 = fig.add_subplot(gs[2,1])
 
 
-        
+
+        # TODO : Transpose
+        img=ax1.imshow(self.mass_map**self.contrast_exponent,cmap='grey',origin='upper')
+
+        divider = make_axes_locatable(ax1)
+        cax = divider.append_axes("right", size="5%", pad=0.1)
+        cbar = fig.colorbar(img,cax=cax,label="$M_\odot$")
     
-    # def show_interpolated_mass_grid_image(self):
 
-    #     img=plt.imshow(self.grid_mass_interpolated.T**self.contrast_exponent,cmap='grey',origin='lower')
-    #     plt.colorbar(img,label="$M_\odot$")
-    #     plt.xlabel("kpc")
-    #     plt.ylabel("kpc")
-    #     plt.show()
+        def ShowHistogram(pixel:_SPMPixel):
+            hist_x,hist_y=pixel.GetHistogram("Mass")
+            ax2.bar(hist_x,hist_y,width=0.08,align='center')
+            
+
+            hist_x,hist_y=pixel.GetHistogram("Age")
+            ax3.bar(hist_x,hist_y,width=0.08,align='center')
+           
+
+            hist_x,hist_y=pixel.GetHistogram("Metallicity")
+            ax4.bar(hist_x,hist_y,width=0.08,align='center')
+            
+            ax2.set_xlabel("Mass")
+            ax3.set_xlabel("Age (Myr)")
+            ax3.set_xlabel("Metallicity")
+
+
+        def onclick(event):
+            ix, iy = round(event.xdata), round(event.ydata)
+            # print(ix,iy)
+            ax2.clear()
+            ax3.clear()
+            ax4.clear()
+            pixel = self.SPMGrid[iy,ix]
+            ShowHistogram(pixel)
+
+            [p.remove() for p in ax1.patches]
+            rect = plt.Rectangle((ix-0.5, iy-0.5), 1, 1, edgecolor='red', facecolor='none')
+            ax1.add_patch(rect)
+                        
+            fig.canvas.draw()
+
+
+        fig.canvas.mpl_connect('button_press_event', onclick)
+        ax2.set_xlabel("Mass")
+        ax3.set_xlabel("Age (Myr)")
+        plt.show()
+
+    
+
 
     # def show_age_distribution(self):pass
     #     fig,axes = plt.subplots(1,2,figsize=(10, 5))

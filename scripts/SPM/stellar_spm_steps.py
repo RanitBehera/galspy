@@ -20,11 +20,12 @@ spm.target_PIG_Group(1+GROUP_OFFSET,20)
 
 
 spm.project_to_plane()
-spm.show_projected_points()
+# spm.show_projected_points()
 
 spm.generate_pixelwise_grid(grid_resolution=(50,50),mode="NGB")
-spm.show_star_mass_map()
-# spm.show_age_distribution()
+# spm.show_star_mass_map()
+
+spm.show_pixelwise_grid()
 # spm.show_spectra()
 
 
