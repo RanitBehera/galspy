@@ -21,7 +21,6 @@ class _SPMPixel:
         self.column=clm
         # STAR
         self.star_bank=[]
-        self.grid=numpy.zeros((50,50,22))
         self.star_mass=0
         self.star_count=0
         # BH
@@ -29,7 +28,12 @@ class _SPMPixel:
         self.bh_mass=0
         self.bh_count=0
 
-    def AddStar(self,mass,age,metallicity=0.02):
+        # Foots
+        self.M_foots = numpy.linspace(5,11,61)   # in log space
+        self.T_foots = numpy.arange(6,11.1,0.1)  # in log space : 1Myr to 100Byr
+        self.Z_foots = numpy.log10([1e-5,1e-4,1e-3,2e-3,3e-3,4e-3,6e-3,8e-3,1e-2,1.4e-2,2e-2,3e-2,4e-2])
+
+    def AddStar(self,mass,age,metallicity):
         self.star_bank.append((mass,age,metallicity))
         self.star_mass+=mass
         self.star_count+=1
@@ -40,40 +44,66 @@ class _SPMPixel:
         self.bh_count+=1
 
     def generate_grid(self):
+        # Bin Width
+        M_bw = self.M_foots[1]-self.M_foots[0]
+        T_bw = self.T_foots[1]-self.T_foots[0]
+
+        #Bin Edges
+        self._M_edges = numpy.array([self.M_foots[0]-M_bw/2]+[0.5*(self.M_foots[i]+self.M_foots[i+1]) for i in range(len(self.M_foots)-1)]+[self.M_foots[-1]+M_bw/2])
+        self._T_edges = numpy.array([self.T_foots[0]-T_bw/2]+[0.5*(self.T_foots[i]+self.T_foots[i+1]) for i in range(len(self.T_foots)-1)]+[self.T_foots[-1]+T_bw/2])
+        self._Z_edges = numpy.array([2*self.Z_foots[0]-self.Z_foots[1]]+
+                              [0.5*(self.Z_foots[i]+self.Z_foots[i+1]) for i in range(len(self.Z_foots)-1)]+
+                              [2*self.Z_foots[-1]-self.Z_foots[-2]])
+
+        # Number of Bins
+        num_Mbin,num_Tbin,num_Zbin=len(self._M_edges)-1,len(self._T_edges)-1,len(self._Z_edges)-1
+        
+        # Initialise Grid
+        self.grid=numpy.zeros((num_Mbin,num_Tbin,num_Zbin))
+
         # Find Bin Index (BID)
-        for mass,age,metallicity in self.star_bank:
-            m_bid = int((numpy.log10(mass)-6)/0.1)
-            # m_bid = int((numpy.log10(mass)-6)/0.05)
-            # m_bid = int((numpy.log10(mass)-6)/0.01)
-            
-            if age==0:T_bid=0
-            else:
-                T_bid = int((numpy.log10(age))/0.1)
-                if T_bid<0:T_bid=0
-            
-            Z_bid = int((numpy.log10(metallicity) - (-10))/0.5)
-            
-            self.grid[m_bid,T_bid,Z_bid] +=1
+        # TODO : Overflow and undeflow bins
+        # TODO : Z interplotatio, this will make binning easier
+         # To avoid -inf in numpy: RuntimeWarning: divide by zero encountered in log10 add a small number
+        self.star_bank=numpy.array(self.star_bank)+(1e-35)
+        for log10_M,log10_T,log10_Z in numpy.log10(self.star_bank):
+            # Mass
+            m_ind = int((log10_M-self._M_edges[0])/M_bw)
+
+            # Age : in units of Myr : log10T=0=>TMyr=1=>T=10^6yr
+            if log10_T<0:T_ind=0    # For just spawned stars
+            else:T_ind = int(log10_T-self._T_edges[0]/T_bw)
+
+            # Metallicity
+            if log10_Z<=self._Z_edges[0]:Z_ind=0
+            elif log10_Z>=self._Z_edges[-1]:Z_ind=len(self._Z_edges)-2
+            # Two less : one for edges to bins, another for 0 based bin index 
+            else:           
+                for i in range(len(self._Z_edges)):
+                    if self._Z_edges[i]<log10_Z:
+                        continue
+                    else:
+                        Z_ind=i-1
+                        break
+
+            # Populate grid
+            self.grid[m_ind,T_ind,Z_ind] +=1
+
 
     def GetHistogram(self,hist_for=Literal["Age","Mass","Metallicity"]):
         assert hist_for in ["Age","Mass","Metallicity"]
         
         if hist_for=="Mass":
-            hist_x = numpy.arange(6,11,0.1)
-            hist_y = numpy.array([numpy.sum(self.grid[i,:,:]) for i in range(50)])
+            hist_x = self.M_foots
+            hist_y = numpy.array([numpy.sum(self.grid[i,:,:]) for i in range(len(hist_x))])
         elif hist_for=="Age":
-            hist_x = numpy.arange(6,11,0.1)
-            hist_y = numpy.array([numpy.sum(self.grid[:,i,:]) for i in range(50)])
+            hist_x = self.T_foots
+            hist_y = numpy.array([numpy.sum(self.grid[:,i,:]) for i in range(len(hist_x))])
         elif hist_for=="Metallicity":
-            hist_x = numpy.arange(-11,0,0.5)
-            hist_y = numpy.array([numpy.sum(self.grid[:,:,i]) for i in range(22)])
+            hist_x = self.Z_foots
+            hist_y = numpy.array([numpy.sum(self.grid[:,:,i]) for i in range(len(hist_x))])
             
         return hist_x,hist_y
-        
-
-
-
-
         
 
 
@@ -314,7 +344,7 @@ class SpectroPhotoMetry:
         plt.show()
 
 
-    def show_pixelwise_grid(self):
+    def show_pixelwise_histogram(self):
         fig = plt.figure(figsize=(10,5))
         gs = GridSpec(3,2,figure=fig)
 
@@ -325,8 +355,6 @@ class SpectroPhotoMetry:
         ax4 = fig.add_subplot(gs[2,1])
 
 
-
-        # TODO : Transpose
         img=ax1.imshow(self.mass_map**self.contrast_exponent,cmap='grey',origin='upper')
 
         divider = make_axes_locatable(ax1)
@@ -338,11 +366,9 @@ class SpectroPhotoMetry:
             hist_x,hist_y=pixel.GetHistogram("Mass")
             ax2.bar(hist_x,hist_y,width=0.08,align='center')
             
-
             hist_x,hist_y=pixel.GetHistogram("Age")
             ax3.bar(hist_x,hist_y,width=0.08,align='center')
            
-
             hist_x,hist_y=pixel.GetHistogram("Metallicity")
             ax4.bar(hist_x,hist_y,width=0.08,align='center')
             
@@ -373,38 +399,6 @@ class SpectroPhotoMetry:
         plt.show()
 
     
-
-
-    # def show_age_distribution(self):pass
-    #     fig,axes = plt.subplots(1,2,figsize=(10, 5))
-    #     ax1,ax2 = axes
-    #     img=ax1.imshow(self.grid_mass_interpolated.T**self.contrast_exponent,cmap='grey',origin='lower')
-
-    #     divider = make_axes_locatable(ax1)
-    #     cax = divider.append_axes("right", size="5%", pad=0.1)
-    #     cbar = fig.colorbar(img,cax=cax,label="$M_\odot$")
-
-    #     # ax1.set_xlabel("kpc")
-    #     # ax1.set_ylabel("kpc")
-
-    #     def ShowHistogramForAges(ages):
-    #         log10_ages=numpy.log10(ages)+6
-    #         ax2.hist(log10_ages,bins=numpy.arange(6,10,0.1))
-    #         ax2.set_xlabel("Myr")
-    #         ax2.set_ylabel("count")
-
-
-    #     def onclick(event):
-    #         ix, iy = round(event.xdata), round(event.ydata)
-    #         ages = self.grid_age_distributed[ix,iy]
-    #         ax2.clear()
-    #         ShowHistogramForAges(ages)
-    #         fig.canvas.draw()
-
-
-    #     fig.canvas.mpl_connect('button_press_event', onclick)
-    #     plt.show()
-
 
     # def show_spectra(self):
     #     fig,axes = plt.subplots(1,2,figsize=(10, 5))
