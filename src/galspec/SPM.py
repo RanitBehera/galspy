@@ -6,16 +6,19 @@ from typing import Literal
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import galspec.bpass as bp
 from matplotlib.gridspec import GridSpec
+from matplotlib.ticker import MaxNLocator
+
+# from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool as Pool
+
 
 from astropy.cosmology import FlatLambdaCDM
 cosmo = FlatLambdaCDM(H0=67.36, Om0=0.3153)
 
-BPASS = bp.BPASS("CHABRIER_UPTO_300M","Binary",0.02)
-waves=[5e2,5e4]
-FLUX=BPASS.Spectra.GetFlux(waves[0],waves[-1])
 
 
 class _SPMPixel:
+    _spec_cache=None
     def __init__(self,row:int=0,clm:int=0) -> None:
         self.row=row
         self.column=clm
@@ -29,9 +32,10 @@ class _SPMPixel:
         self.bh_count=0
 
         # Foots
-        self.M_foots = numpy.linspace(5,11,61)   # in log space
-        self.T_foots = numpy.arange(6,11.1,0.1)  # in log space : 1Myr to 100Byr
+        self.M_foots = numpy.linspace(5,8,31)   # in log space
+        self.T_foots = numpy.arange(6,11.1,0.1)  # Mathc with BAPSS: in log space : 1Myr to 100Byr
         self.Z_foots = numpy.log10([1e-5,1e-4,1e-3,2e-3,3e-3,4e-3,6e-3,8e-3,1e-2,1.4e-2,2e-2,3e-2,4e-2])
+        # TODO: T_foots other than BPASS: Interpolation
 
     def AddStar(self,mass,age,metallicity):
         self.star_bank.append((mass,age,metallicity))
@@ -72,7 +76,7 @@ class _SPMPixel:
 
             # Age : in units of Myr : log10T=0=>TMyr=1=>T=10^6yr
             if log10_T<0:T_ind=0    # For just spawned stars
-            else:T_ind = int(log10_T-self._T_edges[0]/T_bw)
+            else:T_ind = int((6+log10_T-self._T_edges[0])/T_bw)
 
             # Metallicity
             if log10_Z<=self._Z_edges[0]:Z_ind=0
@@ -104,7 +108,39 @@ class _SPMPixel:
             hist_y = numpy.array([numpy.sum(self.grid[:,:,i]) for i in range(len(hist_x))])
             
         return hist_x,hist_y
+    
+    def CacheSpectras():
+        print("Caching Spectras...")
+        _SPMPixel._spec_cache={}
+        Z_foots=[1e-5,1e-4,1e-3,2e-3,3e-3,4e-3,6e-3,8e-3,1e-2,1.4e-2,2e-2,3e-2,4e-2]
+
+        for i,Z in enumerate(Z_foots):
+            print(i+1,"/",len(Z_foots),"...",end=" ",flush=True)
+            BPASS = bp.BPASS("CHABRIER_UPTO_300M","Binary",Z)
+            FLUX=BPASS.Spectra.GetFlux(500,10000)
+            _SPMPixel._spec_cache[i]=FLUX
+            print("Done")
+
+
+    def GetSpectra(self):
+        if _SPMPixel._spec_cache==None:
+            _SPMPixel.CacheSpectras()
+
+        pick_age = lambda ind:str(numpy.round(self.T_foots[ind],1))        
+
+        TOTAL_FLUX = 0*numpy.array(len(_SPMPixel._spec_cache[0][pick_age(0)]))
+        for zi,_ in enumerate(self.Z_foots):
+            for ti,_ in enumerate(self.T_foots):
+                for mi,_ in enumerate(self.M_foots):
+                    FLUX_ALL=_SPMPixel._spec_cache[zi]
+                    FLUX = FLUX_ALL[pick_age(ti)]
+                    mass = self.M_foots[mi]
+                    cell_count = self.grid[mi,ti,zi]
+                    mass_factor = 10**(mass-6)
+                    TOTAL_FLUX = TOTAL_FLUX + cell_count * mass_factor * FLUX
         
+        return _SPMPixel._spec_cache[0].WL,TOTAL_FLUX
+            
 
 
 
@@ -271,6 +307,7 @@ class SpectroPhotoMetry:
 
     def generate_pixelwise_grid(self,grid_resolution:tuple,mode=Literal["NGB","CIC"]):
         assert mode in ["NGB", "CIC"]
+        self.resolution=grid_resolution
 
         span_Up_star = numpy.max(self._Up_star) - numpy.min(self._Up_star)
         span_Vp_star = numpy.max(self._Vp_star) - numpy.min(self._Vp_star)
@@ -358,8 +395,8 @@ class SpectroPhotoMetry:
         img=ax1.imshow(self.mass_map**self.contrast_exponent,cmap='grey',origin='upper')
 
         divider = make_axes_locatable(ax1)
-        cax = divider.append_axes("right", size="5%", pad=0.1)
-        cbar = fig.colorbar(img,cax=cax,label="$M_\odot$")
+        cax = divider.append_axes("top", size="5%", pad=0.1)
+        cbar = fig.colorbar(img,cax=cax,label="$M_\odot$",orientation="horizontal",location="top")
     
 
         def ShowHistogram(pixel:_SPMPixel):
@@ -376,69 +413,96 @@ class SpectroPhotoMetry:
             ax3.set_xlabel("Age (Myr)")
             ax3.set_xlabel("Metallicity")
 
+            for ax in [ax2,ax3,ax4]:
+                ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+
+
 
         def onclick(event):
+            if not event.inaxes == ax1: return
             ix, iy = round(event.xdata), round(event.ydata)
-            # print(ix,iy)
-            ax2.clear()
-            ax3.clear()
-            ax4.clear()
-            pixel = self.SPMGrid[iy,ix]
-            ShowHistogram(pixel)
-
             [p.remove() for p in ax1.patches]
             rect = plt.Rectangle((ix-0.5, iy-0.5), 1, 1, edgecolor='red', facecolor='none')
             ax1.add_patch(rect)
-                        
+            
+            for ax in [ax2,ax3,ax4]: ax.clear()
+            pixel = self.SPMGrid[iy,ix]
+            ShowHistogram(pixel)
+            
             fig.canvas.draw()
 
 
+
         fig.canvas.mpl_connect('button_press_event', onclick)
+
+        ax1.set_xlabel("Pixel Index")
+        ax1.set_ylabel("Pixel Index")
+
         ax2.set_xlabel("Mass")
         ax3.set_xlabel("Age (Myr)")
+        for ax in [ax2,ax3,ax4]:
+            ax.yaxis.set_major_locator(MaxNLocator(integer=True))
         plt.show()
 
     
 
-    # def show_spectra(self):
-    #     fig,axes = plt.subplots(1,2,figsize=(10, 5))
-    #     ax1,ax2 = axes
-    #     img=ax1.imshow(self.grid_mass_interpolated.T**self.contrast_exponent,cmap='grey',origin='lower')
+    def show_pixelwise_spectra(self):
+        fig,axes = plt.subplots(1,2,figsize=(10, 5))
+        ax1,ax2 = axes
 
-    #     divider = make_axes_locatable(ax1)
-    #     cax = divider.append_axes("right", size="5%", pad=0.1)
-    #     cbar = fig.colorbar(img,cax=cax,label="$M_\odot$")
+        img=ax1.imshow(self.mass_map**self.contrast_exponent,cmap='grey',origin='upper')
 
-    #     # ax1.set_xlabel("kpc")
-    #     # ax1.set_ylabel("kpc")
+        divider = make_axes_locatable(ax1)
+        cax = divider.append_axes("top", size="5%", pad=0.1)
+        cbar = fig.colorbar(img,cax=cax,label="$M_\odot$",orientation="horizontal",location="top")
 
-    #     def ShowPixelSpectra(ages,mass):
-    #         log10_ages=numpy.log10(ages)+6
-    #         bin_counts,age_bins=numpy.histogram(log10_ages,bins=numpy.arange(6,10,0.1))
+        _SPMPixel.CacheSpectras()
+
+        def ShowPixelSpectra(pixel:_SPMPixel):
+            x,y=pixel.GetSpectra()
+            ax2.plot(x,y)
+            ax2.set_yscale('log')
+            ax2.set_xscale('log')
+   
+
+        def onclick(event):
+            if not event.inaxes == ax1: return
+            ix, iy = round(event.xdata), round(event.ydata)
+            [p.remove() for p in ax1.patches]
+            rect = plt.Rectangle((ix-0.5, iy-0.5), 1, 1, edgecolor='red', facecolor='none')
+            ax1.add_patch(rect)
             
-
-    #         total_flux=0*FLUX.WL
-    #         for a,c in zip(age_bins,bin_counts):
-    #             if c==0:continue
-    #             aflux=FLUX[str(numpy.round(a,1))]
-    #             total_flux+=aflux
-
-    #             # ax2.plot(FLUX.WL,aflux,'--')
-
-    #         ax2.plot(FLUX.WL,total_flux,'k')
-    #         ax2.set_yscale('log')
-    #         ax2.set_xscale('log')
+            ax2.clear()
+            pixel = self.SPMGrid[iy,ix]
+            ShowPixelSpectra(pixel)
+            
+            fig.canvas.draw()
 
 
-
-    #     def onclick(event):
-    #         ix, iy = round(event.xdata), round(event.ydata)
-    #         ages = self.grid_age_distributed[ix,iy]
-    #         proj_mass = self.grid_mass_interpolated[ix,iy]
-    #         ax2.clear()
-    #         ShowPixelSpectra(ages,proj_mass)
-    #         fig.canvas.draw()
+        fig.canvas.mpl_connect('button_press_event', onclick)
+        ax1.set_xlabel("Pixel Index")
+        ax1.set_ylabel("Pixel Index")
+        plt.show()
 
 
-    #     fig.canvas.mpl_connect('button_press_event', onclick)
-    #     plt.show()
+    def show_rgb_channels(self):
+        fig,axes = plt.subplots(2,2,figsize=(10, 10))
+        axR,axG,axB,axRGB = axes
+        
+        red=0*self.mass_map
+        green=0*self.mass_map
+        blue=0*self.mass_map
+
+        for row in self.resolution[0]:
+            for clm in self.resolution[1]:
+                pixel:_SPMPixel=self.SPMGrid[row,clm]
+                wave,spec=pixel.GetSpectra()
+                red[row,clm]=spec[numpy.where(wave==1200)]
+                green[row,clm]=spec[numpy.where(wave==1500)]
+                blue[row,clm]=spec[numpy.where(wave==4000)]
+
+        axR.imshow(red)
+        axG.imshow(green)
+        axB.imshow(blue)
+
+        plt.show()

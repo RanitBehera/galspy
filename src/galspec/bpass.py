@@ -93,10 +93,9 @@ class BPASS:
     
     def _get_file_path(self,quantity:Literal["colours","hrs","ionizing","lick","mlratio","numbers","spectra","starmass","supernova","yields"]):
         imf_str = f"imf{_model_name_imf_sting[self.imf]}"
-        metal_str = str(self.metallicity)
-        if metal_str=="0.0001":metal_str="em4"
-        elif metal_str=="0.00001":metal_str="em5"
-        else:metal_str=str(metal_str).split(".")[-1].ljust(3,"0")
+        if np.round(self.metallicity,5)==0.00001:metal_str="em5"
+        elif np.round(self.metallicity,4)==0.0001:metal_str="em4"
+        else:metal_str=str(np.round(self.metallicity,3)).split(".")[-1].ljust(3,"0")
     
         filepath = BPASS_DIR + os.sep
         filepath += f"bpass_v{BPASS_VERSION}_{imf_str}" + os.sep
