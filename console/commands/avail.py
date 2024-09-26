@@ -1,6 +1,6 @@
 import argparse, os
 from galspy.utility.termutil import get_available_sim
-from galspy.IO.ConfigFile import ReadAsDictionary
+from galspy.FileTypes.ConfigFile import ReadAsDictionary
 
 def completion(env:dict):
     snap = {"PART":None,"PIG":None,"RSG":None}

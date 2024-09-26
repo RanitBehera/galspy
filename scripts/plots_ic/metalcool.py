@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import galspy.IO.BigFile as bf
+import galspy.FileTypes.BigFile as bf
 import os
 
 path = "/mnt/home/student/cranit/runsim/MP-Gadget/examples/cooling_metal_UVB"

@@ -1,9 +1,9 @@
 import argparse,os
 import galspy.utility.HaloQuery as hq
-from galspy.IO.ConfigFile import ReadAsDictionary
+from galspy.FileTypes.ConfigFile import ReadAsDictionary
 from treelib import Tree, Node
 import galterm.ansi as ANSI
-import galspy.IO.BigFile as bf
+import galspy.FileTypes.BigFile as bf
 import galspy.MPGadget as mp
 
 def main(env:dict):

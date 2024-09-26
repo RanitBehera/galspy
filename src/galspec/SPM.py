@@ -158,6 +158,11 @@ class SpectroPhotoMetry:
     def target_region(self,x,y,z,size_in_kpc):
         self._target_location   = [x,y,z]
         self._target_size       = size_in_kpc
+
+        if False:
+            offset=numpy.array([-5,-4,1])
+            self._target_location=self._target_location+offset
+
         self.gather_particles_in_region()
 
     def target_PIG_Group(self,pig_groupid,zoom=1):
@@ -240,6 +245,7 @@ class SpectroPhotoMetry:
         self.target_star_pos = self.target_star_pos - self._target_location
         self.target_bh_pos = self.target_bh_pos - self._target_location
 
+
         # self.get_angular_momentum_direction()
 
         # plt.hist(self.target_star_pos[:,0],bins=100,label="X",alpha=0.5)
@@ -285,6 +291,7 @@ class SpectroPhotoMetry:
         self._Vp_star   = self.target_star_pos[:,1]
         self._Up_bh     = self.target_bh_pos[:,0]
         self._Vp_bh     = self.target_bh_pos[:,1]
+
     
 
     def show_projected_points(self):
@@ -317,7 +324,7 @@ class SpectroPhotoMetry:
 
         span = max([span_Up_star,span_Vp_star,span_Up_bh,span_Vp_bh])
 
-        span*=1.1 # To keep everything well inside field boundary
+        span*=2 # To keep everything well inside field boundary
         #TODO:Better solution to fix slight offset of index. for (50,50) index should go to 0-49. case of 50.04
         #TODO:Else add this multiplier as class variable
 
@@ -486,23 +493,38 @@ class SpectroPhotoMetry:
 
 
     def show_rgb_channels(self):
-        fig,axes = plt.subplots(2,2,figsize=(10, 10))
-        axR,axG,axB,axRGB = axes
+        fig = plt.figure(figsize=(10,5))
+        gs = GridSpec(2,2,figure=fig)
+
+        axR = fig.add_subplot(gs[0,0])
+        axG = fig.add_subplot(gs[0,1])
+        axB = fig.add_subplot(gs[1,0])
+        axRGB = fig.add_subplot(gs[1,1])
         
         red=0*self.mass_map
         green=0*self.mass_map
         blue=0*self.mass_map
 
-        for row in self.resolution[0]:
-            for clm in self.resolution[1]:
+        print("Getting Pixelwise channels ...")
+        for row in range(self.resolution[0]):
+            for clm in range(self.resolution[1]):
                 pixel:_SPMPixel=self.SPMGrid[row,clm]
                 wave,spec=pixel.GetSpectra()
-                red[row,clm]=spec[numpy.where(wave==1200)]
-                green[row,clm]=spec[numpy.where(wave==1500)]
-                blue[row,clm]=spec[numpy.where(wave==4000)]
+                red[row,clm]=spec[3500]
+                green[row,clm]=spec[1500]
+                blue[row,clm]=spec[1200]
 
-        axR.imshow(red)
-        axG.imshow(green)
-        axB.imshow(blue)
+        axR.imshow(red,cmap="grey")
+        axG.imshow(green,cmap="grey")
+        axB.imshow(blue,cmap="grey")
+
+
+        red = red/numpy.max(red)
+        green = green/numpy.max(green)
+        blue = blue/numpy.max(blue)
+
+        clr_img = numpy.stack((red, green, blue), axis=-1)
+
+        axRGB.imshow(clr_img)
 
         plt.show()

@@ -1,5 +1,5 @@
 import numpy as np
-import galspy.IO.BigFile as bf
+import galspy.FileTypes.BigFile as bf
 import galspy.MPGadget as mp
 
 path = "/mnt/home/student/cranit/Work/test_para_rock/OUT_L50N640/RSG_036"

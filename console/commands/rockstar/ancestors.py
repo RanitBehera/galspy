@@ -1,6 +1,6 @@
 import argparse,os
 import galspy.utility.HaloQuery as hq
-from galspy.IO.ConfigFile import ReadAsDictionary
+from galspy.FileTypes.ConfigFile import ReadAsDictionary
 from treelib import Tree, Node
 
 from galterm import utfsym

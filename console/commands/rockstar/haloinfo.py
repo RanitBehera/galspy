@@ -1,5 +1,5 @@
 import argparse
-from galspy.IO.ConfigFile import ReadAsDictionary
+from galspy.FileTypes.ConfigFile import ReadAsDictionary
 import galspy.MPGadget as mp
 
 def completion(env:dict):

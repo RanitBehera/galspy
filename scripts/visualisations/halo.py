@@ -2,7 +2,7 @@ import galspy.MPGadget as mp
 import galspy.utility.HaloQuery as rs
 import galspy.utility.visualization as vis
 import matplotlib.pyplot as plt
-import galspy.IO.BigFile as bf
+import galspy.FileTypes.BigFile as bf
 
 import os,numpy
 

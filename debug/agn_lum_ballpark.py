@@ -14,7 +14,19 @@ GROUP_OFFSET = 0
 root = galspy.NavigationRoot(MPGADGET_OUTPUT_DIR)
 # PIG = root.PIG(SNAP)
 
-ac=root.PART(51).BlackHole.BlackholeAccretionRate()
+ac=root.PIG(34).BlackHole.BlackholeAccretionRate()
+bm= root.PIG(34).BlackHole.BlackholeMass()*1e10
+
+
+plt.plot(bm,ac,'.',ms=2)
+plt.xscale('log')
+plt.yscale('log')
+plt.show()
+
+
+exit()
+
+
 if False:
     print(ac.dtype)
     max_float32 = numpy.finfo(numpy.float32).max
@@ -32,6 +44,7 @@ if False:
     print(max(ac*2e20*2e20))
 
 
+
 ac = ac.astype(numpy.float128)
 ac=ac #M_sun/year
 ac=ac*(2e30)/(365*24*3600) #kg/sec
@@ -40,17 +53,49 @@ c=3e8
 L = 0.1 * ac * (c**2) #SI Rest
 
 
+z=8
 from astropy.cosmology import FlatLambdaCDM
 cosmo = FlatLambdaCDM(H0=67.36, Om0=0.3153)
-D=cosmo.luminosity_distance(8).value # In MPC
-D *= 3.086e22 #in m
+DL=cosmo.luminosity_distance(z).value # In MPC
 
-f=L/(4*numpy.pi*(D**2)*((1+8)**2)) #SI Observed
-Jy = 1e-26
-f=f/Jy
+# ------ Rest to Obaserved
+m_per_Mpc = 3.086e22
+DL *= m_per_Mpc
+Area = 4*numpy.pi*(DL**2)
+f=L/Area #SI Observed : J s-1 m-2
 
-plt.hist(numpy.log10(f),bins=100)
-plt.yscale('log')
-plt.show()
+
+# ----- Bolometric to Spectral
+# f=0.1*f #- 10% in UV
+
+# Jy = 1e-26
+# Ang = 1e-10
+
+# d_lam = 1000 * Ang * (1+z)
+# lam = 1500 * Ang * (1+z)
+
+# d_nu = (c/(lam**2))*d_lam
+
+
+# f=(f/d_nu)/Jy
+
+# m_AB = -2.5*numpy.log10(f)+8.90
+
+
+
+
+
+
+# plt.hist(f,bins=100)
+# plt.plot()
+
+
+# plt.plot(bm,ac,'.',ms=2)
+# plt.xscale('log')
+# plt.yscale('log')
+# plt.show()
 
 # print(L/)
+
+
+# Blackhole mass,  accretion Rate

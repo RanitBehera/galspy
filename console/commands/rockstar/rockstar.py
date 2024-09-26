@@ -1,8 +1,8 @@
 import os,stat, argparse
-from galspy.IO.ConfigFile import ReadAsDictionary
+from galspy.FileTypes.ConfigFile import ReadAsDictionary
 import tqdm,numpy
 
-import galspy.IO.BigFile as bf
+import galspy.FileTypes.BigFile as bf
 import galspy.utility.HaloQuery as hq
 
 import galterm.ansi as ANSI

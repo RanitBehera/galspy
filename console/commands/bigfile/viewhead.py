@@ -1,4 +1,4 @@
-import galspy.IO.BigFile as bf
+import galspy.FileTypes.BigFile as bf
 import os
 
 def main(env):
