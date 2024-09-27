@@ -16,6 +16,11 @@ k_B = 1.38e-23        # SI
 M_solar = 1.988e30  # kg
 # Seconds in Year
 sec_in_year = 365 * 24 * 3600
+# Electron Volt in
+eV = 1.602176e-19
+# Rydberg
+Ryd_in_eV = 13.605693
+
 
 
 class ThinDisk:
@@ -97,11 +102,49 @@ class ThinDisk:
         def IntegrateForFreq(f):
             return numpy.sum(integrand(r[:-1],f)*dr)
 
+
         return numpy.array([IntegrateForFreq(f) for f in freq])
     
 
+    def GetSoftExcess(self,freq,alpha_ox):
+        def get_freq_from_eV(ev):
+            return ev * (eV/h)
+        
+        def get_freq_from_rydberg(ryd):
+            return get_freq_from_eV(ryd * Ryd_in_eV)
+        
+        def get_freq_from_angstrom(ang):
+            return c/(ang*1e-10)
 
+        nu_high = get_freq_from_eV(10000)
+        nu_low  = get_freq_from_rydberg(0.1)
 
+        def high_cut(f):
+            return numpy.exp(-f/nu_high)
+
+        def low_cut(f):
+            return numpy.exp(-nu_low/f)
+        
+        def soft_excess(f,A):
+            return A*(f**(-alpha_ox))*high_cut(f)*low_cut(f)
+
+        # Normalisation
+        nu_2500ang  = get_freq_from_angstrom(2500)
+        nu_2kev     = get_freq_from_eV(2000)
+
+        L_2500ang   = self.SpectralLuminosity([nu_2500ang])
+        L_2500ang_cgs   = L_2500ang * 1e7
+        L_2kev      = self.SpectralLuminosity([nu_2kev])
+
+        C_norm      = 4.531
+        beta_norm   = 0.721
+
+        w_2kev_expected_cgs = (10**C_norm)*(L_2500ang_cgs**beta_norm)
+        w_2kev_got_cgs      = soft_excess(nu_2kev,1)
+
+        A_norm      = w_2kev_expected_cgs/w_2kev_got_cgs
+
+        return soft_excess(freq,A_norm)/1e7 # CGS to SI
 
 
 
