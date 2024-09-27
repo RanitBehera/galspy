@@ -418,7 +418,7 @@ class SpectroPhotoMetry:
             
             ax2.set_xlabel("Mass")
             ax3.set_xlabel("Age (Myr)")
-            ax3.set_xlabel("Metallicity")
+            ax4.set_xlabel("Metallicity")
 
             for ax in [ax2,ax3,ax4]:
                 ax.yaxis.set_major_locator(MaxNLocator(integer=True))
@@ -508,6 +508,7 @@ class SpectroPhotoMetry:
         print("Getting Pixelwise channels ...")
         for row in range(self.resolution[0]):
             for clm in range(self.resolution[1]):
+                print(row*self.resolution[1]+clm)
                 pixel:_SPMPixel=self.SPMGrid[row,clm]
                 wave,spec=pixel.GetSpectra()
                 red[row,clm]=spec[3500]

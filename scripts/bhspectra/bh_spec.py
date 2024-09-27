@@ -2,31 +2,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 from galspec.AGN import ThinDisk
 
-TD1 = ThinDisk(1e8,1,3,3e10,0)
-# print(TD1.AccretionRate_SI)
-# print(TD1.SchwarzschildRadius_SI)
-
-
-# R = np.logspace(np.log10(3),np.log10(3e5),1000)
-# T = TD1.Temperature(R)
-# plt.plot(R*TD1.SchwarzschildRadius_SI,T)
-# plt.xscale('log')
-# plt.yscale('log')
-# plt.ylim(1e4,1e6)
-# plt.grid()
-# plt.show()
-
+TD1 = ThinDisk(1e8,1,3,30000,0)
 
 freq=np.logspace(-2,20,1000)
 L1 = TD1.SpectralLuminosity(freq)
-# L1 = L1
+plt.plot(freq,L1*(1e7/1e24))
 
 
-plt.plot(freq,L1)
+
+
+
+
+
+
+
+
+
 plt.xscale("log")
 plt.yscale("log")
-# plt.ylim(bottom=1e0)
-# plt.xlim(10**12,10**20)
+plt.ylim(1,1e7)
+plt.xlim(10**9,10**19)
 plt.show()
 
 

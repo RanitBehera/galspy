@@ -1,6 +1,6 @@
 import numpy
-from scipy.integrate import quad, quad_vec
 import matplotlib.pyplot as plt
+from typing import Literal
 
 # Universal Gravitational Constant
 G = 6.6743e-11      # SI
@@ -51,16 +51,16 @@ class ThinDisk:
         return 2*G*self.Mass_SI/(c**2)
 
     # Characteristic Temperature
-    def _get_T_Char(self):
+    def _get_Tfactor(self):
         return (3*G*self.Mass_SI*self.AccretionRate_SI)/(8*numpy.pi*sigma)
     
     # needs to be in units of scwraschild radius as external interface
     def Temperature(self,r):
-        Tc = self._get_T_Char()
-        # print("Tc=",Tc)
+        Tf = self._get_Tfactor()
+        # print("Tf=",Tf)
         # print("inner=",self.InnerEdge_SI)
         r_SI = r* self.SchwarzschildRadius_SI
-        Q = Tc  * ( (1-(self.InnerEdge_SI/r_SI))**0.5 ) / (r_SI**3)
+        Q = Tf  * ( (1-(self.InnerEdge_SI/r_SI))**0.5 ) / (r_SI**3)
         return Q**0.25
 
     # def SpectralBrightness(self,r,freq):
@@ -76,24 +76,35 @@ class ThinDisk:
     #     return numpy.pi * self.SpectralBrightness(r,freq)
     
     def SpectralLuminosity(self,freq):
-        Q1 = 4*(numpy.pi**2)*h/(c**2)
-        Q2 = Q1 * (freq**3) * numpy.cos(self.AxisInclination)
-        Rs_SI = self.SchwarzschildRadius_SI
+        def C(f):
+            Q1 = 4*(numpy.pi**2)*h/(c**2)
+            Q2 = Q1 * (f**3) * numpy.cos(self.AxisInclination)
+            return Q2
 
+        Rs_SI = self.SchwarzschildRadius_SI        
         def integrand(r_SI,f):
-            return r_SI/(numpy.exp(h*f/(k_B*self.Temperature(r_SI/Rs_SI)))-1)
+            return C(f)*r_SI/(numpy.exp(h*f/(k_B*self.Temperature(r_SI/Rs_SI)))-1)
+
+        # The intergrand sharply drops in the beginning
+        # So a high resolution sampling is needed
+        # Effect is negligible for now
+        # r_start_hr  = numpy.logspace(numpy.log10((1+(1e-10))*self.InnerEdge_SI),numpy.log10(1.01*self.InnerEdge_SI),100)
+        # r = numpy.concatenate((r_start_hr,r_mid))
+
+        # For integration
+        r = numpy.logspace(numpy.log10(1.01*self.InnerEdge_SI),numpy.log10(self.OuterEdge_SI),1000)
+        dr = r[1:]-r[:-1]
+        def IntegrateForFreq(f): to create these simulatio
+            return numpy.sum(integrand(r[:-1],f)*dr)
+
+        return numpy.array([IntegrateForFreq(f) for f in freq])
+    
 
 
-        # r=numpy.logspace(numpy.log10(1.01*self.InnerEdge_SI),numpy.log10(self.OuterEdge_SI),1000)
-        # for_fre_ind=999
-        # print("tf=",freq[for_fre_ind])
-        # I=integrand(r,freq[for_fre_ind])
-        # plt.plot(r,I)
-        # plt.xscale('log')
-        # plt.yscale('log')
-        # # plt.ylim(1e18,1e22)
-        # plt.grid()
-        # plt.show()
 
-        I = [quad(integrand,self.InnerEdge_SI,self.OuterEdge_SI,args=f)[0] for f in freq]
-        return Q2 * I
+
+
+
+
+
+
