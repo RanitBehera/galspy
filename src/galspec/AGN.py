@@ -94,7 +94,7 @@ class ThinDisk:
         # For integration
         r = numpy.logspace(numpy.log10(1.01*self.InnerEdge_SI),numpy.log10(self.OuterEdge_SI),1000)
         dr = r[1:]-r[:-1]
-        def IntegrateForFreq(f): to create these simulatio
+        def IntegrateForFreq(f):
             return numpy.sum(integrand(r[:-1],f)*dr)
 
         return numpy.array([IntegrateForFreq(f) for f in freq])
