@@ -119,6 +119,7 @@ class _SPMPixel:
             BPASS = bp.BPASS("CHABRIER_UPTO_300M","Binary",Z)
             FLUX=BPASS.Spectra.GetFlux(500,10000)
             _SPMPixel._spec_cache[i]=FLUX
+            # _SPMPixel._spec_cache[i]=FLUX.to_numpy()
             print("Done")
 
 

@@ -7,7 +7,7 @@ matplotlib.rcParams['font.size']=12
 
 
 PBS_PATH = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/run/PBS"
-JOB_IDS = [58553,64554]
+JOB_IDS = [58553,64554,66876]
 
 # Get stdout filepaths
 STDOUTS = [f"{PBS_PATH}/{jid}.hn1/stdout.txt" for jid in JOB_IDS]
@@ -48,8 +48,8 @@ axs.plot(wall_time_hr,redshift,'k-')
 
 
 # BEAUTIFY
-UNIT_SPAN = 6
-TIME_RANGE = 192
+UNIT_SPAN = 12
+TIME_RANGE = 24*12
 TIME_REFS = np.arange(0,TIME_RANGE+UNIT_SPAN,UNIT_SPAN)
 for span_start,span_end in zip(TIME_REFS[:-1],TIME_REFS[1:]):
     if (span_start/UNIT_SPAN)%2 == 0: alp = 0.05
@@ -94,14 +94,14 @@ plt.plot(50*count_star/max(count_star),'-',label="stars")
 
 # CRUDE FITTING
 #=========================
-SLOPE_START = 400
-SLOPE_END = 1600
+SLOPE_START = 1600
+SLOPE_END = 3000
 # print(len(wall_time_hr))
 # plt.plot([wall_time_hr[SLOPE_START],wall_time_hr[SLOPE_END]],[redshift[SLOPE_START],redshift[SLOPE_END]],'.',ms=10)
 lwt = np.log10(wall_time_hr)
 lred = np.log10(redshift)
 slope = (lred[SLOPE_START]-lred[SLOPE_END])/(lwt[SLOPE_START]-lwt[SLOPE_END])
-xr = np.log10(np.linspace(50,192,200))
+xr = np.log10(np.linspace(50,24*12,200))
 yr = lred[SLOPE_END] + slope * (xr-lwt[SLOPE_END])
 
 lin_red = 10**yr

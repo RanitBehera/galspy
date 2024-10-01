@@ -2,6 +2,9 @@ import numpy
 import matplotlib.pyplot as plt
 from typing import Literal
 
+
+
+
 # Universal Gravitational Constant
 G = 6.6743e-11      # SI
 # Stefan-Boltzmann Constant
@@ -103,6 +106,7 @@ class ThinDisk:
             return numpy.sum(integrand(r[:-1],f)*dr)
 
 
+        
         return numpy.array([IntegrateForFreq(f) for f in freq])
     
 
