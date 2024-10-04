@@ -53,8 +53,9 @@ class _Spectra:
         spectra = hoki.load.model_output(self.filepath)
         if (not wavelength_lower==1) or (not wavelength_higher==100000):
             spectra_masked = spectra[(spectra.WL>=wavelength_lower)&(spectra.WL<=wavelength_higher)]
-        return spectra_masked
-
+            return spectra_masked
+        else:
+            return spectra
 
 
 

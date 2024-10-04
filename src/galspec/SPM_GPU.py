@@ -1,62 +1,16 @@
 import galspy
 from galspy.utility.visualization import CubeVisualizer
-import numpy
+import numpy, cupy
 import matplotlib.pyplot as plt
 from typing import Literal
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import galspec.bpass as bp
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MaxNLocator
-import time
-import os
-import pickle
+
 
 from astropy.cosmology import FlatLambdaCDM
 cosmo = FlatLambdaCDM(H0=67.36, Om0=0.3153)
-
-
-
-class _BPASSCache:
-    def __init__(self,filepath:str) -> None:
-        self.filepath=filepath
-
-    def Cache(self,overwrite=False):
-        if os.path.isfile(self.filepath) and not overwrite:
-            print("Using existing cache:"+self.filepath)
-            return
-        
-        print("Creating Cache ...")
-        Z_foots=[1e-5,1e-4,1e-3,2e-3,3e-3,4e-3,6e-3,8e-3,1e-2,1.4e-2,2e-2,3e-2,4e-2]
-        T_foots = numpy.arange(6,11.1,0.1)
-
-        Z_KEYS = [f"{zf:.5f}".rstrip('0') for zf in Z_foots]
-        T_KEYS = [str(numpy.round(tf,1)) for tf in T_foots]
-        
-        CACHE_METALLICITY_DICT = {"Z_KEYS":Z_KEYS,"T_KEYS":T_KEYS}
-        for i,Z in enumerate(Z_foots):
-            print(" - ",i+1,"/",len(Z_foots),flush=True)
-
-            BPASS = bp.BPASS("CHABRIER_UPTO_300M","Binary",Z)
-            table=BPASS.Spectra.GetFlux().to_numpy()
-            lam,aged_flux = table[:,0],table[:,1:].T
-
-            CACHE_AGE_DICT = {"WL":lam}
-            for j,age in enumerate(T_foots):
-                CACHE_AGE_DICT[T_KEYS[j]] = aged_flux[j]
-
-            CACHE_METALLICITY_DICT[Z_KEYS[i]] = CACHE_AGE_DICT
-
-        print("Saving Pickle ...",flush=True)
-        with open(self.filepath,"wb") as fp: pickle.dump(CACHE_METALLICITY_DICT,fp)
-
-        print(f"Saved as \"{self.filepath}\"")
-
-    def Read(self):
-        self.Cache(False)
-        with open(self.filepath,"rb") as fp:
-            cache = pickle.load(fp)
-        return cache
-        
 
 class _SPMPixel:
     _spec_cache=None
@@ -150,34 +104,38 @@ class _SPMPixel:
             
         return hist_x,hist_y
     
+    def CacheSpectras():
+        print("Caching Spectras...")
+        _SPMPixel._spec_cache={}
+        Z_foots=[1e-5,1e-4,1e-3,2e-3,3e-3,4e-3,6e-3,8e-3,1e-2,1.4e-2,2e-2,3e-2,4e-2]
+
+        for i,Z in enumerate(Z_foots):
+            print(i+1,"/",len(Z_foots),"...",end=" ",flush=True)
+            BPASS = bp.BPASS("CHABRIER_UPTO_300M","Binary",Z)
+            FLUX=BPASS.Spectra.GetFlux(500,10000)
+            _SPMPixel._spec_cache[i]=FLUX
+            # _SPMPixel._spec_cache[i]=FLUX.to_numpy()
+            print("Done")
+
 
     def GetSpectra(self):
         if _SPMPixel._spec_cache==None:
-            _SPMPixel._spec_cache= _BPASSCache("cache/bpass.ch").Read()
+            _SPMPixel.CacheSpectras()
 
-        s=time.time()
         pick_age = lambda ind:str(numpy.round(self.T_foots[ind],1))        
 
-        WL = _SPMPixel._spec_cache["0.00001"]["WL"]
-        TOTAL_FLUX = numpy.zeros(len(WL))
-        for Zi,Z in enumerate(self.Z_foots):
-            Z_KEY = f"{10**Z:.5f}".rstrip('0')
-            FLUX_ALL=_SPMPixel._spec_cache[Z_KEY]
-            for Ti,T in enumerate(self.T_foots):
-                FLUX = FLUX_ALL[str(numpy.round(T,1))]
-                # How to get the mass factor is collapse
-                # Only multiplying by count assumes all star to have same mass
-                # However B pass is only for 10^6 mass
-
-                cell_counts = self.grid[:,Ti,Zi]
-                TOTAL_FLUX = TOTAL_FLUX + (cell_counts * (10**(self.M_foots-6))) * FLUX
-                # for mi,M in enumerate(self.M_foots):
-                    # mass_factor = 10**(M-6)
-                    # TOTAL_FLUX = TOTAL_FLUX + cell_count * mass_factor * FLUX
+        TOTAL_FLUX = 0*numpy.array(len(_SPMPixel._spec_cache[0][pick_age(0)]))
+        for zi,_ in enumerate(self.Z_foots):
+            for ti,_ in enumerate(self.T_foots):
+                for mi,_ in enumerate(self.M_foots):
+                    FLUX_ALL=_SPMPixel._spec_cache[zi]
+                    FLUX = FLUX_ALL[pick_age(ti)]
+                    mass = self.M_foots[mi]
+                    cell_count = self.grid[mi,ti,zi]
+                    mass_factor = 10**(mass-6)
+                    TOTAL_FLUX = TOTAL_FLUX + cell_count * mass_factor * FLUX
         
-        e=time.time()
-        print(e-s)
-        return WL,TOTAL_FLUX
+        return _SPMPixel._spec_cache[0].WL,TOTAL_FLUX
             
 
 
@@ -514,6 +472,8 @@ class SpectroPhotoMetry:
         divider = make_axes_locatable(ax1)
         cax = divider.append_axes("top", size="5%", pad=0.1)
         cbar = fig.colorbar(img,cax=cax,label="$M_\odot$",orientation="horizontal",location="top")
+
+        _SPMPixel.CacheSpectras()
 
         def ShowPixelSpectra(pixel:_SPMPixel):
             x,y=pixel.GetSpectra()
