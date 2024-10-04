@@ -7,6 +7,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import galspec.bpass as bp
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MaxNLocator
+import matplotlib.colors as mcolors
 import time
 import os
 import pickle
@@ -155,12 +156,14 @@ class _SPMPixel:
         if _SPMPixel._spec_cache==None:
             _SPMPixel._spec_cache= _BPASSCache("cache/bpass.ch").Read()
 
-        s=time.time()
+        # s=time.time()
+
         pick_age = lambda ind:str(numpy.round(self.T_foots[ind],1))        
 
         WL = _SPMPixel._spec_cache["0.00001"]["WL"]
         TOTAL_FLUX = numpy.zeros(len(WL))
         for Zi,Z in enumerate(self.Z_foots):
+            if Zi !=5: continue
             Z_KEY = f"{10**Z:.5f}".rstrip('0')
             FLUX_ALL=_SPMPixel._spec_cache[Z_KEY]
             for Ti,T in enumerate(self.T_foots):
@@ -168,15 +171,12 @@ class _SPMPixel:
                 # How to get the mass factor is collapse
                 # Only multiplying by count assumes all star to have same mass
                 # However B pass is only for 10^6 mass
-
                 cell_counts = self.grid[:,Ti,Zi]
-                TOTAL_FLUX = TOTAL_FLUX + (cell_counts * (10**(self.M_foots-6))) * FLUX
-                # for mi,M in enumerate(self.M_foots):
-                    # mass_factor = 10**(M-6)
-                    # TOTAL_FLUX = TOTAL_FLUX + cell_count * mass_factor * FLUX
+                TOTAL_FLUX = TOTAL_FLUX + numpy.sum((cell_counts * (10**(self.M_foots-6)))) * FLUX
+                # Works however 10 times more masives doesn't mean 10 times more flux. Surface brighness??
         
-        e=time.time()
-        print(e-s)
+        # e=time.time()
+        # print(e-s)
         return WL,TOTAL_FLUX
             
 
@@ -542,14 +542,22 @@ class SpectroPhotoMetry:
         plt.show()
 
 
-    def show_rgb_channels(self):
+    def show_rgb_channels(self,band_center:list[int,int,int],band_width=list[int,int,int]):
+        band_center = numpy.int32(band_center)
+        band_low = numpy.int32(numpy.array(band_center)-0.5*numpy.array(band_width))
+        band_high = numpy.int32(numpy.array(band_center)+0.5*numpy.array(band_width))
+        
+        
+        
         fig = plt.figure(figsize=(10,5))
-        gs = GridSpec(2,2,figure=fig)
+        gs = GridSpec(2,4,figure=fig)
 
         axR = fig.add_subplot(gs[0,0])
         axG = fig.add_subplot(gs[0,1])
-        axB = fig.add_subplot(gs[1,0])
-        axRGB = fig.add_subplot(gs[1,1])
+        axB = fig.add_subplot(gs[0,2])
+        axRGB = fig.add_subplot(gs[0,3])
+
+        axSpec = fig.add_subplot(gs[1,:])
         
         red=0*self.mass_map
         green=0*self.mass_map
@@ -561,21 +569,75 @@ class SpectroPhotoMetry:
                 print(row*self.resolution[1]+clm)
                 pixel:_SPMPixel=self.SPMGrid[row,clm]
                 wave,spec=pixel.GetSpectra()
-                red[row,clm]=spec[3500]
-                green[row,clm]=spec[1500]
-                blue[row,clm]=spec[1200]
 
-        axR.imshow(red,cmap="grey")
-        axG.imshow(green,cmap="grey")
-        axB.imshow(blue,cmap="grey")
+                red[row,clm]=numpy.mean(spec[band_low[0]:band_high[0]])
+                green[row,clm]=numpy.mean(spec[band_low[1]:band_high[1]])
+                blue[row,clm]=numpy.mean(spec[band_low[2]:band_high[2]])
 
+        cmap_red = mcolors.LinearSegmentedColormap.from_list('custom_red', ['black', 'red'])
+        cmap_green = mcolors.LinearSegmentedColormap.from_list('custom_green', ['black', 'green'])
+        cmap_blue = mcolors.LinearSegmentedColormap.from_list('custom_blue', ['black', 'blue'])
 
-        red = red/numpy.max(red)
-        green = green/numpy.max(green)
-        blue = blue/numpy.max(blue)
+        axR.imshow(red,cmap=cmap_red)
+        axG.imshow(green,cmap=cmap_green)
+        axB.imshow(blue,cmap=cmap_blue)
+
+        max_r = numpy.max(red)
+        max_g = numpy.max(green)
+        max_b = numpy.max(blue)
+        max_rgb = numpy.max(numpy.row_stack((red,green,blue)))
+
+        red = red/max_r
+        green = green/max_g
+        blue = blue/max_b
 
         clr_img = numpy.stack((red, green, blue), axis=-1)
-
         axRGB.imshow(clr_img)
+
+
+        # axR.contour(red, levels=4, colors='white', linewidths=0.5,alpha=0.5)
+        # axG.contour(green, levels=4, colors='white', linewidths=0.5,alpha=0.5)
+        # axB.contour(blue, levels=4, colors='white', linewidths=0.5,alpha=0.5)
+
+
+
+
+        def ShowPixelSpectra(pixel:_SPMPixel):
+            x,y=pixel.GetSpectra()
+            axSpec.plot(x,y)
+            axSpec.set_yscale('log')
+            # axSpec.set_xscale('log')
+            axSpec.set_xlim(500,8000)
+            axSpec.set_ylim(max(y)/1e3,10*max(y))
+            axSpec.axvspan(band_low[0],band_high[0],fc='r',ec=None,alpha=0.1)
+            axSpec.axvspan(band_low[1],band_high[1],fc='g',ec=None,alpha=0.1)
+            axSpec.axvspan(band_low[2],band_high[2],fc='b',ec=None,alpha=0.1)
+
+        def onclick(event):
+            if not event.inaxes in [axR,axG,axB,axRGB]: return
+            ix, iy = round(event.xdata), round(event.ydata)
+            [[p.remove() for p in ax.patches] for ax in [axR,axG,axB,axRGB]]
+            rectR = plt.Rectangle((ix-0.5, iy-0.5), 1, 1, ec='white', fc='none')
+            rectG = plt.Rectangle((ix-0.5, iy-0.5), 1, 1, ec='white', fc='none')
+            rectB = plt.Rectangle((ix-0.5, iy-0.5), 1, 1, ec='white', fc='none')
+            rectRGB = plt.Rectangle((ix-0.5, iy-0.5), 1, 1, ec='white', fc='none')
+            axR.add_patch(rectR)
+            axG.add_patch(rectG)
+            axB.add_patch(rectB)
+            axRGB.add_patch(rectRGB)
+            
+            axSpec.clear()
+            pixel = self.SPMGrid[iy,ix]
+            ShowPixelSpectra(pixel)
+            
+            fig.canvas.draw()
+
+        fig.canvas.mpl_connect('button_press_event', onclick)
+
+
+
+
+
+
 
         plt.show()
