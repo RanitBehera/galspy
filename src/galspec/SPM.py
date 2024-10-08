@@ -156,14 +156,11 @@ class _SPMPixel:
         if _SPMPixel._spec_cache==None:
             _SPMPixel._spec_cache= _BPASSCache("cache/bpass.ch").Read()
 
-        # s=time.time()
-
-        pick_age = lambda ind:str(numpy.round(self.T_foots[ind],1))        
+        s=time.time()
 
         WL = _SPMPixel._spec_cache["0.00001"]["WL"]
         TOTAL_FLUX = numpy.zeros(len(WL))
         for Zi,Z in enumerate(self.Z_foots):
-            if Zi !=5: continue
             Z_KEY = f"{10**Z:.5f}".rstrip('0')
             FLUX_ALL=_SPMPixel._spec_cache[Z_KEY]
             for Ti,T in enumerate(self.T_foots):
@@ -175,8 +172,8 @@ class _SPMPixel:
                 TOTAL_FLUX = TOTAL_FLUX + numpy.sum((cell_counts * (10**(self.M_foots-6)))) * FLUX
                 # Works however 10 times more masives doesn't mean 10 times more flux. Surface brighness??
         
-        # e=time.time()
-        # print(e-s)
+        e=time.time()
+        print(e-s)
         return WL,TOTAL_FLUX
             
 
@@ -203,7 +200,7 @@ class SpectroPhotoMetry:
 
         self.gather_particles_in_region()
 
-    def target_PIG_Group(self,pig_groupid,zoom=1):
+    def target_PIG_Group(self,pig_groupid,zoom=1,offset=[0,0,0]):
         location = self._PIG.FOFGroups.MassCenterPosition()[pig_groupid]   
         pig_stars_pos = self._PIG.Star.Position()
         pig_stars_gid = self._PIG.Star.GroupID()
@@ -214,7 +211,11 @@ class SpectroPhotoMetry:
         target_group_span_z = numpy.max(target_group_star_pos[:,2]) - numpy.min(target_group_star_pos[:,2])
         target_group_span   = max([target_group_span_x,target_group_span_y,target_group_span_z])
         size = target_group_span / zoom
-        self.target_region(*location,size) 
+
+        x,y,z = location
+        xo,yo,zo = offset
+
+        self.target_region(x+xo,y+yo,z+zo,size) 
 
     def gather_particles_in_region(self):
         # region lower and upper bounds
@@ -383,6 +384,9 @@ class SpectroPhotoMetry:
         grid_drow = span/grid_resolution[0]
         grid_dclm = span/grid_resolution[1] 
 
+        # TODO: drow and dclm
+        self._grid_drow = grid_drow
+
         left_edge = -span/2
         upper_edge = +span/2
 
@@ -432,12 +436,22 @@ class SpectroPhotoMetry:
         self.mass_map = mass_map 
 
 
+    def _show_scale(self,ax:plt.Axes):
+        ax.plot([2,5],[2,2],'white',lw=1)
+        ax.plot([2,2],[2-0.2,2+0.2],'white',lw=1)
+        ax.plot([5,5],[2-0.2,2+0.2],'white',lw=1)
+        ax.annotate(f"{3*self._grid_drow:.01f}kpc",xy=(3.5,2),xytext=(0,5),
+                    xycoords='data',textcoords="offset pixels",
+                    color='white',ha='center')
 
     def show_star_mass_map(self):
         # TODO : Transpose
         img=plt.imshow(self.mass_map,cmap='grey')
         plt.colorbar(img)
+        self._show_scale(plt.gca())
         plt.show()
+
+    
 
 
     def show_pixelwise_histogram(self):
@@ -452,6 +466,8 @@ class SpectroPhotoMetry:
 
 
         img=ax1.imshow(self.mass_map**self.contrast_exponent,cmap='grey',origin='upper')
+        self._show_scale(ax1)
+
 
         divider = make_axes_locatable(ax1)
         cax = divider.append_axes("top", size="5%", pad=0.1)
@@ -510,6 +526,7 @@ class SpectroPhotoMetry:
         ax1,ax2 = axes
 
         img=ax1.imshow(self.mass_map**self.contrast_exponent,cmap='grey',origin='upper')
+        self._show_scale(ax1)
 
         divider = make_axes_locatable(ax1)
         cax = divider.append_axes("top", size="5%", pad=0.1)
@@ -520,6 +537,8 @@ class SpectroPhotoMetry:
             ax2.plot(x,y)
             ax2.set_yscale('log')
             ax2.set_xscale('log')
+            # ax2.set_xlim(500,8000)
+            # ax2.set_ylim(max(y)/1e3,10*max(y))
    
 
         def onclick(event):
@@ -578,22 +597,31 @@ class SpectroPhotoMetry:
         cmap_green = mcolors.LinearSegmentedColormap.from_list('custom_green', ['black', 'green'])
         cmap_blue = mcolors.LinearSegmentedColormap.from_list('custom_blue', ['black', 'blue'])
 
-        axR.imshow(red,cmap=cmap_red)
-        axG.imshow(green,cmap=cmap_green)
-        axB.imshow(blue,cmap=cmap_blue)
+
+
 
         max_r = numpy.max(red)
         max_g = numpy.max(green)
         max_b = numpy.max(blue)
         max_rgb = numpy.max(numpy.row_stack((red,green,blue)))
 
-        red = red/max_r
-        green = green/max_g
-        blue = blue/max_b
+        # red = red/max_r
+        # green = green/max_g
+        # blue = blue/max_b
 
+        axR.imshow(red,cmap=cmap_red)
+        axG.imshow(green,cmap=cmap_green)
+        axB.imshow(blue,cmap=cmap_blue)
+
+        
         clr_img = numpy.stack((red, green, blue), axis=-1)
+        clr_img = clr_img / numpy.max(clr_img)
         axRGB.imshow(clr_img)
 
+        self._show_scale(axR)
+        self._show_scale(axG)
+        self._show_scale(axB)
+        self._show_scale(axRGB)
 
         # axR.contour(red, levels=4, colors='white', linewidths=0.5,alpha=0.5)
         # axG.contour(green, levels=4, colors='white', linewidths=0.5,alpha=0.5)

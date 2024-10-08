@@ -9,7 +9,7 @@ SNAP_PATH = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS"
 root = galspy.NavigationRoot(SNAP_PATH)
 
 MASS_UNIT = 1e10 
-SNAP_NUM = 43
+SNAP_NUM = 63
 
 hm  = root.PIG(SNAP_NUM).FOFGroups.Mass()*MASS_UNIT
 mbt = root.PIG(SNAP_NUM).FOFGroups.MassByType().T * MASS_UNIT
