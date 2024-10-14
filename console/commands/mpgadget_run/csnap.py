@@ -12,6 +12,8 @@ class SnapManager:
 
     def _recalculate(self):
         primary = self.scale_factor[self.tag==SnapManager.TAG_PRIMARY]
+
+        # Tag seconary snapshots as primary if its also in primary
         for i in range(len(self.scale_factor)):
             ai=self.scale_factor[i]
             ti=self.tag[i]
@@ -53,6 +55,9 @@ class SnapManager:
         z=np.array(redshifts)
         self.AppendScales(1/(z+1),primary)
 
+    def AddScale(self,a:list,primary:bool=True):
+        self.AppendScales(a,primary)
+
 
     def AvailableSnaps(self):
         childs = os.listdir(self.snapshot_path)
@@ -66,20 +71,26 @@ class SnapManager:
         self.avail_part=PART_NUM
         self.avail_pig=PIG_NUM
 
-    def GetSnapScaleFactor(self):
+    def GetSnapTxtScaleFactors(self):
         snapshots_txt_path =os.path.join(self.snapshot_path,"Snapshots.txt")
-        N,a = np.loadtxt(snapshots_txt_path).T
+        if os.path.exists(snapshots_txt_path):
+            N,a = np.loadtxt(snapshots_txt_path).T
+        else:
+            N,a=[-1],[-1]
         return np.int32(N),a
+        # TODO:handle when no or single row in snap.txt
+        # return np.array(N,dtype=np.int32),np.array(a)
 
 
 
     def DisplayTable(self):
-        CW=16
-        print("#".ljust(8),'|',
-              "Scale Factor".center(CW),'|',
+        CW=10
+        print("#".ljust(4),'|',
+              "Expected".center(CW),'|',
+              "Output".center(CW),'|',
               "Redshift".center(CW),'|',
-              "Status".center(CW),'|',
-              "Type".center(CW),'|',
+              "Available".center(CW+4),'|',
+              "Priority".center(CW),'|',
               "Action")
   
         for i in range(len(self.scale_factor)):
@@ -87,52 +98,76 @@ class SnapManager:
             z=(1/a)-1
             tag = self.tag[i]
 
-            Nc,ac = self.GetSnapScaleFactor()
+            Nc,ac = self.GetSnapTxtScaleFactors()
 
-            COLOR_PRE_i = ANSI.FG_MAGENTA
-            COLOR_PRE_a = ANSI.FG_MAGENTA
+            COLOR = ANSI.DIM if i>= len(Nc) else ""
+
+            # Snap Number
+            print(COLOR+str(i).ljust(4),'|',end=ANSI.RESET+" ")
+
+            # Expected Scale
+            print(COLOR+f"{np.round(a,5)}".ljust(CW),'|',end=ANSI.RESET+" ")
+
+            # Output Scale
             if i<len(Nc):
-                if i==Nc[i]: COLOR_PRE_i=ANSI.FG_GREEN
-                if np.round(a,5)==np.round(ac[i],5): COLOR_PRE_a=ANSI.FG_GREEN
-
-            if i<len(Nc):        
-                print(COLOR_PRE_i+str(i).ljust(8)+ANSI.RESET,'|',end=" ")
-                print(COLOR_PRE_a+f"{np.round(a,5)}({np.round(ac[i],5)})".ljust(CW)+ANSI.RESET,'|',end=" ")
+                COLOROK = ANSI.FG_GREEN if np.round(a,5)==np.round(ac[i],5) else ANSI.FG_MAGENTA
+                print(COLOROK+f"{np.round(ac[i],5)}".ljust(CW)+ANSI.RESET,'|',end=" ")
             else:
-                print(str(i).ljust(8)+ANSI.RESET,'|',end=" ")
-                print(str(np.round(a,5)).ljust(CW)+ANSI.RESET,'|',end=" ")
-
-            print(str(np.round(z,5)).ljust(CW),'|',end=" ")
-
-            # STATUS
-            self.AvailableSnaps()
-            status=[]
-            if i in self.avail_part:status.append("PART")
-            if i in self.avail_pig:status.append("PIG")
-            print(" + ".join(status).center(CW),'|',end=" ")
-
+                print(COLOR+"-".center(CW),'|',end=ANSI.RESET + " ")
             
+            # Redshift
+            print(COLOR+str(np.round(z,5)).ljust(CW),'|',end=ANSI.RESET+" ")
+
+            # PART and/or PIG
+            self.AvailableSnaps()
+            avail=[]
+            if i in self.avail_part:avail.append("PART")
+            if i in self.avail_pig:avail.append("PIG")
+            print(" + ".join(avail).center(CW+4),'|',end=" ")
+
+            # Priority
             if tag==SnapManager.TAG_PRIMARY:
-                print("PRIMARY".center(CW),'|',end=" ")
-                print("")
-            else:
-                print("SECONDARY".center(CW),'|',end=" ")
-                if i in self.avail_part:
-                    print(ANSI.FG_YELLOW+f"DELETE PART_{i:03}"+ANSI.RESET)
+                print(ANSI.BOLD+"P".center(CW)+ANSI.RESET,'|',end=" ")
+            elif tag==SnapManager.TAG_SECONDARY:
+                print(ANSI.DIM+"S".center(CW)+ANSI.RESET,'|',end=" ")
+
+            # Action
+            if tag==SnapManager.TAG_SECONDARY:
+                if i in self.avail_part and i in self.avail_pig:
+                    print(ANSI.FG_YELLOW+f"DELETE PART_{i:03}"+ANSI.RESET,end="")
+                elif i in self.avail_pig:
+                    # print(ANSI.DIM+f"DELETED PART_{i:03}"+ANSI.RESET,end="")
+                    pass
                 else:
-                    print(f"DELETE PART_{i:03}")
+                    # print(f"DELETE PART_{i:03}",end="")
+                    pass
+            
+            # New Line
+            if i==len(Nc)-1:print("\n"+"-"*8*CW,end="")
+            print("")
 
     def OutputScales(self):
         print(','.join([str(np.round(a,9)) for a in self.scale_factor]))
 
 
 def main(env:dict):
-    sm = SnapManager("/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS")
+    sm = SnapManager("/mnt/home/student/cranit/NINJA/simulations/L250N2040/SNAPS")
+
+    # L150N2040
     sm.AddRedshifts([90,50,20])
     sm.AddRedshiftsLinear(15,0,31)
-    sm.AddRedshifts([11.06139])
+    sm.AddScale([0.0829092])
     sm.AddScalesLogarithimic(1/(11+1),1/(4+1),51,False)
+    sm.AddScale([0.178876])
+    
 
+    # L250N2040
+    # sm.AddRedshifts([90,50,20])
+    # sm.AddRedshiftsLinear(15,0,31)
+    # sm.AddRedshifts([11.06139])
+    # sm.AddScalesLogarithimic(1/(11+1),1/(4+1),51,False)
+    
+    
     sm.DisplayTable()
     # sm.OutputScales()
 
