@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 LyL = 912 #Lyman Limit in Angstrom
 
@@ -78,4 +79,11 @@ if False:
 
     plt.show()
 
-SaveSED("/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/sed/ht1.sed",lam,1,1e3,0,-2)
+def GetLogMiddle(a,b):return (a*b)**0.5
+
+OUT = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/uveffect/FH" + os.sep
+SaveSED(OUT + "fh1.sed",lam,1,10,0,-2)
+SaveSED(OUT + "fh2.sed",lam,1,(1000)**0.5,0,-2)
+SaveSED(OUT + "fh3.sed",lam,1,100,0,-2)
+SaveSED(OUT + "fh4.sed",lam,1,(1e5)**0.5,0,-2)
+SaveSED(OUT + "fh5.sed",lam,1,100,0,-2)

@@ -2,8 +2,8 @@ import galspec.Cloudy as gc
 import numpy
 import matplotlib.pyplot as plt
 
-CLOUDY_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/temp/cloudy"
-con = gc.CloudyOutput(CLOUDY_DIR,"pn")
+CLOUDY_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/sed"
+con = gc.CloudyOutput(CLOUDY_DIR,"test")
 
 def ConvertToWavelength(freq,flux_nu):
     pass
