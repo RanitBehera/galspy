@@ -21,5 +21,7 @@ class CloudyOutput:
         self.NetTrans       = _data[4]
         self.Reflection     = _data[5]
         self.Total          = _data[6]
-        self.RefLine          = _data[7]
-        self.OutLine          = _data[8]
+        self.RefLine        = _data[7]
+        self.OutLine        = _data[8]
+
+

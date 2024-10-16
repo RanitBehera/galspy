@@ -2,11 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from typing import Literal
 
-# Gordon et. al. (2003)
-# DOI: 10.1086/376774
-# https://arxiv.org/abs/astro-ph/0305257
-# Fitzpatrick & Massa (1990)
-# https://ui.adsabs.harvard.edu/abs/1990ApJS...72..163F/abstract
+
+
+
 class _FitzpatrickMassa1990:
     MW      = [0.12,0.63,3.26,0.41,4.596,0.96]
     LMC     = [-0.890,0.998,2.719,0.400,4.579,0.934]
@@ -31,6 +29,24 @@ class _FitzpatrickMassa1990:
         return BG + DB + FUVR 
 
 
+class _Caletti2000:
+    def __init__(self) -> None:
+        pass
+
+    def k(self,lam_ang,RV):
+        lam=np.array(lam_ang)*1e-10/1e-6
+        a1,a2 = -1.857,1.040
+        b1,b2,b3,b4 = -2.156,1.509,-0.198,0.011
+        c=2.659
+        mask1=(0.63<=lam) & (lam<=2.20)
+        mask2=(0.12<=lam) & (lam<2.20)
+        
+        _x = 1/lam
+        k1 = c*(a1 + a2*_x) + RV
+        k2 = c*(b1 + b2*_x + b3*(_x**2) + b4*(_x**3)) + RV
+
+        k = 0*(mask1 * k1) + (mask2 * k2)
+        return k
 
     
 class DustExtinction:
@@ -54,17 +70,21 @@ class DustExtinction:
         return x,FM
 
 
-    def ALam(self,wavelengths,model:Literal["MW","LMC","SMC_BAR"],AV,RV):
-        x,FM = self.FM(wavelengths,model)
-        _,FM_V = self.FM(np.array([5500]),model)
-        Alam = AV*(1+(FM/RV))/(1+(FM_V/RV))
+    def ALam(self,wavelengths,model:Literal["MW","LMC","SMC_BAR","Calzetti"],AV,RV):
+        if model in ["MW","LMC","SMC_BAR"]:
+            x,FM = self.FM(wavelengths,model)
+            _,FM_V = self.FM(np.array([5500]),model)
+            Alam = AV*(1+(FM/RV))/(1+(FM_V/RV))
+        elif model in ["Calzetti"]:
+            A_lam_V = (AV/RV)*_Caletti2000().k([5500],RV)
+            Alam = (AV/RV)*_Caletti2000().k(wavelengths,RV) / ((AV/RV)*A_lam_V)
         return Alam
 
-    def ALam_b_AV(self,wavelengths,model:Literal["MW","LMC","SMC_BAR"],AV,RV):
-        x,FM = self.FM(wavelengths,model)
-        _,FM_V = self.FM(np.array([5500]),model)
-        Alam_b_AV = (1+(FM/RV))/(1+(FM_V/RV))
-        return x,Alam_b_AV
+    # def ALam_b_AV(self,wavelengths,model:Literal["MW","LMC","SMC_BAR"],AV,RV):
+    #     x,FM = self.FM(wavelengths,model)
+    #     _,FM_V = self.FM(np.array([5500]),model)
+    #     Alam_b_AV = (1+(FM/RV))/(1+(FM_V/RV))
+    #     return x,Alam_b_AV
 
     def GetOpticalDepth(self,wavelengths,model:Literal["MW","LMC","SMC_BAR"],AV,RV):
         Alam = self.ALam(wavelengths,model,AV,RV)
