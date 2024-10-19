@@ -5,8 +5,6 @@ import matplotlib.pyplot as plt
 CLOUDY_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/sed"
 con = gc.CloudyOutput(CLOUDY_DIR,"test")
 
-def ConvertToWavelength(freq,flux_nu):
-    pass
 
 plt.plot(con.Frequency,con.Incident,label="Incident")
 plt.plot(con.Frequency,con.Transmitted,label="Transmitted")

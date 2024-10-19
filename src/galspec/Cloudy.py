@@ -14,14 +14,14 @@ class ParameterStudy:
         self._MAPTABLE = {}
         self._REPTABLE = {} #Replace Table for Macros
 
-    def InputVariation(self,token:str,values:list[str]):
+    def Map(self,token:str,values:list[str]):
         if not len(values)==self.vcount:
             raise ValueError(f"Length of list of values {len(values)} doesnot match the expected variation count {self.vcount}.")
         if token in self._MAPTABLE.keys():
             raise ValueError(f"Token {token} for variation already present.")
         self._MAPTABLE[token]=values
 
-    def ReplaceToken(self,token:str,value:str):
+    def Replace(self,token:str,value:str):
         if token in self._REPTABLE.keys():
             raise ValueError(f"Token '{token}' for replacement to '{self._REPTABLE[token]}' already present.")
         self._REPTABLE[token]=value
@@ -55,7 +55,7 @@ class ParameterStudy:
             if file.endswith(".in"):file.removesuffix(".in")
 
             os.chdir(outdir)
-            print(f"[ {file} ]","Starting ...")
+            print(f"[ {file} ]","Running ...")
 
             result = subprocess.run(["cloudy","-r",file],
                     stdout=subprocess.PIPE,stderr=subprocess.PIPE)
@@ -72,20 +72,39 @@ class ParameterStudy:
 
 
 
+class _DiffuseContinuum:
+    def __init__(self,filename):
+        self.filename = filename
+        _data  = numpy.loadtxt(self.filename).T
+        self.Energy                 = _data[0] 
+        self.ConEmitLocal           = _data[1] 
+        self.DiffuseLineEmission    = _data[2] 
+        self.Total                  = _data[3] 
 
-class CloudyOutput:
-    def __init__(self,output_dir:str,filename:str) -> None:
-        self._output_dir    = output_dir
-        self._filename      =  filename
+class _GrainContinuum:
+    def __init__(self,filename):
+        self.filename = filename
+        _data  = numpy.loadtxt(self.filename).T
+        self.Energy     = _data[0] 
+        self.Grapahite  = _data[1] 
+        self.Rest       = _data[2] 
+        self.Total      = _data[3] 
 
-        self._in        = self._output_dir + os.sep + self._filename + ".in"
-        self._out       = self._output_dir + os.sep + self._filename + ".out"
-        self._ovr       = self._output_dir + os.sep + self._filename + ".ovr"
-        self._con       = self._output_dir + os.sep + self._filename + ".con"
+class _TwoPhotonContinuum:
+    def __init__(self,filename):
+        self.filename = filename
+        _data  = numpy.loadtxt(self.filename).T
+        self.Energy     = _data[0] 
+        self.Nu         = _data[1] 
+        self.NuFnu      = _data[2] 
+
+
+class _Con:
+    def __init__(self,filename):
+        self.filename = filename
 
         _cols  = [0,1,2,3,4,5,6,7,8]
-        _data  = numpy.loadtxt(self._con,delimiter="\t",usecols=_cols).T
-
+        _data  = numpy.loadtxt(filename,delimiter="\t",usecols=_cols).T
         self.Frequency      = _data[0]
         self.Incident       = _data[1]
         self.Transmitted    = _data[2]
@@ -95,6 +114,42 @@ class CloudyOutput:
         self.Total          = _data[6]
         self.RefLine        = _data[7]
         self.OutLine        = _data[8]
+
+class _Continuum:
+    def __init__(self,output_dir:str,filename:str):
+        self._output_dir    = output_dir
+        self._filename      =  filename
+        _con       = self._output_dir + os.sep + self._filename + ".con"
+        _diffcon   = self._output_dir + os.sep + self._filename + ".diffcon"
+        _graincon   = self._output_dir + os.sep + self._filename + ".graincon"
+        _twophcon   = self._output_dir + os.sep + self._filename + ".twophcon"
+
+        self.Con        = _Con(_con)
+        self.Diffuse    = _DiffuseContinuum(_diffcon)
+        self.Grain      = _GrainContinuum(_graincon)
+        self.TwoPhoton  = _TwoPhotonContinuum(_twophcon)
+
+
+
+
+
+
+class CloudyOutput:
+    def __init__(self,output_dir:str,filename:str) -> None:
+        self._output_dir    = output_dir
+        self._filename      =  filename
+
+
+        self.Continuum  = _Continuum(output_dir,filename)
+
+
+        # Temporary
+        _in        = self._output_dir + os.sep + self._filename + ".in"
+        _out       = self._output_dir + os.sep + self._filename + ".out"
+        _ovr       = self._output_dir + os.sep + self._filename + ".ovr"
+
+
+        
 
 
 

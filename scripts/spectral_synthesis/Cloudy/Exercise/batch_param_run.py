@@ -1,12 +1,13 @@
 from galspec.Cloudy import ParameterStudy
+import numpy
 
-SCRIPT=\
+SCRIPTSED=\
 """\
 table SED "$__SEDFN__"
-luminosity solar 4
+L(nu) = 24.0 at 0.9 Ryd 
 radius linear parsec 3
 sphere
-hden 4
+hden 2
 abundances "HII.abn"
 iterate
 stop temprature 100
@@ -14,13 +15,44 @@ stop pfrac 0.01
 set save prefix "$__PREFN__"
 save overview ".ovr" last
 save continuum ".con" last units Angstrom
+save diffuse continuum ".diffcon" last units Angstrom
+save grain continuum ".graincon" last units Angstrom
+save two photon continuum ".twophcon" last units Angstrom
 """
 
 
-eh = ParameterStudy(SCRIPT,5)
-prefix = [f"es{i+1}" for i in range(5)]
-eh.InputVariation("$__SEDFN__",[pre+".sed" for pre in prefix])
-eh.InputVariation("$__PREFN__",prefix)
+SCRIPTNH=\
+"""\
+table SED "es5.sed"
+luminosity solar 4
+radius linear parsec 3
+sphere
+hden $__HDEN__
+abundances "HII.abn"
+iterate
+stop temprature 100
+stop pfrac 0.01
+set save prefix "$__PREFN__"
+save overview ".ovr" last
+save continuum ".con" last units Angstrom
+save diffuse continuum ".diffcon" last units Angstrom
+save grain continuum ".graincon" last units Angstrom
+save two photon continuum ".twophcon" last units Angstrom
+"""
 
-OUTPATH = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/uveffect/ES"
+
+
+
+# ======================================
+
+eh = ParameterStudy(SCRIPTSED,5)
+prefix = [f"eh{i+1}" for i in range(5)]     #<---
+eh.Map("$__SEDFN__",[pre+".sed" for pre in prefix])
+
+# eh = ParameterStudy(SCRIPTNH,5)
+# prefix = [f"eh{i+1}" for i in range(5)]     #<---
+# eh.Map("$__HDEN__",[str(i) for i in range(1,6)])
+
+eh.Map("$__PREFN__",prefix)
+OUTPATH = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/uveffect/EH"  #<---
 eh.RunCloudyAsync(OUTPATH,prefix)

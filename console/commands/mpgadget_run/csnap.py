@@ -161,7 +161,7 @@ def main(env:dict):
     # sm.AddScale([0.178876])
     
 
-    # L250N2040
+    # # L250N2040
     sm.AddRedshifts([90,50,20])
     sm.AddRedshiftsLinear(15,0,31)
     sm.AddScalesLogarithimic(1/(11+1),1/(4+1),51,False)

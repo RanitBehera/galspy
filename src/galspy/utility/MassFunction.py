@@ -1,7 +1,7 @@
 import numpy
 from colossus.cosmology import cosmology
 from colossus.lss import mass_function
-
+from galspy.MPGadget import _PIG
 
 
 
@@ -86,3 +86,4 @@ def MassFunctionLiterature(
 
 def CosmologyDict(isflat:bool,H0:float,Om0:float,Ob0:float,sig8:float,ns:float):
     return {'flat': isflat,'H0': H0,'Om0': Om0,'Ob0': Ob0,'sigma8': sig8,'ns': ns}
+
