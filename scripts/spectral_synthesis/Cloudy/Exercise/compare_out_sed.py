@@ -17,13 +17,18 @@ clr=['r','g','b','c','m']
 alp=[0.2,0.4,0.6,0.8,1]
 
 MAX_INCIDENT = 0
+ES_LEVEL = 0
 for i in range(5):
-    out = gc.CloudyOutput(EH_DIR,"eh"+str(i+1))
+    out = gc.CloudyOutput(FS_DIR,"fs"+str(i+1))
     # out = gc.CloudyOutput(NH_DIR,"nh"+str(i+1))
     con = out.Continuum
 
-    plt.plot(con.Con.Frequency,con.Con.Incident/con.Con.Frequency,ls='-',lw=1,c='b',alpha=alp[i])
-    plt.plot(con.Con.Frequency,con.Con.DiffuseOut/con.Con.Frequency,ls='-',c='r',alpha=alp[i])
+    plt.plot(con.Con.Frequency,con.Con.Incident/con.Con.Frequency,ls='-',lw=1,c=clr[i],alpha=1)
+    plt.plot(con.Con.Frequency,con.Con.DiffuseOut/con.Con.Frequency,ls='-',c=clr[i],alpha=1)
+    # plt.plot(con.Con.Frequency,con.Con.Reflection/con.Con.Frequency,ls='--',c='k',alpha=1)
+
+    plt.plot(con.TwoPhoton.Energy,con.TwoPhoton.Nu,c=clr[i])
+    
 
     # plt.plot(con.Con.Frequency,con.Con.Total,ls='-',c=clr[i])#,label="Total")
 
@@ -32,8 +37,11 @@ for i in range(5):
     max_inci = max(inci)
     if max_inci>MAX_INCIDENT:MAX_INCIDENT=max_inci
 
+    if i==2:
+        index=(con.Con.Frequency<800) & (con.Con.Frequency>400)
+        ES_LEVEL=(con.Con.Incident/con.Con.Frequency)[index][-1]
 
-    # plt.plot(con.Diffuse.Energy,con.Diffuse.ConEmitLocal,ls='-',lw=1,c=clr[i])
+    plt.plot(con.Diffuse.Energy,con.Diffuse.ConEmitLocal,ls='-',lw=1,c=clr[i])
     # plt.plot(con.Diffuse.Energy,con.Diffuse.DiffuseLineEmission)
     # plt.plot(con.Diffuse.Energy,con.Diffuse.Total)
     # plt.plot(con.Grain.Energy,con.Grain.Grapahite)
@@ -45,9 +53,12 @@ for i in range(5):
 
 plt.xscale('log')
 plt.yscale('log')
-plt.xlim(200,8000)
+# plt.xlim(200,8000)
 maxL=max(con.Con.Incident/con.Con.Frequency)
-plt.ylim(maxL*1e-6,maxL*1e3)
+# plt.ylim(maxL*1e-6,maxL*1e3) #EH
+# plt.ylim(maxL*1e-5,maxL*1e1) #ES
+
+# plt.ylim(0.9e30,1.1e40)
 
 
 
@@ -88,13 +99,24 @@ ax2.minorticks_off()
 plt.setp( ax2.xaxis.get_majorticklabels(), rotation=90 )
 
 
-if True:
+if False:#EH
     plt.plot((200,1000),(MAX_INCIDENT,MAX_INCIDENT),ls='--',color='k',alpha=0.3)
     plt.annotate('$\\times$0.800',xy=(500,MAX_INCIDENT*0.8),xytext=(0,-2),textcoords="offset pixels",ha="center",va='top',alpha=0.5)
     plt.annotate('$\\times$0.150',xy=(500,MAX_INCIDENT*0.150),xytext=(0,-2),textcoords="offset pixels",ha="center",va='top',alpha=0.5)
     plt.annotate('$\\times$0.028',xy=(500,MAX_INCIDENT*0.028),xytext=(0,-2),textcoords="offset pixels",ha="center",va='top',alpha=0.5)
     plt.annotate('$\\times$0.005',xy=(500,MAX_INCIDENT*0.005),xytext=(0,-2),textcoords="offset pixels",ha="center",va='top',alpha=0.5)
     plt.annotate('$\\times$0.001',xy=(500,MAX_INCIDENT*0.001),xytext=(0,-2),textcoords="offset pixels",ha="center",va='top',alpha=0.5)
+
+if False:#ES
+    plt.annotate('$\\times$0.500',xy=(300,ES_LEVEL),xytext=(0,-2),textcoords="offset pixels",ha="center",va='top',alpha=0.5)
+
+if False:#FH
+    plt.plot((200,1000),(MAX_INCIDENT,MAX_INCIDENT),ls='--',color='k',alpha=0.3)
+    plt.annotate('$\\times$0.001',xy=(500,MAX_INCIDENT*0.001),xytext=(0,-2),textcoords="offset pixels",ha="center",va='top',alpha=0.5)
+
+if True:#FS
+    pass
+
 
 
 

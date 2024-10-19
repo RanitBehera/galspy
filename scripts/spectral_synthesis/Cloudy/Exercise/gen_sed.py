@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-LyL = 912 #Lyman Limit in Angstrom
+LyL = 930 #Lyman Limit in Angstrom
 
 
 # ===== Utility Functions
@@ -98,7 +98,7 @@ if False:
 #endregion
 
 
-if True:
+if False:
     OUT = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/uveffect/EH" + os.sep
     SaveSED(OUT + "eh1.sed",lam,1,1e3,0,-2)
     SaveSED(OUT + "eh2.sed",lam,(28.28427)**0.5,1e3,0,-2)
@@ -122,13 +122,19 @@ if False:
     SaveSED(OUT + "fh4.sed",lam,1,(1e5)**0.5,0,-2)
     SaveSED(OUT + "fh5.sed",lam,1,1e3,0,-2)
 
-if False:
+if True:
     OUT = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/uveffect/FS" + os.sep
-    SaveSED(OUT + "fs1.sed",lam,1,100,0,-1)
-    SaveSED(OUT + "fs2.sed",lam,1,100,0,-1.5)
-    SaveSED(OUT + "fs3.sed",lam,1,100,0,-2)
-    SaveSED(OUT + "fs4.sed",lam,1,100,0,-2.5)
-    SaveSED(OUT + "fs5.sed",lam,1,100,0,-3)
+    # SaveSED(OUT + "fs1.sed",lam,10,1e3,0,-3)
+    # SaveSED(OUT + "fs2.sed",lam,10,1e3,0,-2.5)
+    # SaveSED(OUT + "fs3.sed",lam,10,1e3,0,-2)
+    # SaveSED(OUT + "fs4.sed",lam,10,1e3,0,-1.5)
+    # SaveSED(OUT + "fs5.sed",lam,10,1e3,0,-1)
+
+    SaveSED(OUT + "fs1.sed",lam,10,1e3,0,-1.5)
+    SaveSED(OUT + "fs2.sed",lam,10,1e3,0,-1.4)
+    SaveSED(OUT + "fs3.sed",lam,10,1e3,0,-1.3)
+    SaveSED(OUT + "fs4.sed",lam,10,1e3,0,-1.2)
+    SaveSED(OUT + "fs5.sed",lam,10,1e3,0,-1.1)
 
 
 
