@@ -15,7 +15,7 @@ ax:plt.Axes
 
 clrs = bty.GetGradientColorList((0,0,1),(1,0,0),51)
 for i,Tkey in enumerate(Tkeys):
-    if i==41:break
+    if i==11:break
     # if not i%10==7: continue
     OFFSET = 1/(100**i)
     Tspec   = specs[Z][Tkey]
@@ -23,7 +23,7 @@ for i,Tkey in enumerate(Tkeys):
 
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.set_xlim(1,1e5)
+# ax.set_xlim(1,1e5)
 
 ax.axvspan(3646,7000,color='k',alpha=0.1,ec=None)
 ax.axvspan(912,3646,color='k',alpha=0.05,ec=None)

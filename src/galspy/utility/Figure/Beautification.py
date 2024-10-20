@@ -133,10 +133,15 @@ def sticky_tick_to_curve(ax_data:plt.Axes,curve_index:list[int],labels=list[str]
     def update_ticks(ymin,ymax):
         _,xmax = ax_data.get_xlim()
         yloc = []
+        num_curves = len(ax_data.lines)
         for ci in curve_index:
-            curve = ax_data.lines[ci]
-            xind = numpy.argmin(numpy.abs(curve.get_xdata()-xmax))
-            yloc.append(curve.get_ydata()[xind])
+            if ci>num_curves-1:
+                loc=ymin-10
+            else:
+                curve = ax_data.lines[ci]
+                xind = numpy.argmin(numpy.abs(curve.get_xdata()-xmax))
+                loc = curve.get_ydata()[xind]
+            yloc.append(loc)
         yloc = numpy.array(yloc)
 
         mask = (ymin<=yloc) & (yloc<=ymax)
