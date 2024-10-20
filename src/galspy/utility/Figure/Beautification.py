@@ -19,7 +19,11 @@ SetMyStyle()
 
 # List of colors for gradient
 def GetGradientColorList(from_clr:tuple,to_clr:tuple,num:int=10):
-    mix_pcts = [x/(num-1) for x in range(num)]
+    def Curve(x):
+        return x**0.5
+    
+    mix_pcts = [Curve(x/(num-1)) for x in range(num)]
+
     from_clr = numpy.array(from_clr)
     to_clr = numpy.array(to_clr)
     rgb_colors = numpy.array([numpy.round(((1-mix)*from_clr + (mix*to_clr)),3) for mix in mix_pcts])
@@ -39,7 +43,7 @@ def AddRydebergScale(ax:plt.Axes):
     lam_min,lam_max = ax.get_xlim()
     ax_Ryd.set_xlim(Ang_to_Ryd(lam_min),Ang_to_Ryd(lam_max))
 
-    Ryd_ticks=[0.01,0.1,1,10,100]
+    Ryd_ticks=[0.01,0.05,0.1,0.5,1,5,10,50,100]
     ax_Ryd.set_xticks(Ryd_ticks,labels=[str(r) for r in Ryd_ticks])
     # ax_Ryd.minorticks_off()
     
@@ -136,7 +140,7 @@ def sticky_tick_to_curve(ax_data:plt.Axes,curve_index:list[int],labels=list[str]
         yloc = numpy.array(yloc)
 
         mask = (ymin<=yloc) & (yloc<=ymax)
-        axT.set_yticks(yloc[mask],labels[mask])
+        axT.set_yticks(yloc[mask],labels[mask],fontsize=14)
 
     update_ticks(ymini,ymaxi)
 
