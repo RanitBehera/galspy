@@ -6,7 +6,7 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
 
-class ParameterStudy:
+class ConcurrentCloudyRunner:
     def __init__(self,input_script:str,variation_count:int):
         self.script=input_script
         self.vcount=variation_count

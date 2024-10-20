@@ -44,7 +44,9 @@ plt.annotate(f"Z={Z}",(0,1),(8,-8),"axes fraction","offset pixels",ha="left",va=
 plt.title("BPASS Spectra Evolution",fontsize=16,pad=10)
 plt.subplots_adjust(bottom=0.15,top=0.8)
 plt.tight_layout()
-plt.show()
+
+if __name__=="__main__":
+    plt.show()
 
 
 
