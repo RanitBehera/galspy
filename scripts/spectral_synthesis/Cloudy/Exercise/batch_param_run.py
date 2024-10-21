@@ -1,4 +1,4 @@
-from galspec.Cloudy import ParameterStudy
+from galspec.Cloudy import ConcurrentCloudyRunner
 import numpy
 
 SCRIPTSED=\
@@ -28,7 +28,7 @@ luminosity solar 4
 radius linear parsec 3
 sphere
 hden $__HDEN__
-abundances "HII.abn"
+abundances "solar_GASS10.abn"
 iterate
 stop temprature 100
 stop pfrac 0.01
@@ -45,14 +45,14 @@ save two photon continuum ".twophcon" last units Angstrom
 
 # ======================================
 
-eh = ParameterStudy(SCRIPTSED,5)
-prefix = [f"fs{i+1}" for i in range(5)]     #<---
-eh.Map("$__SEDFN__",[pre+".sed" for pre in prefix])
+# eh = ParameterStudy(SCRIPTSED,5)
+# prefix = [f"fs{i+1}" for i in range(5)]     #<---
+# eh.Map("$__SEDFN__",[pre+".sed" for pre in prefix])
 
-# eh = ParameterStudy(SCRIPTNH,5)
-# prefix = [f"eh{i+1}" for i in range(5)]     #<---
-# eh.Map("$__HDEN__",[str(i) for i in range(1,6)])
+eh = ConcurrentCloudyRunner(SCRIPTNH,5)
+prefix = [f"nh{i+1}" for i in range(5)]     #<---
+eh.Map("$__HDEN__",[str(i) for i in range(1,6)])
 
 eh.Map("$__PREFN__",prefix)
-OUTPATH = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/uveffect/FS"  #<---
+OUTPATH = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/uveffect/NH"  #<---
 eh.RunCloudyAsync(OUTPATH,prefix)

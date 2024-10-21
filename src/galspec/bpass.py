@@ -144,7 +144,7 @@ import pickle
 
 
 # Usage
-#  bpass = BPASSCache("cache/bpass.ch").Read()
+#  bpass = BPASSCache("cache/bpass_chab_300M.ch").Read()
 
 class BPASSCache:
     def __init__(self,filepath:str) -> None:
@@ -152,7 +152,7 @@ class BPASSCache:
 
     def Cache(self,overwrite=False):
         if os.path.isfile(self.filepath) and not overwrite:
-            print("Using existing cache:"+self.filepath)
+            print("Using existing cache: \""+self.filepath +"\"")
             return
         
         print("Creating Cache ...")
@@ -166,8 +166,8 @@ class BPASSCache:
         for i,Z in enumerate(Z_foots):
             print(" - ",i+1,"/",len(Z_foots),flush=True)
 
-            BPASS = BPASS("CHABRIER_UPTO_300M","Binary",Z)
-            table=BPASS.Spectra.GetFlux().to_numpy()
+            _BPASS = BPASS("CHABRIER_UPTO_300M","Binary",Z)
+            table=_BPASS.Spectra.GetFlux().to_numpy()
             lam,aged_flux = table[:,0],table[:,1:].T
 
             CACHE_AGE_DICT = {"WL":lam}

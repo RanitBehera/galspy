@@ -155,3 +155,44 @@ def sticky_tick_to_curve(ax_data:plt.Axes,curve_index:list[int],labels=list[str]
 
     ax_data.callbacks.connect('xlim_changed', on_change)
     ax_data.callbacks.connect('ylim_changed', on_change)
+
+
+def AttachSpectraLines(ax:plt.Axes):
+    LINES ={
+        "Ha"    : [6564.61,"H $\\alpha$"], 
+        "Hb"    : [4862.68,"H $\\beta$"],
+        "OII"   : [3727.092,"O II"],
+        "OIIIa"   : [4364.436,"O III"],
+        "OIIIb"   : [4932.603,"O III"],
+        "OIIIc"  : [4960.295,"O III"],
+        "OIIId"  : [5008.240,"O III"],
+        "OI"    : [6302.046,"O I"],
+        "NeV"   : [3346.79,"Ne V"],
+        "OIII2" : [1665.85,"O III"],
+        "HeII"  : [1640.4,"He II"],
+        "CIV"   : [1549.48,"C IV"],
+        "SiIV"  : [1397.61,"Si IV"],
+        "CII"   : [1335.31,"C II"],
+        "CIII"  : [1908.734,"C III"],
+        "OI"    : [1305.53,"O I"],
+        "NV"    : [1240.81,"N V"],
+        "Lya"   : [1215.24,"Ly $\\alpha$"]     
+    }
+
+    tloc=[]
+    tname=[]
+    for key,val in LINES.items():
+        tloc.append(val[0])
+        tname.append(val[1])
+        plt.axvline(val[0],ls='--',color='k',lw=1,alpha=0.2)
+
+    ax2=ax.twiny()
+    if ax.get_xaxis().get_scale()=="log":
+        ax2.set_xscale('log')
+    min_lam,max_lam = ax.get_xlim()
+    ax2.set_xlim(min_lam,max_lam)
+    ax2.set_xticks(tloc)
+    ax2.set_xticklabels(tname)
+    ax2.minorticks_off()
+    plt.setp( ax2.xaxis.get_majorticklabels(), rotation=90 )
+

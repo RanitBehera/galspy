@@ -112,7 +112,7 @@ class _SPMPixel:
 
     def GetSpectra(self):
         if _SPMPixel._spec_cache==None:
-            _SPMPixel._spec_cache= BPASSCache("cache/bpass.ch").Read()
+            _SPMPixel._spec_cache= BPASSCache("cache/bpass_chab_300M.ch").Read()
 
         s=time.time()
 

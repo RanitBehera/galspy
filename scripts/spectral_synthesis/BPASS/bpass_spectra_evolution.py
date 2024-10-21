@@ -3,9 +3,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import galspy.utility.Figure.Beautification as bty
 
-specs:dict = BPASSCache("cache/bpass.ch").Read()
-
+# ================
 Z = "0.00001"
+LAM_MASK = [100,10000]
+# ================
+
+
+specs:dict = BPASSCache("cache/bpass_chab_300M.ch").Read()
 Zspecs  = specs[Z]
 Tkeys   = specs["T_KEYS"] 
 WL      = Zspecs["WL"]
@@ -15,27 +19,36 @@ ax:plt.Axes
 
 clrs = bty.GetGradientColorList((0,0,1),(1,0,0),51)
 for i,Tkey in enumerate(Tkeys):
-    if i==11:break
+    if i==41:break
     # if not i%10==7: continue
+    # if Tkey not in ["6.0","6.7","7.0","7.7","8.0","8.7","9.0"]: continue
     OFFSET = 1/(100**i)
     Tspec   = specs[Z][Tkey]
-    ax.plot(WL,Tspec * OFFSET,c=clrs[i])
+
+    if "LAM_MASK" in locals():MASK = slice(*LAM_MASK,1)
+    else:MASK = slice(1,-1,1)
+    ax.plot(WL[MASK],(Tspec * OFFSET)[MASK],c=clrs[i])
+
+
 
 ax.set_xscale("log")
 ax.set_yscale("log")
-# ax.set_xlim(1,1e5)
+
+if "LAM_MASK" in locals():ax.set_xlim(*LAM_MASK)
+else:ax.set_xlim(1,1e5)
 
 ax.axvspan(3646,7000,color='k',alpha=0.1,ec=None)
 ax.axvspan(912,3646,color='k',alpha=0.05,ec=None)
 ax.axvspan(912/4,912,color='k',alpha=0.1,ec=None)
 
 # ax.set_yticks([])
-bty.AddRydebergScale(ax)
+# bty.AddRydebergScale(ax)
+bty.AttachSpectraLines(ax)
 
 ax.set_xlabel("Wavelength $(\\AA)$",fontsize=12)
 ax.set_ylabel("Flux $(L_\odot\ \\AA^{-1})$ + OFFSET",fontsize=12)
 
-if True:
+if False:
     # Stick may be slow due to its calculations
     bty.sticky_tick_to_curve(ax,[0,10,20,30,40],["1 Myr","10 Myr","100 Myr","1 Gyr","10Gyr"])
 

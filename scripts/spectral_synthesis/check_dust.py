@@ -6,7 +6,7 @@ import pickle
 
 de = DustExtinction()
 
-with open("cache/bpass.ch","rb") as fp:
+with open("cache/bpass_chab_300M.ch","rb") as fp:
     tspec:dict = pickle.load(fp)
 WL = tspec["0.02"]["WL"][700:10000]
 flux = tspec["0.02"]["8.0"][700:10000]
