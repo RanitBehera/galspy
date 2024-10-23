@@ -22,7 +22,7 @@ for i,Tkey in enumerate(Tkeys):
     if i==41:break
     # if not i%10==7: continue
     # if Tkey not in ["6.0","6.7","7.0","7.7","8.0","8.7","9.0"]: continue
-    OFFSET = 1/(100**i)
+    OFFSET = 1#/(100**i)
     Tspec   = specs[Z][Tkey]
 
     if "LAM_MASK" in locals():MASK = slice(*LAM_MASK,1)

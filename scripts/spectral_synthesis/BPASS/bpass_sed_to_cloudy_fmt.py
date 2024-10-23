@@ -21,7 +21,7 @@ def WriteSEDFile(filepath,angtrom,Flambda):
 
 # ================
 OUTDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_sed"
-LAM_NORM = 1000 #In Angstrom
+LAM_NORM = 2 #In Angstrom
 NORM = []
 for i,Tkey in enumerate(Tkeys):
     # if i==41:break
