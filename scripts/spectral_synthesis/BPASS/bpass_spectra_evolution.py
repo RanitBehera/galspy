@@ -45,15 +45,15 @@ ax.set_xscale("log")
 ax.set_yscale("log")
 
 if "LAM_MASK" in locals():ax.set_xlim(*LAM_MASK)
-else:ax.set_xlim(1,1e5)
+# else:ax.set_xlim(1,1e5)
 
 ax.axvspan(3646,7000,color='k',alpha=0.1,ec=None)
 ax.axvspan(912,3646,color='k',alpha=0.05,ec=None)
 ax.axvspan(912/4,912,color='k',alpha=0.1,ec=None)
 
 # ax.set_yticks([])
-# bty.AddRydebergScale(ax)
-bty.AttachSpectraLines(ax)
+bty.AddRydebergScale(ax)
+# bty.AttachSpectraLines(ax)
 
 ax.set_xlabel("Wavelength $(\\AA)$",fontsize=12)
 ax.set_ylabel("Flux $(L_\odot\ \\AA^{-1})$ + OFFSET",fontsize=12)

@@ -38,12 +38,15 @@ def AddRydebergScale(ax:plt.Axes):
     V=1.6e-19
     def Ang_to_Ryd(ang):
         return ((h*c)/(ang*(1e-10)))/(13.6*V)
-    
-    ax_Ryd.set_xscale('log')
-    lam_min,lam_max = ax.get_xlim()
-    ax_Ryd.set_xlim(Ang_to_Ryd(lam_min),Ang_to_Ryd(lam_max))
+    if ax.get_xscale()=="log":
+        ax_Ryd.set_xscale('log')
 
-    Ryd_ticks=[0.01,0.05,0.1,0.5,1,5,10,50,100]
+    lam_min,lam_max = ax.get_xlim()
+    Ryd_max,Ryd_min = Ang_to_Ryd(lam_min),Ang_to_Ryd(lam_max) 
+    ax_Ryd.set_xlim(Ryd_max,Ryd_min)
+
+    Ryd_ticks=numpy.array([0.01,0.05,0.1,0.5,1,5,10,50,100])
+    Ryd_ticks=Ryd_ticks[(Ryd_min<=Ryd_ticks)&(Ryd_ticks<=Ryd_max)]
     ax_Ryd.set_xticks(Ryd_ticks,labels=[str(r) for r in Ryd_ticks])
     # ax_Ryd.minorticks_off()
     

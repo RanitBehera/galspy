@@ -98,8 +98,8 @@ if False:
 #endregion
 
 
-if False:
-    OUT = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/uveffect/EH" + os.sep
+if True:
+    OUT = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/toymodel/eh" + os.sep
     SaveSED(OUT + "eh1.sed",lam,1,1e3,0,-2)
     SaveSED(OUT + "eh2.sed",lam,(28.28427)**0.5,1e3,0,-2)
     SaveSED(OUT + "eh3.sed",lam,28.28427,1e3,0,-2)

@@ -2,46 +2,11 @@ import numpy
 import os
 from galspec.Cloudy import ConcurrentCloudyRunner
 
-# ================================================================
-#                    CLOUDY BATCH SCRIPT
-# ================================================================
-SCRIPT=\
-"""\
-table SED "t0.sed"
-L(nu) = -23.450 at 456.0 Ryd
-#
-radius linear parsec $__RADIN__
-sphere
-hden 2
-abundances "solar_GASS10.abn"
-#
-iterate
-stop temprature 100
-stop pfrac 0.01
-#
-set save prefix "$__FN__"
-save overview ".ovr" last
-save continuum ".con" last units Angstrom
-save diffuse continuum ".diffcon" last units Angstrom
-save grain continuum ".graincon" last units Angstrom
-save two photon continuum ".twophcon" last units Angstrom
-#
-save element Hydrogen ".is_H" last
-save element Helium ".is_He" last
-save element Carbon ".is_C" last
-save element Oxygen ".is_O" last
-save element Nitrogrn ".is_N" last
-#
-print last
-print citation
-print coolants
-print line sort wavelength range 900 to 10000
-#print line sort intensity
-"""
-# ==================================================================
-
-# ==================================================================
+INFILE = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/spectral_synthesis/BPASS/bpass_cloudy.in"
 OUTDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_ri"
+
+with open(INFILE,"r") as fp:SCRIPT=fp.read()
+
 
 # Auto-detect ".sed" files
 # SED_FN  = [cld.removesuffix(".sed") for cld in os.listdir(OUTDIR) 

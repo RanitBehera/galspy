@@ -1,0 +1,31 @@
+table SED "$__SEDFN__.sed"
+L(nu) = 21.0 at 0.9 Ryd
+#
+radius linear parsec 3
+sphere
+hden 2
+abundances "solar_GASS10.abn"
+#
+iterate
+stop temprature 100
+stop pfrac 0.01
+#
+set save prefix "$__SEDFN__"
+save overview ".ovr" last
+save continuum ".con" last units Angstrom
+save diffuse continuum ".diffcon" last units Angstrom
+save grain continuum ".graincon" last units Angstrom
+save two photon continuum ".twophcon" last units Angstrom
+save element Hydrogen ".is_H" last
+save element Helium ".is_He" last
+save element Carbon ".is_C" last
+save element Oxygen ".is_O" last
+save element Nitrogrn ".is_N" last
+save cooling ".cool" last
+save heating ".heat" last
+#
+print last
+print zone 1
+print citation
+print line sort wavelength range 900 to 10000
+#print line sort intensity
