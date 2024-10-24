@@ -1,14 +1,15 @@
 import matplotlib.pyplot as plt
 import galspy.utility.Figure.Beautification as bty
-# import bpass_spectra_evolution
+
 from galspec.bpass import BPASSCache
+
 
 import galspec.Cloudy as gc
 
 OUTDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_sed"
 for i in range(0,41):
     # if not i==11:continue
-    if i==41:break
+    if i==1:break
     out = gc.CloudyOutput(OUTDIR,"t"+str(i))
     con = out.Continuum
 
@@ -28,34 +29,26 @@ plt.xscale('log')
 plt.yscale('log')
 
 
+specs:dict = BPASSCache("cache/bpass_chab_300M.ch").Read()
+Z = "0.00001"
+Zspecs  = specs[Z]
+Tkeys   = specs["T_KEYS"] 
+WL      = Zspecs["WL"]
+
+for i,Tkey in enumerate(Tkeys):
+    if i==1:break
+    # if not i%10==7: continue
+    # if Tkey not in ["6.0","6.7","7.0","7.7","8.0","8.7","9.0"]: continue
+    OFFSET = 1#/(100**i)
+    Tspec   = specs[Z][Tkey]
+
+
+    X,Y = WL, Tspec 
+    plt.plot(X,Y*3.846e33,c='m')
+
+
+
+
 # bty.AttachSpectraLines(plt.gca())
-
-
-
-# import numpy as np
-# a=np.loadtxt("study/cloudy/bpass_sed/t0.sed",skiprows=1).T
-# b=np.loadtxt("study/cloudy/bpass_sed/t1.sed",skiprows=1).T
-
-# plt.plot(a[0],a[1]*3.846e33,c='m')
-# plt.plot(b[0],b[1]*3.846e33,c='m')
-
-
-
-# Check for Correct Input
-if True:
-    specs:dict = BPASSCache("cache/bpass_chab_300M.ch").Read()
-    Z="0.00001"
-    Zspecs  = specs[Z]
-    Tkeys   = specs["T_KEYS"] 
-    WL      = Zspecs["WL"]
-    for i,Tkey in enumerate(Tkeys):
-        if i==41:break
-        # if not i%10==7: continue
-        OFFSET = 1#/(10000**i)
-        Tspec   = specs[Z][Tkey] *3.846e33
-
-        plt.plot(WL,(Tspec * OFFSET),c='m',ls='-',lw=1)
-
-# plt.axvscale()
 
 plt.show()

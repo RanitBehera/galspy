@@ -2,9 +2,10 @@ from galspec.bpass import BPASSCache
 import matplotlib.pyplot as plt
 import numpy as np
 import galspy.utility.Figure.Beautification as bty
+from galspec.Utility import SlopeFinder
 
 # ================
-Z = "0.00001"
+Z = "0.04"
 LAM_MASK = [100,10000]
 # ================
 
@@ -19,7 +20,7 @@ ax:plt.Axes
 
 clrs = bty.GetGradientColorList((0,0,1),(1,0,0),51)
 for i,Tkey in enumerate(Tkeys):
-    if i==41:break
+    if i==1:break
     # if not i%10==7: continue
     # if Tkey not in ["6.0","6.7","7.0","7.7","8.0","8.7","9.0"]: continue
     OFFSET = 1#/(100**i)
@@ -27,7 +28,16 @@ for i,Tkey in enumerate(Tkeys):
 
     if "LAM_MASK" in locals():MASK = slice(*LAM_MASK,1)
     else:MASK = slice(1,-1,1)
-    ax.plot(WL[MASK],(Tspec * OFFSET)[MASK],c=clrs[i])
+
+    X,Y = WL[MASK], (Tspec * OFFSET)[MASK] 
+    ax.plot(X,Y,c=clrs[i])
+
+    
+    SX,SY,beta = SlopeFinder(X,Y,1200,2800,1450,Y[1450-LAM_MASK[0]],-2)
+    print(beta)
+    ax.axvline(1450)
+    ax.plot(1450,Y[1450-LAM_MASK[0]],'.r',ms=10)
+    ax.plot(SX,SY,c='r')
 
 
 
