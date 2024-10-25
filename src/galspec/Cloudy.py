@@ -76,6 +76,7 @@ class _FileReader:
         self.filepath   = filepath
         self._usecols    = usecols
         self._data      = None
+        # self._text      = None
 
     def _GetColumn(self,index):
         if self._data is None:
@@ -85,6 +86,8 @@ class _FileReader:
                 self._data  = numpy.loadtxt(self.filepath,delimiter="\t",usecols=self._usecols).T
         
         return self._data[index]
+    
+     
 
 
 class _DiffuseContinuum(_FileReader):
@@ -116,13 +119,13 @@ class _GrainContinuum(_FileReader):
 class _TwoPhotonContinuum(_FileReader):
     def __init__(self,filepath):
         super().__init__(filepath)
-
+        print(self.filepath)
     @property
     def Energy(self):     return self._GetColumn(0)
     @property
-    def Nu(self):         return self._GetColumn(1)
+    def n_Nu(self):         return self._GetColumn(1)
     @property
-    def NuFnu(self):      return self._GetColumn(2)
+    def nuFnu(self):      return self._GetColumn(2)
 
 
 class _Continuum(_FileReader):
@@ -309,34 +312,66 @@ class _Spectrum:
 
         self.Continuum          = _Continuum(self._filepath + ".con")
         
-        # self.DiffuseContinuum   = _DiffuseContinuum(self._filepath + ".diffcon")
+        self.DiffuseContinuum   = _DiffuseContinuum(self._filepath + ".diffcon")
         # self.GrainContinuum     = _GrainContinuum(self._filepath + ".graincon")
-        # self.TwoPhotonContinuum = _TwoPhotonContinuum(self._filepath + ".twophcon")
+        self.TwoPhotonContinuum = _TwoPhotonContinuum(self._filepath + ".twophcon")
 
 
 class _Element:
     def __init__(self,filepath):
-        pass
         self.Hydrogen   = _ElementHydrogen(filepath + ".is_H")
         self.Helium     = _ElementHelium(filepath + ".is_He")
         self.Carbon     = _ElementCarbon(filepath + ".is_C")
         self.Nitrogen   = _ElementNitrogen(filepath + ".is_N")
         self.Oxygen     = _ElementOxygen(filepath + ".is_O")
 
-class _Overview:
-    pass
+
+class _Output(_FileReader):
+    def __init__(self, filepath):
+        super().__init__(filepath)
+
+        self._text = None
+
+    # TODO : Improve
+    @property
+    def InnerRadius(self):
+        self._inn_rad=None
+        if self._text is None and self._inn_rad is None:
+            with open(self.filepath,"r") as fp:
+                self._text = fp.read() 
+
+        self._text=self._text.split('\n')
+        self._text=self._text[:100]
+        target_line = ""
+        for line in self._text:
+            line:str
+
+            if "radius" in line:
+                target_line=line
+                break
+        
+        target_line = target_line.strip()[1:-1].strip()
+        target_chunks = target_line.split(" ")
+
+        rad_inn = float(target_chunks[-1])
+        return rad_inn
+
+
 
 class CloudyOutputReader:
     def __init__(self,output_dir:str,filename:str) -> None:
         self._output_dir    = output_dir
         self._filename      =  filename
 
-        self.Overview   = _Overview()
+        self.Overview   = _Overview(output_dir+os.sep+filename+".ovr")
         self.Spectrum   = _Spectrum(output_dir+os.sep+filename)
         self.Elements   = _Element(output_dir+os.sep+filename)
 
-
-
+        self.Output     = _Output(output_dir+os.sep+filename + ".out")
 
 
     
+
+if __name__ == "__main__":
+    out = _Output("/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_ri/r1.out")
+    print(out.InnerRadius)

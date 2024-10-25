@@ -1,7 +1,7 @@
 table SED "$__SEDFN__.sed"
 L(nu) = 21.0 at 0.9 Ryd
 #
-radius linear parsec 3
+radius linear parsec 0.5
 sphere
 hden 2
 abundances "solar_GASS10.abn"

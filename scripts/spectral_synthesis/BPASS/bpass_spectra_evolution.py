@@ -5,7 +5,7 @@ import galspy.utility.Figure.Beautification as bty
 from galspec.Utility import SlopeFinder
 
 # ================
-Z = "0.04"
+Z = "0.00001"
 LAM_MASK = [100,10000]
 # ================
 
