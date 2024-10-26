@@ -98,7 +98,7 @@ if False:
 #endregion
 
 
-if True:
+if False:
     OUT = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/toymodel/eh" + os.sep
     SaveSED(OUT + "eh1.sed",lam,1,1e3,0,-2)
     SaveSED(OUT + "eh2.sed",lam,(28.28427)**0.5,1e3,0,-2)
@@ -107,7 +107,7 @@ if True:
     SaveSED(OUT + "eh5.sed",lam,800,1e3,0,-2)
 
 if False:
-    OUT = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/uveffect/ES" + os.sep
+    OUT = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/toymodel/es" + os.sep
     SaveSED(OUT + "es1.sed",lam,500,1e3,2,-2)
     SaveSED(OUT + "es2.sed",lam,500,1e3,1,-2)
     SaveSED(OUT + "es3.sed",lam,500,1e3,0,-2)
@@ -115,7 +115,7 @@ if False:
     SaveSED(OUT + "es5.sed",lam,500,1e3,-2,-2)
 
 if False:
-    OUT = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/uveffect/FH" + os.sep
+    OUT = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/toymodel/fh" + os.sep
     SaveSED(OUT + "fh1.sed",lam,1,10,0,-2)
     SaveSED(OUT + "fh2.sed",lam,1,(1e3)**0.5,0,-2)
     SaveSED(OUT + "fh3.sed",lam,1,100,0,-2)
@@ -123,7 +123,7 @@ if False:
     SaveSED(OUT + "fh5.sed",lam,1,1e3,0,-2)
 
 if False:
-    OUT = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/uveffect/FS" + os.sep
+    OUT = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/toymodel/fs" + os.sep
     SaveSED(OUT + "fs1.sed",lam,10,1e3,0,-3)
     SaveSED(OUT + "fs2.sed",lam,10,1e3,0,-2.5)
     SaveSED(OUT + "fs3.sed",lam,10,1e3,0,-2)

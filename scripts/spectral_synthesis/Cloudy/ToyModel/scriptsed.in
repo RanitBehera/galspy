@@ -1,16 +1,16 @@
-table SED "$__SEDFN__.sed"
-L(nu) = 21.0 at 0.9 Ryd
+table SED "eh1.sed"
+L(nu) = 21 at 1.1 Ryd
 #
-radius linear parsec 0.5
+radius linear parsec 1
 sphere
 hden 2
-abundances "solar_GASS10.abn"
+abundances "$__ABN__.abn"
 #
 iterate
 stop temprature 100
 stop pfrac 0.01
 #
-set save prefix "$__SEDFN__"
+set save prefix "$__FN__"
 save overview ".ovr" last
 save continuum ".con" last units Angstrom
 save diffuse continuum ".diffcon" last units Angstrom

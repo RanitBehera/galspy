@@ -49,7 +49,7 @@ def CloudySpecAndZone(out:CloudyOutputReader):
     ax_spec.set_xscale('log')
     ax_spec.set_yscale('log')
     ax_spec.set_xlim(100,10000)
-    ax_spec.set_ylim(1e25,1e38)
+    ax_spec.set_ylim(1e36,1e43)
     # bty.AddRydebergScale(ax_spec)
     # bty.AttachSpectraLines(ax_spec)
 
@@ -106,6 +106,10 @@ def CloudySpecAndZone(out:CloudyOutputReader):
                      xycoords="axes fraction", textcoords="offset pixels",
                      ha="center",va="bottom",fontsize=14)
 
+    ax_spec.annotate(f"Z=0.00001\n1 Myr",
+                     xy=(1,1),xytext=(-4,-4),
+                     xycoords="axes fraction", textcoords="offset pixels",
+                     ha="right",va="top",fontsize=14)
 
 
     ax_spec.legend(loc='upper left')
@@ -143,6 +147,12 @@ def CloudySpecAndZone(out:CloudyOutputReader):
     ax_ionfr.plot(depths,out.Elements.Oxygen.OIII,color='r',ls=(0,(1,1,1,1,5,1)))    
     ax_ionfr.plot(depths,out.Elements.Oxygen.OIV,color='r',ls=(0,(1,1,1,1,1,1,5,1)))    
 
+    ax_ionfr.plot(depths,out.Elements.Carbon.CI,color='b',ls='-')
+    ax_ionfr.plot(depths,out.Elements.Carbon.CII,color='b',ls=(0,(1,1,5,1)))    
+    ax_ionfr.plot(depths,out.Elements.Carbon.CIII,color='b',ls=(0,(1,1,1,1,5,1)))    
+    ax_ionfr.plot(depths,out.Elements.Carbon.CIV,color='b',ls=(0,(1,1,1,1,1,1,5,1)))    
+
+
 
 
     # Beautification
@@ -172,6 +182,7 @@ def CloudySpecAndZone(out:CloudyOutputReader):
     H_line  = mlines.Line2D([], [], color='g', label='H')
     He_line = mlines.Line2D([], [], color='m', label='He')
     O_line  = mlines.Line2D([], [], color='r', label='O')
+    C_line  = mlines.Line2D([], [], color='b', label='C')
 
     I_line      = mlines.Line2D([], [], color='k', ls='-' ,label='I')
     II_line     = mlines.Line2D([], [], color='k',ls=(2,(1,1,5,1)),label='II')
@@ -179,8 +190,8 @@ def CloudySpecAndZone(out:CloudyOutputReader):
     IV_line     = mlines.Line2D([], [], color='k',ls=(6,(1,1,1,1,1,1,5,1)),label='IV')
 
 
-    leg_elem=ax_ionfr.legend(handles=[H_line,He_line,O_line],
-                               fontsize=12, loc='center',ncol=3,frameon=False,bbox_to_anchor=(0.5, 1.2))
+    leg_elem=ax_ionfr.legend(handles=[H_line,He_line,O_line,C_line],
+                               fontsize=12, loc='center',ncol=4,frameon=False,bbox_to_anchor=(0.5, 1.2))
     
     leg_ion=ax_ionfr.legend(handles=[I_line,II_line,III_line,IV_line],
                                fontsize=12, loc='center',ncol=4,frameon=False,bbox_to_anchor=(0.5, 1.1))
@@ -190,12 +201,12 @@ def CloudySpecAndZone(out:CloudyOutputReader):
     ax_ionfr.add_artist(leg_ion)
 
 
-    ax_temp.annotate(f"$R_0$={out.Output.InnerRadius} pc",
+    ax_den.annotate(f"$R_0$={out.Output.InnerRadius} pc",
                     xy=(0,0.5),xytext=(4,0),
                     xycoords="axes fraction", textcoords="offset pixels",
                     ha="left",va="center",fontsize=12)
 
-    ax_ionfr.set_ylim(1e-10,1)
+    ax_ionfr.set_ylim(1e-10,2)
 
 
     plt.subplots_adjust(hspace=0.05,wspace=0.05)

@@ -119,7 +119,7 @@ class _GrainContinuum(_FileReader):
 class _TwoPhotonContinuum(_FileReader):
     def __init__(self,filepath):
         super().__init__(filepath)
-        print(self.filepath)
+        
     @property
     def Energy(self):     return self._GetColumn(0)
     @property

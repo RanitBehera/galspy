@@ -1,9 +1,9 @@
 table SED "t0.sed"
 L(nu) = -23.450 at 456.0 Ryd
 #
-radius linear parsec $__RADIN__
+radius linear parsec 1
 sphere
-hden 2
+hden $__HDEN__
 abundances "solar_GASS10.abn"
 #
 iterate

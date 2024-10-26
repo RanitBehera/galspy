@@ -3,7 +3,7 @@ import os
 from galspec.Cloudy import ConcurrentCloudyRunner
 
 INFILE = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/spectral_synthesis/BPASS/bpass_cloudy.in"
-OUTDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_ri"
+OUTDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_1Myr/hden"
 
 with open(INFILE,"r") as fp:SCRIPT=fp.read()
 
@@ -21,8 +21,10 @@ script = ConcurrentCloudyRunner(SCRIPT,5)
 # script.Map("$__SEDFN__",SED_FN)
 # script.Map("$__LNORM__",LNORM)
 
-RADIN = [str(ri) for ri in [0.1,0.5,1,5,10]]
-FN = ["r01","r05","r1","r5","r10"]
-script.Map("$__RADIN__",RADIN)
+RADIN = [str(ri) for ri in [0.1,0.5,1,3,5]]
+HDEN = [str(hd) for hd in [1,2,3,4,5]]
+FN = ["hd1","hd2","hd3","hd4","hd5"]
+# script.Map("$__RADIN__",RADIN)
+script.Map("$__HDEN__",HDEN)
 script.Map("$__FN__",FN)
 script.RunCloudyAsync(OUTDIR,FN)
