@@ -203,10 +203,12 @@ class CubeVisualizer:
             self.axis3d.scatter(x,y,z,s=sz,color=pc,ec='none',alpha=al)
         return self.axis3d
 
-    def show(self):
+    def show(self,show=True):
         self.beautify_axis()
         self.plot()
         self.draw_annotate()
         self.draw_wire_sphere()
         self.draw_arrows()
-        plt.show()
+        
+        if show:plt.show()
+        else:return self.axis3d

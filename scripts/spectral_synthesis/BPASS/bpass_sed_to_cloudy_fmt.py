@@ -20,12 +20,12 @@ def WriteSEDFile(filepath,angtrom,Flambda):
 
 
 # ================
-# OUTDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_sed"
-OUTDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_1Myr/Lnu"
+OUTDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_sed2"
+# OUTDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_1Myr/Lnu"
 LAM_NORM = 2 #In Angstrom
 NORM = []
 for i,Tkey in enumerate(Tkeys):
-    if i==1:break
+    if i==51:break
     # if not i%10==7: continue
     Tspec   = specs[Z][Tkey]
     WriteSEDFile(OUTDIR + os.sep + f"t{i}.sed",WL,Tspec)

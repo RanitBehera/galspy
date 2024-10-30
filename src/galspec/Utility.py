@@ -60,3 +60,36 @@ def SlopeFinder(ang,flam,ang_start,ang_end,ang_repr,flam_repr,guess):
     SX = X_HR
     SY = 10**Y_HR
     return SX,SY,beta
+
+
+def BandFluxFinder(ang,flam,ang_repr,ang_range):
+    mask1 = (ang>=ang_repr-ang_range)
+    mask2 = (ang<=ang_repr+ang_range)
+    mask = mask1 & mask2
+
+    band_ang = ang[mask]
+    band_flam = flam[mask]
+
+    sort = numpy.argsort(band_ang)
+    band_lam = band_ang[sort]
+    band_flam = band_flam[sort]
+
+
+    dlam = numpy.diff(band_lam)
+    avg_flux = numpy.sum(band_flam[:-1] * dlam)/(band_lam[-1]-band_lam[0])
+
+    return avg_flux
+
+def TwoBandSlopeFinder(ang,flam,lam1,lam2,range1,range2):
+    # Make sure lam1<lam2
+    if lam1>lam2:
+        lam1,lam2 = lam2,lam1
+        range1,range2 = range2,range1
+    
+    flx1 = BandFluxFinder(ang,flam,lam1,range1)
+    flx2 = BandFluxFinder(ang,flam,lam2,range2)
+
+    log10_flux_ratio = numpy.log10(flx1/flx2)
+    log10_lam_ratio = numpy.log10(lam1/lam2)
+
+    return log10_flux_ratio/log10_lam_ratio
