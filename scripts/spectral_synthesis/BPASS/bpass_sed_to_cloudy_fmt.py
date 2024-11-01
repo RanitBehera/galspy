@@ -20,7 +20,7 @@ def WriteSEDFile(filepath,angtrom,Flambda):
 
 
 # ================
-OUTDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_sed2"
+OUTDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_sed"
 # OUTDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_1Myr/Lnu"
 LAM_NORM = 2 #In Angstrom
 NORM = []

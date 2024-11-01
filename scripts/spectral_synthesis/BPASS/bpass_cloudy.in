@@ -23,9 +23,11 @@ save element Oxygen ".is_O" last
 save element Nitrogrn ".is_N" last
 save cooling ".cool" last
 save heating ".heat" last
+save hydrogen lines ".li_H" last
+save line list column ".lines" "LinesList.dat" last
 #
 print last
-print zone 1
+#print zone 1
 print citation
 print line sort wavelength range 900 to 10000
 #print line sort intensity

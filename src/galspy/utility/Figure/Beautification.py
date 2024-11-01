@@ -5,16 +5,15 @@ import matplotlib.colors as mcolors
 import matplotlib.patches as patches
 
 
-
-
-
 # Default settings change
-def SetMyStyle():
-    font = {'size'   : 12}
-
+def SetMyStyle(fontsize):
+    font = {'family':'serif',
+            'serif':['Roboto'],
+            'size':fontsize,
+            'weight' : 'bold'
+            }
     matplotlib.rc('font', **font)
-
-SetMyStyle()
+    matplotlib.rc('text', usetex=True)
 
 
 # List of colors for gradient

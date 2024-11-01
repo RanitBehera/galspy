@@ -3,7 +3,7 @@ import os
 from galspec.Cloudy import ConcurrentCloudyRunner
 
 INFILE = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/spectral_synthesis/BPASS/bpass_cloudy.in"
-OUTDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_sed2"
+OUTDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_sed"
 
 with open(INFILE,"r") as fp:SCRIPT=fp.read()
 

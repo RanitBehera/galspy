@@ -74,18 +74,28 @@ class ConcurrentCloudyRunner:
 class _FileReader:
     def __init__(self,filepath,usecols=None):
         self.filepath   = filepath
-        self._usecols    = usecols
-        self._data      = None
-        # self._text      = None
+        self._usecols   = usecols
+        self._filedata  = None
+        self._filetext  = None
 
     def _GetColumn(self,index):
-        if self._data is None:
+        if self._filedata is None:
             if not os.path.exists(self.filepath):
                 raise FileNotFoundError(f"File {self.filepath} doesn't exist.")
             else:
-                self._data  = numpy.loadtxt(self.filepath,delimiter="\t",usecols=self._usecols).T
+                self._filedata  = numpy.loadtxt(self.filepath,delimiter="\t",usecols=self._usecols).T
         
-        return self._data[index]
+        return self._filedata[index]
+
+    def _GetText(self):
+        if self._filetext is None:
+            if not os.path.exists(self.filepath):
+                raise FileNotFoundError(f"File {self.filepath} doesn't exist.")
+            else:
+                with open(self.filepath,'r') as fp:
+                    self._filetext = fp.read()
+        
+        return self._filetext
     
      
 
@@ -329,10 +339,38 @@ class _Element:
 class _Output(_FileReader):
     def __init__(self, filepath):
         super().__init__(filepath)
-
         self._text = None
+        self._parsed=False
 
-    # TODO : Improve
+
+    def _read_if_not_already(self):
+        if self._text is None:
+            with open(self.filepath,"r") as fp:
+                self._text = fp.readlines() 
+
+    def _Parse(self):
+        if self._parsed: return
+        self._parsed = True
+
+        self._read_if_not_already()
+
+        _zone_block_start=[]
+        for i,line in enumerate(self._text):
+            line=line.strip()
+            if line.startswith("#"):
+                _zone_block_start.append(i)
+            elif line.startswith("Intrinsic line intensities"):
+                self._int_line_start=i
+            elif line.startswith("Emergent line intensities"):
+                self._int_line_end=i-1
+                self._emg_line_start=i
+
+        
+        self._zone_block_start=_zone_block_start
+
+
+
+    # # TODO : Improve
     @property
     def InnerRadius(self):
         self._inn_rad=None
@@ -357,6 +395,33 @@ class _Output(_FileReader):
         return rad_inn
 
 
+class _LineListIntensity(_FileReader):
+    def __init__(self, filepath):
+        super().__init__(filepath)
+        self._parsed=False
+        self._lines = {}
+
+    def _Parse(self):
+        if self._parsed: return
+        
+        text = self._GetText()
+        text = text.split('\n')[2:]
+        for line in text:
+            if line.strip()=="":continue
+            lam,rel_int=line.split()[2:4]
+            self._lines[lam]=float(rel_int)
+        
+        self._parsed = True
+
+    @property
+    def H_alpha(self):self._Parse();return self._lines["6562.80A"]
+    @property
+    def H_beta(self):self._Parse();return self._lines["4861.32A"]
+
+
+
+
+
 
 class CloudyOutputReader:
     def __init__(self,output_dir:str,filename:str) -> None:
@@ -368,10 +433,11 @@ class CloudyOutputReader:
         self.Elements   = _Element(output_dir+os.sep+filename)
 
         self.Output     = _Output(output_dir+os.sep+filename + ".out")
+        self.Lines      = _LineListIntensity(output_dir+os.sep+filename + ".lines")
 
 
     
 
-if __name__ == "__main__":
-    out = _Output("/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_ri/r1.out")
-    print(out.InnerRadius)
+# if __name__ == "__main__":
+#     out = _Output("/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_ri/r1.out")
+#     print(out.InnerRadius)

@@ -4,7 +4,7 @@ import galspec.Cloudy as cd
 
 import galspec.Utility as gu
 
-PATH = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_sed2"
+PATH = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/bpass_sed"
 fig,ax = plt.subplots(1,2,figsize=(10,5))
 
 
