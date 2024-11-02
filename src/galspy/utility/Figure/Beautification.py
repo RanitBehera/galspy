@@ -6,7 +6,7 @@ import matplotlib.patches as patches
 
 
 # Default settings change
-def SetMyStyle(fontsize):
+def SetMyStyle(fontsize=12):
     font = {'family':'serif',
             'serif':['Roboto'],
             'size':fontsize,

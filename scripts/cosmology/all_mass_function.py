@@ -1,5 +1,5 @@
 import numpy, galspy
-from galspy.utility.Figure import MassFunctionFigure
+from galspy.utility.Figure.MassFunction import PlotLMF,MassFunctionFigure
 import matplotlib.pyplot as plt
 
 L150N2040 = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS"
@@ -8,9 +8,7 @@ L250N2040 = "/mnt/home/student/cranit/NINJA/simulations/L250N2040/SNAPS"
 BOX1 = galspy.NavigationRoot(L150N2040).PIG(26)
 BOX2 = galspy.NavigationRoot(L250N2040).PIG(25)
 
-mffig = MassFunctionFigure()
-mffig.PlotLMF("Seith-Tormen",9,ls='--',color='k',lw=1,alpha=0.5)
-
+mffig = MassFunctionFigure(add_deviation=True)
 
 mffig.AddPIG_MF(BOX1,dm=True,gas=True,star=True,bh=True,color='m')
 mffig.AddPIG_MF(BOX2,dm=True,gas=True,star=True,bh=True,color='c')
@@ -22,7 +20,7 @@ x = [7.023529411764706, 7.241176470588235, 7.576470588235294, 7.911764705882353,
 y = [-2.3245823389021476, -2.5250596658711215, -2.9451073985680187, -3.403341288782816, -3.9761336515513124, -4.5680190930787585, -5.26491646778043, -5.837708830548926, -6.954653937947494]
 X=numpy.power(10,x)
 Y=numpy.power(10,y)
-mffig.ax[0].plot(X,Y*0.6736,lw=2,color='k',label="Astrid",ls="-.")
+mffig.ax.plot(X,Y*0.6736,lw=2,color='k',label="Astrid",ls="-.")
 plt.show()
 
 #     # --- Temporary for Astrid SHMF

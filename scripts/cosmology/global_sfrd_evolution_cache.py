@@ -26,11 +26,12 @@ for i,part in enumerate(parts):
     sn = int(part.removeprefix("PART_"))
     GetSFRD(sn)
 
-sfrd = numpy.array(sfrd)
 z = numpy.array(z)
+sfrd = numpy.array(sfrd)
+sfrd03 = numpy.array(sfrd03)
 
 sort = numpy.argsort(z)
-z,sfrd = z[sort], sfrd[sort]
+z,sfrd,sfrd03 = z[sort], sfrd[sort],sfrd03[sort]
 
 numpy.savetxt("study/hpc_proposal/sfrd_L150N2040.txt",numpy.column_stack([z,sfrd,sfrd03]),
               fmt="%.08f",header="z sfrd sfrd(>0.3) for L150N2040 in Mo/yr/(Mpc/h)^3")

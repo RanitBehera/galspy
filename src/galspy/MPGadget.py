@@ -3,6 +3,7 @@ from typing import Any, Literal
 import galspy.FileTypes.BigFile as bf
 import galspy.FileTypes.ConfigFile as cf
 import galspy.utility.PIGQuery as pq
+import numpy
 
 class _Folder:
     def __init__(self,path:str) -> None:
@@ -562,6 +563,19 @@ class _Sim:
                 'ns': 0.9649
                 }
         return COSMOLOGY
+    
+    def SnapNumFromZ(self,redshift):
+        sn,a = numpy.loadtxt(self.mpgadget_outdir+os.sep+"Snapshots.txt").T
+        sn = [int(sni) for sni in sn]
+        z = (1/a)-1
+        indices = numpy.array([i for i, zi in enumerate(z) if abs(zi - redshift) <= 0.001])
+        if len(indices)==1:
+            return sn[indices[0]]
+        elif len(indices)==0:
+            return -1
+        else:
+            RuntimeError("More than one box found. Try decereasing the tolerance or check for duplicate snaps.")
+            return None
 
 def NavigationRoot(path:str):
     if not os.path.isdir(path):

@@ -10,28 +10,32 @@ CACHE_NAME = ["sfrd_L150N2040.txt",
 
 CACHE = [CACHE_DIR + os.sep + FN for FN in CACHE_NAME]
 LABELS = ["L150N2040","L250N2040"]
-
+COLOSR = ['r','g']
 
 h=0.6736
 
 for i,file in enumerate(CACHE):
-    z,sfrd = np.loadtxt(file).T
+    z,sfrd,sfrd03 = np.loadtxt(file).T
     sfrd = sfrd*(h**3)
+    sfrd03 = sfrd03*(h**3)
     mask = (z<15)
-    z,sfrd=z[mask],sfrd[mask]
+    z,sfrd,sfrd03=z[mask],sfrd[mask],sfrd03[mask]
     plt.plot(z,sfrd,label=LABELS[i])
+    plt.plot(z,sfrd03,label=LABELS[i],ls='--')
 
 # Astrid
 az,asfrd = np.loadtxt("study/astrid/sfrd.txt",delimiter=',').T
 asfrd = 10**asfrd
 plt.plot(az,asfrd,label="Astrid",c='k',ls='-',lw=1)
 
+az,asfrd = np.loadtxt("study/astrid/sfrd03.txt",delimiter=',').T
+asfrd = 10**asfrd
+plt.plot(az,asfrd,label="Astrid03",c='k',ls='--',lw=1)
 # Rough Obs
 
 
 
 plt.yscale('log')
-plt.xscale()
 plt.legend()
 
 plt.xlabel("Redshift $(z)$")
