@@ -13,6 +13,7 @@ def _mass_function_from_mass_list(Mass,VOLUME,LogBinStep):
     Mass = Mass[Mass!=0]
     
     # log10_Mass=numpy.log10(Mass)
+    # Will exponent on e in front-end to get back mass, So no confilict with log10
     log_Mass=numpy.log(Mass)
 
     log_bin_start=numpy.floor(min(log_Mass))

@@ -46,10 +46,11 @@ def DoFor(PBS_PATH,JOB_IDS,clr='k'):
         # PLOT
         wall_time_hr=wall_time/3600
         axs.plot(wall_time_hr,redshift,color=clr)
+        print(wall_time_hr[-1])
         # axs.plot(wall_time/3600,scale_factor,'-')
 
 DoFor("/mnt/home/student/cranit/NINJA/simulations/L150N2040/run/PBS",[58553,64554,66876],'r')
-DoFor("/mnt/home/student/cranit/NINJA/simulations/L250N2040/run/PBS",[68839],'b')
+DoFor("/mnt/home/student/cranit/NINJA/simulations/L250N2040/run/PBS",[68839,71230],'b')
 
 # BEAUTIFY
 UNIT_SPAN = 12
@@ -120,7 +121,7 @@ plt.yticks(range(0,101,10))
 plt.gca().yaxis.grid(True,alpha=0.5)
 plt.xlabel("Wall-Time (Hours)")
 plt.ylabel("Redshift ($z$)")
-# plt.yscale('log')
+plt.yscale('log')
 # plt.xscale('log')
 # plt.ylim(1,100)
 plt.xlim(0,TIME_RANGE)

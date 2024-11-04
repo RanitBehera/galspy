@@ -1,21 +1,23 @@
 import galspy,numpy, os
 
-PATH = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS"
+PATH = "/mnt/home/student/cranit/NINJA/simulations/L250N2040/SNAPS"
 root = galspy.NavigationRoot(PATH)
 
-sfrd=[]
-sfrd03=[]
 z=[]
+sfrd=[]
+sfrdhalo03=[]
 def GetSFRD(snap_num):
-    sfr_gas = root.PART(snap_num).Gas.StarFormationRate()
     bsize   = root.PART(snap_num).Header.BoxSize()/1000
+    sfr_gas = root.PART(snap_num).Gas.StarFormationRate()
     vol     = bsize**3
     _sfrd   = numpy.sum(sfr_gas)/vol
-    _sfrd03   = numpy.sum(sfr_gas[sfr_gas>0.3])/vol
     _z      = root.PART(snap_num).Header.Redshift()
     z.append(_z)
     sfrd.append(_sfrd)
-    sfrd03.append(_sfrd03)
+    sfrhalo   = root.PIG(snap_num).FOFGroups.StarFormationRate()
+    _sfrdhalo03 = numpy.sum((sfrhalo[sfrhalo>0.3]))/vol
+    sfrdhalo03.append(_sfrdhalo03)
+
 
 # Get All PARTS
 parts  = [cld for cld in os.listdir(PATH) 
@@ -24,14 +26,16 @@ tot = len(parts)
 for i,part in enumerate(parts):
     print(i+1,'/',tot)
     sn = int(part.removeprefix("PART_"))
+    Z = root.PART(sn).Header.Redshift()
+    if Z>15:continue
     GetSFRD(sn)
 
 z = numpy.array(z)
 sfrd = numpy.array(sfrd)
-sfrd03 = numpy.array(sfrd03)
+sfrd03 = numpy.array(sfrdhalo03)
 
 sort = numpy.argsort(z)
 z,sfrd,sfrd03 = z[sort], sfrd[sort],sfrd03[sort]
 
-numpy.savetxt("study/hpc_proposal/sfrd_L150N2040.txt",numpy.column_stack([z,sfrd,sfrd03]),
-              fmt="%.08f",header="z sfrd sfrd(>0.3) for L150N2040 in Mo/yr/(Mpc/h)^3")
+numpy.savetxt("study/hpc_proposal/sfrd_L250N2040.txt",numpy.column_stack([z,sfrd,sfrd03]),
+              fmt="%.08f",header="z sfrd sfrdhalo(>0.3) for L250N2040 in Mo/yr/(Mpc/h)^3")

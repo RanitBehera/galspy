@@ -7,8 +7,11 @@ from concurrent.futures import ProcessPoolExecutor,ThreadPoolExecutor
 
 
 class ConcurrentCloudyRunner:
-    def __init__(self,input_script:str,variation_count:int):
-        self.script=input_script
+    def __init__(self,input_script_path:str,variation_count:int):
+
+        with open(input_script_path,"r") as fp:
+            self.script=fp.read()
+
         self.vcount=variation_count
 
         self._MAPTABLE = {}
@@ -417,6 +420,11 @@ class _LineListIntensity(_FileReader):
     def H_alpha(self):self._Parse();return self._lines["6562.80A"]
     @property
     def H_beta(self):self._Parse();return self._lines["4861.32A"]
+    @property
+    def NII_BPT(self):self._Parse();return self._lines["6583.45A"]
+    @property
+    def OIII_BPT(self):self._Parse();return self._lines["5006.84A"]
+    
 
 
 

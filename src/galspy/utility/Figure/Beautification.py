@@ -7,10 +7,11 @@ import matplotlib.patches as patches
 
 # Default settings change
 def SetMyStyle(fontsize=12):
-    font = {'family':'serif',
+    font = {
+            'family':'serif',
             'serif':['Roboto'],
             'size':fontsize,
-            'weight' : 'bold'
+            # 'weight' : 'bold'
             }
     matplotlib.rc('font', **font)
     matplotlib.rc('text', usetex=True)
