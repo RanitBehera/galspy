@@ -11,7 +11,7 @@ CACHE_NAME = ["sfrd_L150N2040.txt",
 
 CACHE = [CACHE_DIR + os.sep + FN for FN in CACHE_NAME]
 LABELS = ["L150N2040","L250N2040"]
-COLOSR = ['r','g']
+COLORS = ['m','c']
 
 h=0.6736
 
@@ -23,8 +23,8 @@ for i,file in enumerate(CACHE):
     sfrd03 = sfrd03*(h**3)
     mask = (z<15)
     z,sfrd,sfrd03=z[mask],sfrd[mask],sfrd03[mask]
-    plt.plot(z,np.log10(sfrd),label=LABELS[i])
-    plt.plot(z,np.log10(sfrd03),label=LABELS[i],ls='--')
+    plt.plot(z,np.log10(sfrd),c=COLORS[i])
+    plt.plot(z,np.log10(sfrd03),ls='--',c=COLORS[i])
 
 # Astrid
 az,asfrd = np.loadtxt("/mnt/home/student/cranit/RANIT/Repo/galspy/study/astrid/sfrd.txt",delimiter=',').T

@@ -217,7 +217,7 @@ class StellarMassFunctionEvolutionFigure:
         self.sims = sims
         self.reds = redshifts
         
-        fig = plt.figure(figsize=(12,8))
+        fig = plt.figure(figsize=(14,4))
         num_axis = len(redshifts)
         if num_axis>nrow*nclm:
                 raise ValueError("More axis are needed as length of redshifty array is larger then nrow x nclms.")
@@ -228,11 +228,11 @@ class StellarMassFunctionEvolutionFigure:
         ax00=fig.add_subplot(gs[0,0])
         ax01=fig.add_subplot(gs[0,1])
         ax02=fig.add_subplot(gs[0,2])
-        ax10=fig.add_subplot(gs[1,0])
-        ax11=fig.add_subplot(gs[1,1])
-        ax12=fig.add_subplot(gs[1,2])
+        ax03=fig.add_subplot(gs[0,3])
+        # ax11=fig.add_subplot(gs[1,1])
+        # ax12=fig.add_subplot(gs[1,2])
 
-        self.axes = [ax00,ax01,ax02,ax10,ax11,ax12]
+        self.axes = [ax00,ax01,ax02,ax03]
 
     
     def Plot(self):
@@ -263,18 +263,18 @@ class StellarMassFunctionEvolutionFigure:
                         "axes fraction","offset pixels",ha="right",va="top")
             ax.grid(alpha=0.2)
 
-        for ax in [axs[1],axs[2],axs[4],axs[5]]:
+        for ax in [axs[1],axs[2],axs[3]]:
             ax.yaxis.set_ticklabels([])
             ax.set_ylabel("")
         
-        for ax in [axs[0],axs[1],axs[2]]:
-            ax.xaxis.set_ticklabels([])
-            ax.set_xlabel("")
+        # for ax in [axs[0],axs[1],axs[2]]:
+        #     ax.xaxis.set_ticklabels([])
+        #     ax.set_xlabel("")
         
-        for ax in [axs[3],axs[4],axs[5]]:
+        for ax in [axs[0],axs[1],axs[2],axs[3]]:
             ax.set_xlabel("$log_{10} M_*/M_\odot$",fontsize=14)
         
-        for ax in [axs[0],axs[3]]:
+        for ax in [axs[0]]:
             ax.set_ylabel("$log_{10} \phi(M_*)$/dex$^{-1}$ Mpc$^{-3}$",fontsize=14)
 
 
@@ -285,21 +285,21 @@ class StellarMassFunctionEvolutionFigure:
         line2 = mlines.Line2D([], [], color=clrs[1], marker=' ',markersize=8, label=labels[1])
         
         boxes = [line1,line2]
-        leg=axs[4].legend(handles=boxes,fontsize=12, loc='lower left',ncol=1,frameon=False)
-        axs[4].add_artist(leg)
+        leg=axs[1].legend(handles=boxes,fontsize=12, loc='lower left',ncol=1,frameon=False)
+        axs[1].add_artist(leg)
 
-        plt.subplots_adjust(wspace=0.03,hspace=0.03)
+        plt.subplots_adjust(wspace=0.03,hspace=0.03,bottom=0.2)
         
 
     def AddObs(self):
         # TODO : AUTOMATE
         axs = self.axes
-        z12 = axs[0]
-        z11 = axs[1]
-        z10 = axs[2]
-        z9 = axs[3]
-        z8 = axs[4]
-        z7 = axs[5]
+        # z12 = axs[0]
+        # z11 = axs[1]
+        z10 = axs[0]
+        z9 = axs[1]
+        z8 = axs[2]
+        z7 = axs[3]
 
         # https://arxiv.org/pdf/1507.05636
         CLR = (0.7,0,0)
@@ -382,4 +382,4 @@ class StellarMassFunctionEvolutionFigure:
         song2016.set_label("Song et al. (2016)")
         stefanon2021.set_label("Stefanon et al. (2021)")
         weibel2024.set_label("Weibel et al. (2024)")
-        z11.legend(handles=[song2016,stefanon2021,weibel2024], loc='upper center',frameon=False,bbox_to_anchor=(0.5,1.2),ncols=5,fontsize=12)
+        # z11.legend(handles=[song2016,stefanon2021,weibel2024], loc='upper center',frameon=False,bbox_to_anchor=(0.5,1.2),ncols=5,fontsize=12)
