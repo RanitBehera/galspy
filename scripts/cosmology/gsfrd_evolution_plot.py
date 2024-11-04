@@ -45,7 +45,7 @@ def PlotObs(path,label):
 
 
 PlotObs("/mnt/home/student/cranit/RANIT/Repo/galspy/obs/sfrd_vs_z/Bouwens_2023.txt","Bouwens et al. (2023)")
-PlotObs("/mnt/home/student/cranit/RANIT/Repo/galspy/obs/sfrd_vs_z/Harikane_2023.txt","harikane et al. (2023)")
+PlotObs("/mnt/home/student/cranit/RANIT/Repo/galspy/obs/sfrd_vs_z/Harikane_2023.txt","Harikane et al. (2023)")
 
 
 
@@ -57,7 +57,7 @@ yerrp = np.array([-0.9158317182029152, -1.1082164212838066, -1.3366732647926334,
 yerrn = y-np.array([-1.0721442808558708, -1.348697403338142, -1.5651302459057561, -1.8476954376607817, -1.9498996520675385, -2.262525052582041])
 
 
-plt.errorbar(x,y,[yerrn,yerrp],fmt='.',capsize=4)
+plt.errorbar(x,y,[yerrn,yerrp],fmt='.',capsize=4,label="Oesch et al. (2018)")
 
 
 
@@ -69,7 +69,7 @@ plt.legend()
 
 plt.xlabel("Redshift $(z)$")
 plt.ylabel("log$_{10}$(SFRD) $(M_\odot$ yr$^{-1}$ Mpc$^{-3})$")
-
+plt.xlim(4)
 plt.show()
 
 

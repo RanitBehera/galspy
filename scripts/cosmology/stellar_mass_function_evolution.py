@@ -14,4 +14,8 @@ smf = StellarMassFunctionEvolutionFigure([L150N2040,L250N2040],REDS,1,4)
 smf.Plot()
 smf.Beautify(["L150N2040","L250N2040"])
 
+
+
+
+
 plt.show()
