@@ -196,13 +196,13 @@ class MassFunctionFigure:
         boxes.append(box_L250N2040)
         # boxes.append(ST_line)
 
-        leg1=self.ax.legend(handles=hands,fontsize=12, loc='upper left',ncol=1,frameon=False)
-        leg2=self.ax.legend(handles=boxes,fontsize=12, loc='upper right',ncol=1,frameon=True,
+        leg_part=self.ax.legend(handles=hands,fontsize=12, loc='upper left',ncol=1,frameon=False)
+        leg_box=self.ax.legend(handles=boxes,fontsize=12, loc='upper right',ncol=1,frameon=True,
                                title="z="+",".join([f"{zi:.02f}" for zi in numpy.unique(numpy.round(self._redshifts,2))]),
                                title_fontsize=14)
 
-        self.ax.add_artist(leg1)
-        self.ax.add_artist(leg2)
+        self.ax.add_artist(leg_part)
+        self.ax.add_artist(leg_box)
 
         # plt.subplots_adjust(left=0.15,right=0.85,top=0.9,bottom=0.15,hspace=0)
         if self.add_dev:
@@ -220,7 +220,7 @@ class StellarMassFunctionEvolutionFigure:
         fig = plt.figure(figsize=(14,4))
         num_axis = len(redshifts)
         if num_axis>nrow*nclm:
-                raise ValueError("More axis are needed as length of redshifty array is larger then nrow x nclms.")
+                raise ValueError("More axis are needed as length of redshifts array is larger then nrow x nclms.")
 
         gs = GridSpec(nrow,nclm)
 
@@ -237,6 +237,7 @@ class StellarMassFunctionEvolutionFigure:
     
     def Plot(self):
         # TODO : GET FROM BOX
+        # TODO : SHIFT sim and redshift as function arguments to here
         clrs=['m','c']
         for ax,red in zip(self.axes,self.reds):
             mffig = MassFunctionFigure(ax)
@@ -285,8 +286,8 @@ class StellarMassFunctionEvolutionFigure:
         line2 = mlines.Line2D([], [], color=clrs[1], marker=' ',markersize=8, label=labels[1])
         
         boxes = [line1,line2]
-        leg=axs[1].legend(handles=boxes,fontsize=12, loc='lower left',ncol=1,frameon=False)
-        axs[1].add_artist(leg)
+        leg=axs[0].legend(handles=boxes,fontsize=12, loc='lower left',ncol=1,frameon=False)
+        axs[0].add_artist(leg)
 
         plt.subplots_adjust(wspace=0.03,hspace=0.03,bottom=0.2)
         
@@ -382,4 +383,9 @@ class StellarMassFunctionEvolutionFigure:
         song2016.set_label("Song et al. (2016)")
         stefanon2021.set_label("Stefanon et al. (2021)")
         weibel2024.set_label("Weibel et al. (2024)")
-        # z11.legend(handles=[song2016,stefanon2021,weibel2024], loc='upper center',frameon=False,bbox_to_anchor=(0.5,1.2),ncols=5,fontsize=12)
+        z10.figure.legend(handles=[song2016,stefanon2021,weibel2024],
+                          loc='upper center',
+                          frameon=False,
+                          bbox_to_anchor=(0.5,1),
+                          ncols=5,
+                          fontsize=12)

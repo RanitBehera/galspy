@@ -1,0 +1,8 @@
+# Oesch et al. (2018) - Table 5
+#https://iopscience.iop.org/article/10.3847/1538-4357/aab03f
+# z vs sfrd(Mo/yr/Mpc3) errp errn
+8 -3.29 0.16 0.16
+# Oesch et al. (2014) - Table 4
+# https://iopscience.iop.org/article/10.1088/0004-637X/786/2/108/pdf
+# z vs sfrd(Mo/yr/Mpc3) errp errn
+10 -3.25 0.35 0.35

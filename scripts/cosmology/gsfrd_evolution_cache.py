@@ -27,7 +27,7 @@ for i,part in enumerate(parts):
     print(i+1,'/',tot)
     sn = int(part.removeprefix("PART_"))
     Z = root.PART(sn).Header.Redshift()
-    if Z>15:continue
+    if Z>18:continue
     GetSFRD(sn)
 
 z = numpy.array(z)

@@ -9,7 +9,7 @@ from galspy.utility.Figure.Beautification import SetMyStyle
 SetMyStyle()
 
 
-fig,axs = plt.subplots(1,1)
+fig,axs = plt.subplots(1,1,figsize=(4.2,4))
 
 # Get stdout filepaths
 def DoFor(PBS_PATH,JOB_IDS,label,clr='k'):
@@ -50,26 +50,28 @@ DoFor("/mnt/home/student/cranit/NINJA/simulations/L250N2040/run/PBS",[68839,7123
 
 plt.yscale("log")
 plt.xscale("log")
-plt.xlim(1,100)
 plt.ylim(0.01,50)
-plt.axvline(5,ls='--',color='k')
+# plt.axvline(5,ls='--',color='k')
 plt.xlabel("Redshift")
 plt.ylabel("Runtime (CPU Hours/$10^5$)")
 
-plt.xticks([1,5,10,50,100],labels=["1","5","10","50","100"])
+plt.xticks([1,5,10,15,50,20,100],labels=["1","5","10","15","50","20","100"])
 plt.yticks([0.01,0.1,1,10],["0.01","0.1","1","10"])
 
+plt.xlim(5,100)
 
 # MANUAL LEGEND
 import matplotlib.lines as mlines
-box_L150N2040 = mlines.Line2D([], [], color='m', marker='',markersize=8, label='L150N2040')
-box_L250N2040 = mlines.Line2D([], [], color='c', marker='',markersize=8, label='L250N2040')
+box_L150N2040 = mlines.Line2D([], [], color='m', marker='',markersize=8, label='L150N2040 : 4.64 $\\times 10^5$ Hrs')
+box_L250N2040 = mlines.Line2D([], [], color='c', marker='',markersize=8, label='L250N2040 : 3.35 $\\times 10^5$ Hrs')
 
 boxes =[]
 boxes.append(box_L150N2040)
 boxes.append(box_L250N2040)
 
-leg2=plt.gca().legend(handles=boxes,fontsize=12, loc='upper right',ncol=1,frameon=False)
+leg2=plt.gca().legend(handles=boxes,fontsize=12, loc='upper right',ncol=1,frameon=False, title="CPU Hours to reach z=5")
 plt.gca().add_artist(leg2)
 
+plt.subplots_adjust(bottom=0.15,left=0.20)
+plt.grid(alpha=0.2)
 plt.show()

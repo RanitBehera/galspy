@@ -1,7 +1,7 @@
-#%%
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import matplotlib.lines as mlines
 from galspy.utility.Figure.Beautification import SetMyStyle
 SetMyStyle(12)
 
@@ -15,13 +15,13 @@ COLORS = ['m','c']
 
 h=0.6736
 
-plt.figure(figsize=(10,8))
+plt.figure(figsize=(6,6))
 
 for i,file in enumerate(CACHE):
     z,sfrd,sfrd03 = np.loadtxt(file).T
     sfrd = sfrd*(h**3)
     sfrd03 = sfrd03*(h**3)
-    mask = (z<15)
+    mask = (z<18)
     z,sfrd,sfrd03=z[mask],sfrd[mask],sfrd03[mask]
     plt.plot(z,np.log10(sfrd),c=COLORS[i])
     plt.plot(z,np.log10(sfrd03),ls='--',c=COLORS[i])
@@ -39,38 +39,48 @@ asfrd = asfrd
 
 # Rough Obs
 
-def PlotObs(path,label):
+def PlotObs(path,label,clr):
     obs_z,obs_sfrd,errp,errn=np.loadtxt(path).T
-    plt.errorbar(obs_z,obs_sfrd,[errn,errp],label=label,fmt='o',capsize=4)
+    plt.errorbar(obs_z,obs_sfrd,[errn,errp],label=label,fmt='o',capsize=4,color=clr)
 
 
-PlotObs("/mnt/home/student/cranit/RANIT/Repo/galspy/obs/sfrd_vs_z/Bouwens_2023.txt","Bouwens et al. (2023)")
-PlotObs("/mnt/home/student/cranit/RANIT/Repo/galspy/obs/sfrd_vs_z/Harikane_2023.txt","Harikane et al. (2023)")
+PlotObs("/mnt/home/student/cranit/RANIT/Repo/galspy/obs/sfrd_vs_z/Bouwens_2023.txt","Bouwens et al. (2023)",(0.7,0,0))
+PlotObs("/mnt/home/student/cranit/RANIT/Repo/galspy/obs/sfrd_vs_z/Harikane_2023.txt","Harikane et al. (2023)",(0,0.6,0.25))
+PlotObs("/mnt/home/student/cranit/RANIT/Repo/galspy/obs/sfrd_vs_z/Oesch_2018.txt","Oesch et al. (2018, 2014)",(1,0.6,0.25))
+PlotObs("/mnt/home/student/cranit/RANIT/Repo/galspy/obs/sfrd_vs_z/McLure_2018.txt","McLure et al. (2018)",(1,0.4,0.8))
+PlotObs("/mnt/home/student/cranit/RANIT/Repo/galspy/obs/sfrd_vs_z/Bouwens_2016.txt","Bouwens et al. (2016)",(0.25,0.5,1.0))
 
 
 
 
-x = np.array([3.0342044352420947, 3.782695611086908, 4.905432651170245, 5.91951722048092, 6.788732565604354, 7.899396249285031])
-y = np.array([-1, -1.234468912781581, -1.456913824621949, -1.7154307392859574, -1.8897795097571763, -2.202404635063088])
+# MANUAL LEGEND
+clrs=['m','c']
+labels=["L150N2040","L250N2040"]
+line1 = mlines.Line2D([], [], color=clrs[0], marker=' ',markersize=8, label=labels[0])
+line2 = mlines.Line2D([], [], color=clrs[1], marker=' ',markersize=8, label=labels[1])
+boxes = [line1,line2]
+leg=plt.gca().legend(handles=boxes,fontsize=12, loc='lower left',ncol=1,frameon=False,ncols=1,bbox_to_anchor=(0,0.25))
+plt.gca().add_artist(leg)
 
-yerrp = np.array([-0.9158317182029152, -1.1082164212838066, -1.3366732647926334, -1.601202386333691, -1.8176352289013051, -2.124248422538758])-y
-yerrn = y-np.array([-1.0721442808558708, -1.348697403338142, -1.5651302459057561, -1.8476954376607817, -1.9498996520675385, -2.262525052582041])
-
-
-plt.errorbar(x,y,[yerrn,yerrp],fmt='.',capsize=4,label="Oesch et al. (2018)")
-
+line1 = mlines.Line2D([], [], color='k',ls='-', marker=' ',markersize=8, label="Global (Full Box)")
+line2 = mlines.Line2D([], [], color='k',ls='--',marker=' ',markersize=8, label="SFR$_{Halo}>$ 0.3 $M_\odot$ yr$^{-1}$")
+boxes = [line1,line2]
+leg=plt.gca().legend(handles=boxes,fontsize=12, loc='upper right',ncol=1,frameon=False,bbox_to_anchor=(1,1))
+plt.gca().add_artist(leg)
 
 
 
 
 
 # plt.yscale('log')
-plt.legend()
+plt.legend(frameon=False,loc="lower left",fontsize=10)
 
 plt.xlabel("Redshift $(z)$")
 plt.ylabel("log$_{10}$(SFRD) $(M_\odot$ yr$^{-1}$ Mpc$^{-3})$")
 plt.xlim(4)
+plt.grid(alpha=0.2)
+
+# plt.title("!! IN PROGRESS !!")
+
 plt.show()
 
-
-# %%
