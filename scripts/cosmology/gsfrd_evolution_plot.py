@@ -75,8 +75,8 @@ plt.gca().add_artist(leg)
 # plt.yscale('log')
 plt.legend(frameon=False,loc="lower left",fontsize=10)
 
-plt.xlabel("Redshift $(z)$")
-plt.ylabel("log$_{10}$(SFRD) $(M_\odot$ yr$^{-1}$ Mpc$^{-3})$")
+plt.xlabel("Redshift $(z)$",fontsize=16)
+plt.ylabel("log$_{10}$(SFRD) $(M_\odot$ yr$^{-1}$ Mpc$^{-3})$",fontsize=16)
 plt.xlim(4)
 plt.grid(alpha=0.2)
 

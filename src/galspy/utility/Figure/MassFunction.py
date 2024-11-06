@@ -137,7 +137,7 @@ class MassFunctionFigure:
 
 
     def BeautifyPlot(self):
-        SetMyStyle()
+        SetMyStyle(16)
 
         self.ax.set_xscale('log')
         self.ax.set_yscale('log')
@@ -234,6 +234,7 @@ class StellarMassFunctionEvolutionFigure:
 
         self.axes = [ax00,ax01,ax02,ax03]
 
+
     
     def Plot(self):
         # TODO : GET FROM BOX
@@ -253,7 +254,6 @@ class StellarMassFunctionEvolutionFigure:
         axs = self.axes
         for i,ax in enumerate(axs):
             ax.tick_params(axis='both', direction='in',which="both")
-            ax.grid(False)
             ax.set_xscale('log')
             ax.set_yscale('log')
             ax.set_xlim(1e5,1e11)
@@ -273,10 +273,10 @@ class StellarMassFunctionEvolutionFigure:
         #     ax.set_xlabel("")
         
         for ax in [axs[0],axs[1],axs[2],axs[3]]:
-            ax.set_xlabel("$log_{10} M_*/M_\odot$",fontsize=14)
+            ax.set_xlabel("$M_*/M_\odot$",fontsize=14)
         
         for ax in [axs[0]]:
-            ax.set_ylabel("$log_{10} \phi(M_*)$/dex$^{-1}$ Mpc$^{-3}$",fontsize=14)
+            ax.set_ylabel("$\phi(M_*)$/dex$^{-1}$ Mpc$^{-3}$",fontsize=14)
 
 
         # MANUAL LEGEND
@@ -291,6 +291,7 @@ class StellarMassFunctionEvolutionFigure:
 
         plt.subplots_adjust(wspace=0.03,hspace=0.03,bottom=0.2)
         
+
 
     def AddObs(self):
         # TODO : AUTOMATE

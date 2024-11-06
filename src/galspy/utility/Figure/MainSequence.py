@@ -48,7 +48,6 @@ def Schreiber2014_Fit(M,z):
     
     log_SFR = numpy.array([Fit(mi) for mi in m])
     SFR = 10**log_SFR
-    print("Inside",M,SFR)
     return M,SFR
 
 
@@ -64,6 +63,9 @@ def Speagle2014_Fit(M,t):
     log_SFR = slope * numpy.log10(M) - offset
     SFR = 10**log_SFR
     return M,SFR
+
+
+# ================================================
 
 
 
@@ -124,30 +126,28 @@ class MainSequenceFigure:
     def Plot(self,sims:list[_Sim],redshifts:list[float]):
         self.reds=redshifts
         z_to_mask = {7:1e11,8:9e10,9:8e10,10:7e10}
-        clrs=['m','c']        
+        clrs=['c','m']        
         for i,sim in enumerate(sims):
             for ax,red in zip(self.axes,redshifts):
-                self._MainSeq(ax,sim,red,z_to_mask[int(red)],c=clrs[i],)
+                self._MainSeq(ax,sim,red,z_to_mask[int(red)],c=clrs[i])
 
     # TODO: FIX thse, get redshift automatically for each axis
     def AddCalabro2024(self,M,ax:plt.Axes,**kwargs):
         M,SFR = Calabro2024_Fit(M)
-        print(M,SFR)
         ax.plot(M,SFR,**kwargs)
 
     def AddSchreiber2014(self,M,z,ax:plt.Axes,**kwargs):
         M,SFR = Schreiber2014_Fit(M,z)
-        print(M,SFR)
         ax.plot(M,SFR,**kwargs)
 
     def AddSpeagle2014(self,M,z,ax:plt.Axes,**kwargs):
         cosmo = FlatLambdaCDM(H0=67.36, Om0=0.3153)
         # atropy lookbacktime in in Gyrs
         lbt_inf = cosmo.lookback_time(999999)
-        lbt_7 = cosmo.lookback_time(z)
-        age = (lbt_inf -lbt_7).value
+        lbt_z = cosmo.lookback_time(z)
+        age = (lbt_inf -lbt_z).value
 
-        M,SFR = Schreiber2014_Fit(M,age)
+        M,SFR = Speagle2014_Fit(M,age)
         ax.plot(M,SFR,**kwargs)
 
     def Beautify(self):
@@ -163,8 +163,8 @@ class MainSequenceFigure:
             ax.set_xticks(10**(numpy.array([7,8,9,10,11])))
             ax.set_ylim(1e-3,1e4)
             ax.set_yticks(numpy.power(10.0,[-2,-1,0,1,2,3]))
-            ax.annotate(f"z={numpy.round(self.reds[i],2)}",(1,1),(-8,-8),
-                        "axes fraction","offset pixels",ha="right",va="top")
+            ax.annotate(f"z={numpy.round(self.reds[i],2)}",(0,1),(8,-8),
+                        "axes fraction","offset pixels",ha="left",va="top")
             ax.grid(alpha=0.2)
 
 
@@ -184,8 +184,8 @@ class MainSequenceFigure:
         line2 = mlines.Line2D([], [], color=clrs[1],ls='', marker='o',markersize=2, label=labels[1])
         
         boxes = [line2,line1]
-        leg=axs[0].legend(handles=boxes,fontsize=12, loc='lower right',ncol=1,frameon=False)
-        axs[0].add_artist(leg)
+        leg=axs[-1].legend(handles=boxes,fontsize=12, loc='lower right',ncol=1,frameon=False)
+        axs[-1].add_artist(leg)
 
         plt.subplots_adjust(wspace=0.03,hspace=0.03,bottom=0.2)
 
@@ -194,7 +194,22 @@ class MainSequenceFigure:
         # TODO : AUTOMATE IT
         for ax,z in zip(self.axes,self.reds):
             M = numpy.geomspace(*ax.get_xlim(),100)
-            self.AddCalabro2024(M,z,ax)
-            self.AddSchreiber2014(M,z,ax)
+            self.AddSpeagle2014(M,z,ax,color='springgreen')
+            self.AddCalabro2024(M,ax,color='darkorange')
+            self.AddSchreiber2014(M,z,ax,color='royalblue')
 
 
+        # MANUAL LEGEND
+        clrs=['springgreen','darkorange','royalblue']
+        labels=["Speagle et al. (2014)","Calabro et al. (2024)","Schreiber et al. (2014)"]
+        ln_Spe = mlines.Line2D([], [], color=clrs[0],ls='-', marker=' ',markersize=2, label=labels[0])
+        ln_Cal = mlines.Line2D([], [], color=clrs[1],ls='-', marker=' ',markersize=2, label=labels[1])
+        ln_Sch = mlines.Line2D([], [], color=clrs[2],ls='-', marker=' ',markersize=2, label=labels[2])
+        
+        boxes = [ln_Sch,ln_Spe,ln_Cal]
+        ax.figure.legend(handles=boxes,
+                          loc='upper center',
+                          frameon=False,
+                          bbox_to_anchor=(0.5,1),
+                          ncols=5,
+                          fontsize=12)
