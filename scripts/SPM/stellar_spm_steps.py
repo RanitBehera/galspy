@@ -1,3 +1,4 @@
+# %%
 import galspy
 import numpy
 import matplotlib.pyplot as plt

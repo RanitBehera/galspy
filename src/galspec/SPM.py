@@ -591,6 +591,8 @@ class SpectroPhotoMetry:
         def ShowPixelSpectra(pixel:_SPMPixel):
             x,y=pixel.GetSpectra()
             axSpec.plot(x,y)
+            # import numpy as np
+            # np.savetxt(f"/mnt/home/student/cranit/RANIT/Repo/galspy/study/hpc_proposal/pixel_{self.ix}_{self.iy}.txt",np.column_stack([x,y]))
             axSpec.set_yscale('log')
             # axSpec.set_xscale('log')
             axSpec.set_xlim(500,8000)
@@ -614,6 +616,8 @@ class SpectroPhotoMetry:
             
             axSpec.clear()
             pixel = self.SPMGrid[iy,ix]
+            # self.ix=ix
+            # self.iy=iy
             ShowPixelSpectra(pixel)
             
             fig.canvas.draw()
