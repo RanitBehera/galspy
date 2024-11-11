@@ -246,7 +246,7 @@ class _RSGParticle(_NodeGroup):
         self.Mass                       = self.AddNode("Mass")
         self.Position                   = self.AddNode("Position")
         self.Velocity                   = self.AddNode("Velocity")
-        self.Velocity                   = self.AddNode("Type")
+        self.Type                       = self.AddNode("Type")
 
 class _RKSGroups(_NodeGroup):
     def __init__(self,path):
@@ -577,12 +577,13 @@ class _Sim:
             RuntimeError("More than one box found. Try decereasing the tolerance or check for duplicate snaps.")
             return None
 
-def NavigationRoot(path:str):
+def NavigationRoot(path:str,rsg_path:str=None):
     if not os.path.isdir(path):
-        print("ERROR : Navigation Root Directory")
+        print("ERROR : Navigation Root Directory.\n",path)
     
     folder = _Folder(path)
-    rsg_path = folder.parent_path + os.sep + "OUT_" + folder.name
+    if rsg_path==None:
+        rsg_path = folder.parent_path + os.sep + "OUT_" + folder.name
 
     return _Sim(path,rsg_path)
 

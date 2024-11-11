@@ -16,7 +16,8 @@ from matplotlib.lines import Line2D
 
 def GetLMF(model:LMF_OPTIONS,redshift,COSMOLOGY=None):
     if COSMOLOGY==None:COSMOLOGY = {'flat': True,'H0': 67.36,'Om0': 0.3153,'Ob0': 0.0493,'sigma8': 0.811,'ns': 0.9649}
-    MASS_HR     = numpy.logspace(7,12,100)
+    if COSMOLOGY==None:COSMOLOGY = {'flat': True,'H0': 69.370,'Om0': 0.2814,'Ob0': 0.0446,'sigma8': 0.811,'ns': 0.9649}
+    MASS_HR     = numpy.logspace(7,15,100)
     hubble=(COSMOLOGY["H0"]/100)
     M, dn_dlogM = MassFunctionLiterature(model,COSMOLOGY,redshift,MASS_HR,'dn/dlnM')
     
@@ -35,8 +36,8 @@ def PlotBMF(ax:plt.Axes,M,phi,error,min_mass,right_skip_count,**kwargs):
         # if right_skip_count>0:
             # M,dn_dlogM,error = M[:-right_skip_count],dn_dlogM[:-right_skip_count],error[:-right_skip_count]
         # mass_mask = (M>min_mass)
-        # num_mask = (phi>1e-10)
-        num_mask = (phi>((M**(-7/5))*(10**(-((-7/5)*6+3)))))
+        num_mask = (phi>1e-10)
+        # num_mask = (phi>((M**(-7/5))*(10**(-((-7/5)*6+3)))))
         mask =  num_mask
         M,phi,error = M[mask],phi[mask],error[mask]
 
@@ -88,6 +89,10 @@ class MassFunctionFigure:
         if token not in self._mfun_ptype:
                 self._mfun_ptype.append(token)
 
+    def AddLMF(self,model:LMF_OPTIONS,redshift,COSMOLOGY=None,**kwargs):
+        M,dn_dlogM=GetLMF(model,redshift,COSMOLOGY)
+        self.ax.plot(M,dn_dlogM,**kwargs)
+
     def AddPIG_MF(self,snap:_PIG,dm=False,gas=False,star=False,bh=False,**kwargs):
         SNAP        = snap
         MASS_UNIT   = 1e10
@@ -97,6 +102,7 @@ class MassFunctionFigure:
         HALO_DEF    = 32
         MASS_TABLE  = SNAP.Header.MassTable()
         HUBBLE      = 0.6736
+        HUBBLE      = 0.697
 
         MBT_FOF        = snap.FOFGroups.MassByType()
         M_GAS,M_DM,M_U1,M_U2,M_STAR,M_BH = numpy.transpose(MBT_FOF) * MASS_UNIT / HUBBLE
@@ -112,7 +118,8 @@ class MassFunctionFigure:
             mask=(M>32*MASS_TABLE[1]*MASS_UNIT)
             M,dn_dlogM,error = M[mask],dn_dlogM[mask],error[mask]
             PlotBMF(self.ax,M,dn_dlogM,error,HALO_DEF * MASS_TABLE[1] * MASS_UNIT,0,color=kwargs["color"],marker=" ")
-            PlotDeviation(self.ax_dev,M,dn_dlogM,error,*GetLMF("Seith-Tormen",REDSHIFT),color=kwargs["color"])
+            if self.add_dev:
+                PlotDeviation(self.ax_dev,M,dn_dlogM,error,*GetLMF("Seith-Tormen",REDSHIFT),color=kwargs["color"])
             self._add_mfun_ptype("dm")
 
         if gas:

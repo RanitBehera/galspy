@@ -154,6 +154,16 @@ class RSGQuery:
         pos = numpy.concatenate([rkspos[pstart[i]:pstart[i]+nump[i],:] for i in range(len(pstart))])
         return pos
 
+    def get_child_particle_position_and_mass_and_type(self,internal_halo_ids,blobname):
+        rkspos = self.particles.Position(blobname)
+        rksmass = self.particles.Mass(blobname)
+        rkstype = self.particles.Type(blobname)
+        pstart,nump = self.get_child_particle_rows(internal_halo_ids,blobname).T
+        ppos = numpy.concatenate([rkspos[pstart[i]:pstart[i]+nump[i],:] for i in range(len(pstart))])
+        pmass = numpy.concatenate([rksmass[pstart[i]:pstart[i]+nump[i]] for i in range(len(pstart))])
+        ptype = numpy.concatenate([rkstype[pstart[i]:pstart[i]+nump[i]] for i in range(len(pstart))])
+        return ppos,pmass,ptype
+    
     # def get_child_particle_types()
 
     def get_centre_position(self,internal_halo_id,blobname):

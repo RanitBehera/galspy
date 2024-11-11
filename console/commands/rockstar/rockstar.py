@@ -423,14 +423,79 @@ def _Length_And_Mass_By_Type_With_Sub(snap_path):
     _log_finish()
 
 
+def _Mass_By_Type_With_Sub_In_Rvir(snap_path):
+    _log_start("PP_MassByTypeWithSubInRvir",snap_path)
+
+    # Halo ID Dict
+    ihid_path   = snap_path + os.sep + "RKSHalos/InternalHaloID"
+    rvir_path   = snap_path + os.sep + "RKSHalos/VirialRadius"
+    hpos_path   = snap_path + os.sep + "RKSHalos/Position"
+    
+    
+    pquery_path = snap_path + os.sep + "RKSHalos/PP_ParticleBlock"
+    ptype_path  = snap_path + os.sep + "RKSParticles/Type"
+    pmass_path  = snap_path + os.sep + "RKSParticles/Mass"
+    ppos_path   = snap_path + os.sep + "RKSParticles/Position"
+
+    
 
 
 
-# if __name__=="__main__":
+
+
+
+    # qr = hq.RSGQuery(snap_path)
+    # header = bf.Header(ihid_path + os.sep + "header").Read()
+    # filenames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(header["NFILE"])]
+
+    # outcolumn_data = []
+    # for n,fn in enumerate(filenames):
+    #     print(UTF8.LIGHT_VERTICAL_RIGHT+UTF8.LIGHT_HORIZONTAL+" BLOB",fn)
+    #     ihids = bf.Blob(ihid_path + os.sep + fn).Read()
+    #     pquerys = bf.Blob(pquery_path + os.sep + fn).Read()        
+    #     rvir = bf.Blob(rvir_path + os.sep + fn).Read()        
+    #     hpos = bf.Blob(hpos_path + os.sep + fn).Read()        
+
+    #     okay1 = len(ihids)==len(pquerys)
+    #     okay2 = len(ihids)==len(rvir)
+    #     okay3 = len(ihids)==len(hpos)
+    #     okay  = okay1 * okay2 * okay3
+    #     _log_cross_check("Check 1",okay,UTF8.LIGHT_VERTICAL + "  " + UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL)
+    #     if not okay : continue
+
+    #     outblob_data = numpy.zeros((len(ihids),6))
+    #     parttype = bf.Blob(ptype_path + os.sep + fn).Read()
+    #     partmass = bf.Blob(pmass_path + os.sep + fn).Read()
+    #     partpos  = bf.Blob(ppos_path + os.sep +fn).Read()
+
+    #     desc_with_ihid = list(map(lambda ihid:[ihid] + list(qr.get_descendant_halos_of(ihid,fn)),ihids))
+    #     for ihid,desc,rv,hp in zip(ihids,desc_with_ihid,rvir,hpos):
+    #         chunk_pos,chunk_mass,chunk_type = qr.get_child_particle_position_and_mass_and_type(desc,fn)
+
+    #         mask = numpy.linalg.norm(chunk_pos - numpy.tile(hp,(len(chunk_pos),1)),axis=1)<rv
+    #         chunk_mass = chunk_mass[mask]
+    #         chunk_type = chunk_type[mask]
+
+    #         dm_mass = numpy.sum(chunk_mass[chunk_type==0])           
+    #         gas_mass = numpy.sum(chunk_mass[chunk_type==1])           
+    #         star_mass = numpy.sum(chunk_mass[chunk_type==2])           
+    #         bh_mass = numpy.sum(chunk_mass[chunk_type==3])
+
+    #         outblob_data[ihid,[0,1,4,5]] += numpy.array([gas_mass,dm_mass,star_mass,bh_mass])/1e10    
+
+    #     outcolumn_data.append(outblob_data)
+
+    # print(UTF8.LIGHT_VERTICAL_RIGHT + UTF8.LIGHT_HORIZONTAL + " Dumping Data - ",end="")
+    # bf.Column(snap_path+os.sep+"RKSHalos/PP_MassByTypeWithSubInRvir").Write(outcolumn_data,"Overwrite")
+    # print(ANSI.FG_GREEN + "SUCCESS" + ANSI.RESET)
+
+    _log_finish()
+
+if __name__=="__main__":
     # _post_process_snap("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
     # _Process_Headers("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_000")
     # _DumpParticleBlock("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_000")
     # _Length_by_Type("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
     # _Mass_by_Type("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
     # _Length_By_Type_With_Sub("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
-    
+    _Mass_By_Type_With_Sub_In_Rvir("/mnt/home/student/cranit/RANIT/Work/test_para_rock/OUT_L50N640z0/RSG_171")
