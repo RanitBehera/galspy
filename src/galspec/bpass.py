@@ -34,7 +34,7 @@ _model_name_imf_sting = {
 
 AVAIL_METALLICITY = [0.00001,0.0001,
                      0.001,0.002,0.003,0.004,0.006,0.008,
-                     0.010,0.020,0.030,0.040]
+                     0.010,0.014,0.020,0.030,0.040]
 
 # TODO: functions for left and right nearest metallicity neighbour
 

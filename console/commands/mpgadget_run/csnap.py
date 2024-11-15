@@ -151,20 +151,20 @@ class SnapManager:
 
 
 def main(env:dict):
-    sm = SnapManager("/mnt/home/student/cranit/NINJA/simulations/L250N2040/SNAPS")
-
     # L150N2040
-    # sm.AddRedshifts([90,50,20])
-    # sm.AddRedshiftsLinear(15,0,31)
-    # sm.AddScale([0.0829092])
-    # sm.AddScalesLogarithimic(1/(11+1),1/(4+1),51,False)
-    # sm.AddScale([0.178876])
+    sm = SnapManager("/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS")
+    sm.AddRedshifts([90,50,20])
+    sm.AddRedshiftsLinear(15,0,31)
+    sm.AddScale([0.0829092])
+    sm.AddScalesLogarithimic(1/(11+1),1/(4+1),51,False)
+    sm.AddScale([0.178876],False)
     
 
     # # L250N2040
-    sm.AddRedshifts([90,50,20])
-    sm.AddRedshiftsLinear(15,0,31)
-    sm.AddScalesLogarithimic(1/(11+1),1/(4+1),51,False)
+    # sm = SnapManager("/mnt/home/student/cranit/NINJA/simulations/L250N2040/SNAPS")
+    # sm.AddRedshifts([90,50,20])
+    # sm.AddRedshiftsLinear(15,0,31)
+    # sm.AddScalesLogarithimic(1/(11+1),1/(4+1),51,False)
     
     
     sm.DisplayTable()

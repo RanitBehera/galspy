@@ -19,6 +19,7 @@ from galspec.bpass import BPASSCache
 
 class _SPMPixel:
     _spec_cache=None
+    _spec_tube=None
     def __init__(self,row:int=0,clm:int=0) -> None:
         self.row=row
         self.column=clm
@@ -112,24 +113,51 @@ class _SPMPixel:
 
     def GetSpectra(self):
         if _SPMPixel._spec_cache==None:
-            _SPMPixel._spec_cache= BPASSCache("cache/bpass_chab_300M.ch").Read()
+            _SPMPixel._spec_cache = BPASSCache("cache/bpass_chab_300M.ch").Read()
+
+        if _SPMPixel._spec_tube==None:
+            print("Generating Tube")            
+            tube = numpy.zeros((13,51,len(_SPMPixel._spec_cache["0.00001"]["WL"])))
+            for Zi,Z in enumerate(self.Z_foots):
+                Z_KEY = f"{10**Z:.5f}".rstrip('0')
+                FLUX_ALL=_SPMPixel._spec_cache[Z_KEY]
+                for Ti,T in enumerate(self.T_foots):
+                    FLUX = FLUX_ALL[str(numpy.round(T,1))]
+                    tube[Zi,Ti,:]=FLUX
+            
+            _SPMPixel._spec_tube = tube
+            print("Done")            
 
         s=time.time()
-
         WL = _SPMPixel._spec_cache["0.00001"]["WL"]
         TOTAL_FLUX = numpy.zeros(len(WL))
-        for Zi,Z in enumerate(self.Z_foots):
-            Z_KEY = f"{10**Z:.5f}".rstrip('0')
-            FLUX_ALL=_SPMPixel._spec_cache[Z_KEY]
-            for Ti,T in enumerate(self.T_foots):
-                FLUX = FLUX_ALL[str(numpy.round(T,1))]
-                # How to get the mass factor is collapse
-                # Only multiplying by count assumes all star to have same mass
-                # However B pass is only for 10^6 mass
-                cell_counts = self.grid[:,Ti,Zi]
-                TOTAL_FLUX = TOTAL_FLUX + numpy.sum((cell_counts * (10**(self.M_foots-6)))) * FLUX
-                # Works however 10 times more masives doesn't mean 10 times more flux. Surface brighness??
+        if False:
+            for Zi,Z in enumerate(self.Z_foots):
+                Z_KEY = f"{10**Z:.5f}".rstrip('0')
+                FLUX_ALL=_SPMPixel._spec_cache[Z_KEY]
+                for Ti,T in enumerate(self.T_foots):
+                    FLUX = FLUX_ALL[str(numpy.round(T,1))]
+                    # How to get the mass factor is collapse
+                    # Only multiplying by count assumes all star to have same mass
+                    # However B pass is only for 10^6 mass
+                    cell_counts = self.grid[:,Ti,Zi]
+                    TOTAL_FLUX = TOTAL_FLUX + numpy.sum((cell_counts * (10**(self.M_foots-6)))) * FLUX
+                    # Works however 10 times more masives doesn't mean 10 times more flux. Surface brighness??
+        e=time.time()
+        print(e-s)
         
+
+
+        s=time.time()
+        if True:
+            # cap
+            cap = np.
+
+
+            pass
+
+
+
         e=time.time()
         print(e-s)
         return WL,TOTAL_FLUX

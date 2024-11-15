@@ -498,4 +498,5 @@ if __name__=="__main__":
     # _Length_by_Type("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
     # _Mass_by_Type("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
     # _Length_By_Type_With_Sub("/mnt/home/student/cranit/Work/test_para_rock/OUT_L10N64/RSG_017")
-    _Mass_By_Type_With_Sub_In_Rvir("/mnt/home/student/cranit/RANIT/Work/test_para_rock/OUT_L50N640z0/RSG_171")
+    # _Mass_By_Type_With_Sub_In_Rvir("/mnt/home/student/cranit/RANIT/Work/test_para_rock/OUT_L50N640z0/RSG_171")
+    pass

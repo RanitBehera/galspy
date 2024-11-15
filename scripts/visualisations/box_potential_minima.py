@@ -17,14 +17,20 @@ PIG = root.PIG(SNAP_NUM)
 
 dm_pos = PIG.DarkMatter.Position()
 gas_pos = PIG.Gas.Position()
-star_pos = PIG.Star.Position()
-bh_pos = PIG.BlackHole.Position()
 
 # Check potential minimum
-pot = PIG.DarkMatter.Potential()
-msort = numpy.argsort(pot)
-loc = dm_pos[msort][:100]
+dm_gid = PIG.DarkMatter.GroupID()
+dm_pot = PIG.DarkMatter.Potential()
+gid,ind,count = numpy.unique(dm_gid,return_index=True,return_counts=True)
 
+pot_min = []
+for gid,ind,count in zip(gid,ind,count):
+    if count<1000:continue
+    chunk_pot = dm_pot[ind:ind+count]
+    ind_sort = numpy.argsort(chunk_pot)
+    min_pos = dm_pos[ind:ind+count][ind_sort][0]
+    pot_min.append(min_pos)
+pot_min = numpy.array(pot_min)
 
 # ----- Visualise
 cv=CubeVisualizer()
@@ -32,7 +38,7 @@ cv.add_points(dm_pos,points_color='k',points_alpha=0.1)
 # cv.add_points(gas_pos,points_color='c',points_alpha=0.2)
 # cv.add_points(star_pos,points_color='r',points_alpha=0.1,points_size=10)
 # cv.add_points(bh_pos,points_color='k',points_alpha=1,points_size=30)
-cv.add_points(loc,points_color='r',points_alpha=1,points_size=300)
+cv.add_points(pot_min,points_color='r',points_alpha=1,points_size=30)
 
 cv.show()
 

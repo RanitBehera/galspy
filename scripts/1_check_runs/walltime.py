@@ -49,7 +49,7 @@ def DoFor(PBS_PATH,JOB_IDS,clr='k'):
         # print(wall_time_hr[-1])
         # axs.plot(wall_time/3600,scale_factor,'-')
 
-DoFor("/mnt/home/student/cranit/NINJA/simulations/L150N2040/run/PBS",[58553,64554,66876],'r')
+DoFor("/mnt/home/student/cranit/NINJA/simulations/L150N2040/run/PBS",[58553,64554,66876,71948],'r')
 DoFor("/mnt/home/student/cranit/NINJA/simulations/L250N2040/run/PBS",[68839,71230],'b')
 
 # BEAUTIFY
