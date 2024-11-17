@@ -10,5 +10,7 @@ dependencies=[
     "seaborn>=0.13.0",
     "colossus>=1.3.3",
     "treelib>=1.7.0",
-    "bagpipes>=1.0.4"
+    "bagpipes>=1.0.4",
+    "astropy==5.3.4",
+    "hoki==1.7.1"
     ]

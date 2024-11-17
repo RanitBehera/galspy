@@ -3,26 +3,25 @@ import pickle
 
 
 # ==================================================================
-def GetFromDictWithKeyList(target_dict:dict,key_list:list[str]):
+def GetFromDictWithKeyChain(target_dict:dict,key_chain:list[str]):
     value=target_dict
-    for key in key_list:
+    for key in key_chain:
         value = value.get(key)
     return value
 
 
-CACHE_FILE_PATH = ""    # Get from env or config file etc, or hardcode
 class _CacheFile:
     cache = None
     def __init__(self, cache_filepath) -> None:
-        pass
+        self.cache_filepath=cache_filepath
 
     def Get(self,key_list:list[str]):
         if _CacheFile.cache is None:
             print("Reading Cache File.")
-            with open(CACHE_FILE_PATH,"rb") as fp:
+            with open(self.cache_filepath,"rb") as fp:
                 _CacheFile.cache = pickle.load(fp)
         
-        return GetFromDictWithKeyList(self.cache,key_list)
+        return GetFromDictWithKeyChain(self.cache,key_list)
 
 
 
@@ -163,5 +162,5 @@ class CachedSpectra:
 
 
 # USE
-s = CachedSpectra("abc")
-s.IMF_CHABRIER.UPTO_300M.Pop_Binary.Z_014.T_60.StellarFlux()
+BPASS = CachedSpectra("abc")
+BPASS.IMF_CHABRIER.UPTO_300M.Pop_Binary.Z_014.T_60.StellarFlux()

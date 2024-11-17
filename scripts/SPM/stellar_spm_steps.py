@@ -29,9 +29,12 @@ spm.generate_pixelwise_grid(grid_resolution=(30,30),mode="NGB")
 # spm.generate_pixelwise_grid(grid_resolution=(1,1),mode="NGB")
 # spm.show_star_mass_map()
 # spm.show_pixelwise_histogram()
-# spm.show_pixelwise_spectra()
+spm.show_pixelwise_spectra()
 
-spm.show_rgb_channels([1450,2500,4450],[100,100,100])
+# spm.show_rgb_channels([1450,2500,4450],[100,100,100])
+spm.show_uv_channels()
+
+
 
 
 

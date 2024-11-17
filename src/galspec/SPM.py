@@ -15,11 +15,10 @@ import pickle
 from astropy.cosmology import FlatLambdaCDM
 cosmo = FlatLambdaCDM(H0=67.36, Om0=0.3153)
 
-from galspec.bpass import BPASSCache        
-
 class _SPMPixel:
-    _spec_cache=None
-    _spec_tube=None
+    _spec_cache_stellar=None
+    _spec_cache_nebular=None
+    # _spec_tube=None
     def __init__(self,row:int=0,clm:int=0) -> None:
         self.row=row
         self.column=clm
@@ -65,6 +64,7 @@ class _SPMPixel:
         
         # Initialise Grid
         self.grid=numpy.zeros((num_Mbin,num_Tbin,num_Zbin))
+        self.flux_weight_grid=numpy.zeros((num_Mbin,num_Tbin,num_Zbin))
 
         # Find Bin Index (BID)
         # TODO : Overflow and undeflow bins
@@ -92,7 +92,8 @@ class _SPMPixel:
                         break
 
             # Populate grid
-            self.grid[m_ind,T_ind,Z_ind] +=1
+            self.grid[m_ind,T_ind,Z_ind] += 1
+            # self.flux_weight_grid[m_ind,T_ind,Z_ind] += 10**(self._M_edges[m_ind]-6)
 
 
     def GetHistogram(self,hist_for=Literal["Age","Mass","Metallicity"]):
@@ -112,55 +113,67 @@ class _SPMPixel:
     
 
     def GetSpectra(self):
-        if _SPMPixel._spec_cache==None:
-            _SPMPixel._spec_cache = BPASSCache("cache/bpass_chab_300M.ch").Read()
+        if _SPMPixel._spec_cache_stellar is None:
+            with open("cache/cloudy_chab_300M.in") as fp:
+                _SPMPixel._spec_cache_stellar = pickle.load(fp)
 
-        if _SPMPixel._spec_tube==None:
-            print("Generating Tube")            
-            tube = numpy.zeros((13,51,len(_SPMPixel._spec_cache["0.00001"]["WL"])))
-            for Zi,Z in enumerate(self.Z_foots):
-                Z_KEY = f"{10**Z:.5f}".rstrip('0')
-                FLUX_ALL=_SPMPixel._spec_cache[Z_KEY]
-                for Ti,T in enumerate(self.T_foots):
-                    FLUX = FLUX_ALL[str(numpy.round(T,1))]
-                    tube[Zi,Ti,:]=FLUX
-            
-            _SPMPixel._spec_tube = tube
-            print("Done")            
+        if _SPMPixel._spec_cache_nebular is None:
+            with open("cache/cloudy_chab_300M.out") as fp:
+                _SPMPixel._spec_cache_stellar = pickle.load(fp)        
 
-        s=time.time()
-        WL = _SPMPixel._spec_cache["0.00001"]["WL"]
-        TOTAL_FLUX = numpy.zeros(len(WL))
-        if False:
-            for Zi,Z in enumerate(self.Z_foots):
-                Z_KEY = f"{10**Z:.5f}".rstrip('0')
-                FLUX_ALL=_SPMPixel._spec_cache[Z_KEY]
-                for Ti,T in enumerate(self.T_foots):
-                    FLUX = FLUX_ALL[str(numpy.round(T,1))]
-                    # How to get the mass factor is collapse
-                    # Only multiplying by count assumes all star to have same mass
-                    # However B pass is only for 10^6 mass
-                    cell_counts = self.grid[:,Ti,Zi]
-                    TOTAL_FLUX = TOTAL_FLUX + numpy.sum((cell_counts * (10**(self.M_foots-6)))) * FLUX
+        WL = _SPMPixel._spec_cache_stellar["0.00001"]["WL"]
+        TOTAL_FLUX_STELLAR = numpy.zeros(len(WL))
+        TOTAL_FLUX_NEBULAR = numpy.zeros(len(WL))
+
+        # s=time.time()
+        for Zi,Z in enumerate(self.Z_foots):
+            Z_KEY = f"{10**Z:.5f}".rstrip('0')
+            FLUX_ALL_STELLAR=_SPMPixel._spec_cache_stellar[Z_KEY]
+            FLUX_ALL_NEBULAR=_SPMPixel._spec_cache_nebular[Z_KEY]
+            for Ti,T in enumerate(self.T_foots):
+                FLUX_STELLAR = FLUX_ALL_STELLAR[str(numpy.round(T,1))]
+                FLUX_NEBULAR = FLUX_ALL_NEBULAR[str(numpy.round(T,1))]
+                # How to get the mass factor is collapse
+                # Only multiplying by count assumes all star to have same mass
+                # However B pass is only for 10^6 mass
+                cell_counts = self.grid[:,Ti,Zi]
+                TOTAL_FLUX_STELLAR = TOTAL_FLUX_STELLAR + numpy.sum((cell_counts * (10**(self.M_foots-6)))) * FLUX_STELLAR
+                TOTAL_FLUX_NEBULAR = TOTAL_FLUX_NEBULAR + numpy.sum((cell_counts * (10**(self.M_foots-6)))) * FLUX_NEBULAR
                     # Works however 10 times more masives doesn't mean 10 times more flux. Surface brighness??
-        e=time.time()
-        print(e-s)
+        # e=time.time()
+        # print("Method 1",e-s)
         
 
+        # This Method is slower compared to first, find out why
+        # if _SPMPixel._spec_tube is None:
+        #     print("Generating Tube")            
+        #     tube = numpy.zeros((13,51,len(_SPMPixel._spec_cache["0.00001"]["WL"])))
+        #     for Zi,Z in enumerate(self.Z_foots):
+        #         Z_KEY = f"{10**Z:.5f}".rstrip('0')
+        #         FLUX_ALL=_SPMPixel._spec_cache[Z_KEY]
+        #         for Ti,T in enumerate(self.T_foots):
+        #             FLUX = FLUX_ALL[str(numpy.round(T,1))]
+        #             tube[Zi,Ti,:]=FLUX
+            
+        #     _SPMPixel._spec_tube = tube
+        #     print("Done")    
 
-        s=time.time()
-        if True:
-            # cap
-            cap = np.
+
+        # if True:
+        #     # cap
+        #     cap = numpy.sum(self.flux_weight_grid,axis=0).T
+        #     s=time.time()
+        #     cap_on_tube = cap[:,:,numpy.newaxis]*_SPMPixel._spec_tube
+        #     TOTAL_FLUX2 = cap_on_tube.sum(axis=(0,1))
+        # e=time.time()
+        # print("Method 2",e-s)
+
+        # dif = TOTAL_FLUX - TOTAL_FLUX2
+        # print(dif)
+        # print(numpy.unique(numpy.clip(dif,1e-10,None)))
 
 
-            pass
-
-
-
-        e=time.time()
-        print(e-s)
-        return WL,TOTAL_FLUX
+        return WL,TOTAL_FLUX_STELLAR,TOTAL_FLUX_NEBULAR
             
 
 
@@ -519,10 +532,13 @@ class SpectroPhotoMetry:
         cbar = fig.colorbar(img,cax=cax,label="$M_\odot$",orientation="horizontal",location="top")
 
         def ShowPixelSpectra(pixel:_SPMPixel):
-            x,y=pixel.GetSpectra()
-            ax2.plot(x,y)
+            wl,st,nb=pixel.GetSpectra()
+            ax2.plot(wl,st,"Stellar")
+            ax2.plot(wl,nb,"Nebular")
+            ax2.plot(wl,st+nb,"Total")
             ax2.set_yscale('log')
-            ax2.set_xscale('log')
+            # ax2.set_xscale('log')
+            ax2.legend()
             # ax2.set_xlim(500,8000)
             # ax2.set_ylim(max(y)/1e3,10*max(y))
    
@@ -573,11 +589,12 @@ class SpectroPhotoMetry:
             for clm in range(self.resolution[1]):
                 print(row*self.resolution[1]+clm)
                 pixel:_SPMPixel=self.SPMGrid[row,clm]
-                wave,spec=pixel.GetSpectra()
+                wave,spec_st,spec_nb=pixel.GetSpectra()
+                spec_tot = spec_st + spec_nb
 
-                red[row,clm]=numpy.mean(spec[band_low[0]:band_high[0]])
-                green[row,clm]=numpy.mean(spec[band_low[1]:band_high[1]])
-                blue[row,clm]=numpy.mean(spec[band_low[2]:band_high[2]])
+                red[row,clm]=numpy.mean(spec_st[band_low[0]:band_high[0]])
+                green[row,clm]=numpy.mean(spec_st[band_low[1]:band_high[1]])
+                blue[row,clm]=numpy.mean(spec_st[band_low[2]:band_high[2]])
 
         cmap_red = mcolors.LinearSegmentedColormap.from_list('custom_red', ['black', 'red'])
         cmap_green = mcolors.LinearSegmentedColormap.from_list('custom_green', ['black', 'green'])
@@ -617,14 +634,17 @@ class SpectroPhotoMetry:
 
 
         def ShowPixelSpectra(pixel:_SPMPixel):
-            x,y=pixel.GetSpectra()
-            axSpec.plot(x,y)
+            wl,st,nb=pixel.GetSpectra()
+            axSpec.plot(wl,st,label="Stellar")
+            axSpec.plot(wl,nb,label="Nebular")
+            axSpec.plot(wl,st+nb,label="Total")
             # import numpy as np
             # np.savetxt(f"/mnt/home/student/cranit/RANIT/Repo/galspy/study/hpc_proposal/pixel_{self.ix}_{self.iy}.txt",np.column_stack([x,y]))
             axSpec.set_yscale('log')
+            axSpec.legend()
             # axSpec.set_xscale('log')
             axSpec.set_xlim(500,8000)
-            axSpec.set_ylim(max(y)/1e3,10*max(y))
+            axSpec.set_ylim(max(st+nb)/1e3,10*max(y))
             axSpec.axvspan(band_low[0],band_high[0],fc='r',ec=None,alpha=0.1)
             axSpec.axvspan(band_low[1],band_high[1],fc='g',ec=None,alpha=0.1)
             axSpec.axvspan(band_low[2],band_high[2],fc='b',ec=None,alpha=0.1)
@@ -652,10 +672,37 @@ class SpectroPhotoMetry:
 
         fig.canvas.mpl_connect('button_press_event', onclick)
 
-
-
-
-
-
-
         plt.show()
+
+    def show_uv_channels(self,ang_start,ang_stop):
+        fig = plt.figure(figsize=(10,5))
+        gs = GridSpec(2,4,figure=fig)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
