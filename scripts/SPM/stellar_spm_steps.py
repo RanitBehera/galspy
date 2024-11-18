@@ -1,8 +1,8 @@
 import galspy
-import numpy
+import numpy,os
 import matplotlib.pyplot as plt
 from galspec.SPM import SpectroPhotoMetry
-
+from concurrent.futures import ThreadPoolExecutor
 
 # MPGADGET_OUTPUT_DIR = "/mnt/home/student/cranit/Data/MP_Gadget/Nishi/L50N640"
 MPGADGET_OUTPUT_DIR = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS"
@@ -42,15 +42,12 @@ def DoFor(GO):
 
 
 # ===============
-# N=10000
-# data = numpy.zeros((N,3))
-
 FILE = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/LuvAB/MUVAB.txt"
 with open(FILE, 'a') as f:
     f.write("#PIGID STAR TOTAL\n")
 
-for g in range(0,10000):
-    print(g)
+for g in range(0,10+1):
+    # print("GID :",g)
     try:
         S,T = DoFor(g)
     except:
@@ -58,10 +55,4 @@ for g in range(0,10000):
     
     with open(FILE, 'a') as f:
         numpy.savetxt(f, numpy.column_stack((g,S,T)), fmt='%d %.02f %.02f')
-
-
-
-
-
-
 
