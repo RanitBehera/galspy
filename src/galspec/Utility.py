@@ -93,3 +93,38 @@ def TwoBandSlopeFinder(ang,flam,lam1,lam2,range1,range2):
     log10_lam_ratio = numpy.log10(lam1/lam2)
 
     return log10_flux_ratio/log10_lam_ratio
+
+
+def LuminosityToABMagnitude(lum_erg_s_A,lam_repr):
+    area = 4 * numpy.pi * (10 * 3.086e18)**2
+    lam = 1400 #UV
+    f_lam = lum_erg_s_A/area
+    f_nu_Jy = (3.34e4*(lam_repr)**2)*f_lam
+
+    M_AB = -2.5*numpy.log10(f_nu_Jy/3631)
+    return M_AB
+
+
+
+
+def LuminosityFunction(MUVAB,VOLUME,LogBinStep):
+    MUVAB = MUVAB[MUVAB!=0]
+    
+    # log10_Mass=numpy.log10(MUVAB)
+    # Will exponent on e in front-end to get back mass, So no confilict with log10
+    log_MUVAB=numpy.log(MUVAB)
+
+    log_bin_start=numpy.floor(min(log_MUVAB))
+    log_bin_end=numpy.ceil(max(log_MUVAB))
+
+    BinCount=numpy.zeros(int((log_bin_end-log_bin_start)/LogBinStep))
+
+    for lm in log_MUVAB:
+        i=int((lm-log_bin_start)/LogBinStep)
+        BinCount[i]+=1
+
+    log_L=numpy.arange(log_bin_start,log_bin_end,LogBinStep)+(LogBinStep/2)
+    dn_dlogL=BinCount/(VOLUME*LogBinStep)
+    error=numpy.sqrt(BinCount)/(VOLUME*LogBinStep)
+
+    return log_L,dn_dlogL,error

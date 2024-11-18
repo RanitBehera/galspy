@@ -11,6 +11,8 @@ import matplotlib.colors as mcolors
 import time
 import os
 import pickle
+from galspec.Utility import LuminosityToABMagnitude
+
 
 from astropy.cosmology import FlatLambdaCDM
 cosmo = FlatLambdaCDM(H0=67.36, Om0=0.3153)
@@ -114,12 +116,12 @@ class _SPMPixel:
 
     def GetSpectra(self):
         if _SPMPixel._spec_cache_stellar is None:
-            with open("cache/cloudy_chab_300M.in") as fp:
+            with open("cache/cloudy_chab_300M.in","rb") as fp:
                 _SPMPixel._spec_cache_stellar = pickle.load(fp)
 
         if _SPMPixel._spec_cache_nebular is None:
-            with open("cache/cloudy_chab_300M.out") as fp:
-                _SPMPixel._spec_cache_stellar = pickle.load(fp)        
+            with open("cache/cloudy_chab_300M.out","rb") as fp:
+                _SPMPixel._spec_cache_nebular = pickle.load(fp)        
 
         WL = _SPMPixel._spec_cache_stellar["0.00001"]["WL"]
         TOTAL_FLUX_STELLAR = numpy.zeros(len(WL))
@@ -533,11 +535,11 @@ class SpectroPhotoMetry:
 
         def ShowPixelSpectra(pixel:_SPMPixel):
             wl,st,nb=pixel.GetSpectra()
-            ax2.plot(wl,st,"Stellar")
-            ax2.plot(wl,nb,"Nebular")
-            ax2.plot(wl,st+nb,"Total")
+            ax2.plot(wl,st,label="Stellar")
+            ax2.plot(wl,nb,label="Nebular")
+            ax2.plot(wl,st+nb,label="Total")
             ax2.set_yscale('log')
-            # ax2.set_xscale('log')
+            ax2.set_xscale('log')
             ax2.legend()
             # ax2.set_xlim(500,8000)
             # ax2.set_ylim(max(y)/1e3,10*max(y))
@@ -676,7 +678,112 @@ class SpectroPhotoMetry:
 
     def show_uv_channels(self,ang_start,ang_stop):
         fig = plt.figure(figsize=(10,5))
-        gs = GridSpec(2,4,figure=fig)
+        gs = GridSpec(2,2,figure=fig)
+
+        ax_UVSt     = fig.add_subplot(gs[0,0])
+        ax_UVTot    = fig.add_subplot(gs[0,1])
+        axSpec   = fig.add_subplot(gs[1,:])
+
+        uv_stellar = 0*self.mass_map
+        uv_total = 0*self.mass_map
+
+        wls,_,_ = self.SPMGrid[0,0].GetSpectra()
+        mask1 = wls>ang_start
+        mask2 = wls<ang_stop
+        mask = mask1 & mask2
+
+
+        print("Getting Pixelwise channels ...")
+        for row in range(self.resolution[0]):
+            for clm in range(self.resolution[1]):
+                print(row*self.resolution[1]+clm)
+                pixel:_SPMPixel=self.SPMGrid[row,clm]
+                wave,spec_st,spec_nb=pixel.GetSpectra()
+                spec_tot = spec_st + spec_nb
+
+                uv_stellar[row,clm] = numpy.mean(spec_st[mask])
+                uv_total[row,clm]= numpy.mean(spec_tot[mask])
+
+
+        cmap_grey = mcolors.LinearSegmentedColormap.from_list('custom_red', ['black', 'white'])        
+
+        ax_UVSt.imshow(uv_stellar,cmap=cmap_grey)
+        ax_UVTot.imshow(uv_total,cmap=cmap_grey)
+
+
+
+
+
+        def ShowPixelSpectra(pixel:_SPMPixel):
+            wl,st,nb=pixel.GetSpectra()
+            axSpec.plot(wl,st,label="Stellar")
+            axSpec.plot(wl,nb,label="Nebular")
+            axSpec.plot(wl,st+nb,label="Total")
+            # import numpy as np
+            # np.savetxt(f"/mnt/home/student/cranit/RANIT/Repo/galspy/study/hpc_proposal/pixel_{self.ix}_{self.iy}.txt",np.column_stack([x,y]))
+            axSpec.set_yscale('log')
+            axSpec.legend()
+            # axSpec.set_xscale('log')
+            axSpec.set_xlim(500,8000)
+            axSpec.set_ylim(max(st+nb)/1e5,10*max(st+nb))
+            axSpec.axvspan(ang_start,ang_stop,fc='k',ec=None,alpha=0.1)
+
+
+        def onclick(event):
+            if not event.inaxes in [ax_UVSt,ax_UVTot]: return
+            ix, iy = round(event.xdata), round(event.ydata)
+            [[p.remove() for p in ax.patches] for ax in [ax_UVSt,ax_UVTot]]
+            rectR = plt.Rectangle((ix-0.5, iy-0.5), 1, 1, ec='white', fc='none')
+            rectG = plt.Rectangle((ix-0.5, iy-0.5), 1, 1, ec='white', fc='none')
+            rectB = plt.Rectangle((ix-0.5, iy-0.5), 1, 1, ec='white', fc='none')
+            rectRGB = plt.Rectangle((ix-0.5, iy-0.5), 1, 1, ec='white', fc='none')
+            ax_UVSt.add_patch(rectR)
+            ax_UVTot.add_patch(rectG)
+            
+            axSpec.clear()
+            pixel = self.SPMGrid[iy,ix]
+            # self.ix=ix
+            # self.iy=iy
+            ShowPixelSpectra(pixel)
+            
+            fig.canvas.draw()
+
+        fig.canvas.mpl_connect('button_press_event', onclick)
+
+        plt.show()
+
+
+
+    def get_MAB(self,start,stop,lrepr):
+        uv_stellar = 0*self.mass_map
+        uv_total = 0*self.mass_map
+
+        wls,_,_ = self.SPMGrid[0,0].GetSpectra()
+        mask1 = wls>start
+        mask2 = wls<stop
+        mask = mask1 & mask2
+
+
+        print("Getting Pixelwise channels ...")
+        for row in range(self.resolution[0]):
+            for clm in range(self.resolution[1]):
+                print(row*self.resolution[1]+clm)
+                pixel:_SPMPixel=self.SPMGrid[row,clm]
+                wave,spec_st,spec_nb=pixel.GetSpectra()
+                spec_tot = spec_st + spec_nb
+
+                uv_stellar[row,clm] = numpy.mean(spec_st[mask])
+                uv_total[row,clm]= numpy.mean(spec_tot[mask])
+
+
+        LUV_S = numpy.sum(uv_stellar)
+        LUV_T = numpy.sum(uv_total)
+
+        MAB_S = LuminosityToABMagnitude(LUV_S,lrepr)
+        MAB_T = LuminosityToABMagnitude(LUV_T,lrepr)
+
+
+        return MAB_S,MAB_T
 
 
 
