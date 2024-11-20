@@ -11,6 +11,8 @@ GROUP_OFFSET = 0
 
 print("SPM")
 
+
+
 root = galspy.NavigationRoot(MPGADGET_OUTPUT_DIR)
 PIG = root.PIG(SNAP_NUM)
 
@@ -28,7 +30,6 @@ def DoFor(GO):
     # spm.show_projected_points()
 
     spm.generate_pixelwise_grid(grid_resolution=(1,1),mode="NGB")
-    # spm.generate_pixelwise_grid(grid_resolution=(1,1),mode="NGB")
     # spm.show_star_mass_map()
     # spm.show_pixelwise_histogram()
     # spm.show_pixelwise_spectra()
@@ -37,17 +38,19 @@ def DoFor(GO):
     # spm.show_uv_channels(1200,2600)
 
     MAB_S,MAB_T=spm.get_MAB(1200,2600,1400)
-
     return MAB_S,MAB_T
 
 
-# ===============
-FILE = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/LuvAB/MUVAB.txt"
-with open(FILE, 'a') as f:
-    f.write("#PIGID STAR TOTAL\n")
+# DoFor(0)
 
-for g in range(0,10+1):
-    # print("GID :",g)
+# =============================
+FILE = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/LuvAB/MUVAB.txt"
+# with open(FILE, 'a') as f:
+#     f.write("#PIGID STAR TOTAL\n")
+
+FROM    = 10001
+TO      = 50000
+for g in range(FROM,TO+1):
     try:
         S,T = DoFor(g)
     except:

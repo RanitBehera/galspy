@@ -108,14 +108,17 @@ def LuminosityToABMagnitude(lum_erg_s_A,lam_repr):
 
 
 def LuminosityFunction(MUVAB,VOLUME,LogBinStep):
-    MUVAB = MUVAB[MUVAB!=0]
+    # MUVAB=numpy.nan_to_num(MUVAB)
+    MUVAB = MUVAB[MUVAB!=0.0]
+    MUVAB = MUVAB[MUVAB!=numpy.inf]
     
     # log10_Mass=numpy.log10(MUVAB)
     # Will exponent on e in front-end to get back mass, So no confilict with log10
-    log_MUVAB=numpy.log(MUVAB)
+    log_MUVAB=MUVAB
 
     log_bin_start=numpy.floor(min(log_MUVAB))
     log_bin_end=numpy.ceil(max(log_MUVAB))
+
 
     BinCount=numpy.zeros(int((log_bin_end-log_bin_start)/LogBinStep))
 

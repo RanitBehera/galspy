@@ -733,10 +733,8 @@ class SpectroPhotoMetry:
             if not event.inaxes in [ax_UVSt,ax_UVTot]: return
             ix, iy = round(event.xdata), round(event.ydata)
             [[p.remove() for p in ax.patches] for ax in [ax_UVSt,ax_UVTot]]
-            rectR = plt.Rectangle((ix-0.5, iy-0.5), 1, 1, ec='white', fc='none')
-            rectG = plt.Rectangle((ix-0.5, iy-0.5), 1, 1, ec='white', fc='none')
-            rectB = plt.Rectangle((ix-0.5, iy-0.5), 1, 1, ec='white', fc='none')
-            rectRGB = plt.Rectangle((ix-0.5, iy-0.5), 1, 1, ec='white', fc='none')
+            rectR = plt.Rectangle((ix-0.5, iy-0.5), 1, 1, ec='red', fc='none')
+            rectG = plt.Rectangle((ix-0.5, iy-0.5), 1, 1, ec='red', fc='none')
             ax_UVSt.add_patch(rectR)
             ax_UVTot.add_patch(rectG)
             
