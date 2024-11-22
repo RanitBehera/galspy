@@ -18,9 +18,10 @@ class _Node(_Folder):
     def Read(self,blobnames:list[str]=None):
         return bf.Column(self.path).Read(blobnames)
     
-    def __call__(self, *args: Any, **kwds: Any) -> Any:
-        if args:args=list(args)
-        else:args=None
+    def __call__(self, args:list[str]=None, **kwds: Any) -> Any:
+        # Its purpose is to call Read() function in a convenient way
+        # if args:args=list(args)
+        # else:args=None
         return self.Read(args)
 
 class _NodeGroup(_Folder):

@@ -159,7 +159,6 @@ class Column:
         if blobnames==None:
             nfile = Header(os.path.join(self.path,"header")).Read()["NFILE"]
             blobnames = [("{:X}".format(i)).upper().rjust(6,'0') for i in range(nfile)]
-        
         column = numpy.concatenate([Blob(os.path.join(self.path,fn)).Read() for fn in blobnames])
         return column
 

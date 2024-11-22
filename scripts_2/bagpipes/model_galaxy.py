@@ -9,7 +9,7 @@ exp = {}                                    # Tau model star formation history c
 exp["age"] = 0.3                            #* Gyr
 exp["tau"] = 0.75                           #* Gyr
 exp["massformed"] = 9.                      # log_10(M*/M_solar)
-exp["metallicity"] = 0.5                    # Z/Z_oldsolar
+exp["metallicity"] = 0.5                    # Confir. Seems in units of Z_Solar
 
 # ----------------------------------------
 nebular = {}
@@ -43,7 +43,7 @@ pwave,pflux     = model.filter_set.eff_wavs, model.photometry
 pflux_err       = 0.05*pflux
 
 # Plot -----------------------------------
-if False:
+if True:
     plt.plot(swave,sflux,c='tab:blue')
     # plt.plot(pwave,pflux,'.',ms=16,mfc='tab:orange',mec='tab:orange')
     # plt.errorbar(pwave,pflux,(pflux*((10**0.02)-1),pflux*(1-(10**-0.02))),fmt='.',ms=20,mfc='tab:orange',mec=None,capsize=4,color='k')
@@ -57,7 +57,7 @@ if False:
 
 
 # Export to a file -----------------------
-# exit()
+exit()
 filedir = str(Path(__file__).parent.absolute())
 
 filepath = filedir + os.sep + "data/demo_model.spec"
