@@ -4,7 +4,7 @@ from galspy.utility.visualization import CubeVisualizer
 
 MPGADGET_OUTPUT_DIR = "/mnt/home/student/cranit/NINJA/simulations/L10N64_Debug/sig8/TwoRun/L10N64/WithSig8/SNAPS"
 SNAP_NUM = 33
-BLOB="000000"
+BLOB="00003A"
 
 root = galspy.NavigationRoot(MPGADGET_OUTPUT_DIR)
 SNAP = root.PART(SNAP_NUM)

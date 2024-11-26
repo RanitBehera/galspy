@@ -1,3 +1,4 @@
+# %%
 import galspy
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,9 +22,10 @@ P = sph.Particles(pos, mass)
 print("sph->Scene",flush=True)
 S = sph.Scene(P)
 
+# %%
 # Set up Camera Angles
 subject1 = [115.41,70.66,44.17]
-subject2 = [110,75,50]
+subject2 = [115.41,70.66,44.17]
 
 targets = [subject1,subject2]
 
@@ -31,11 +33,11 @@ targets = [subject1,subject2]
 anchors = {}
 anchors['sim_times']    = [0.0, 1.0]
 anchors['id_frames']    = [0, 50]
-anchors['r']            = [2, 0.5]
+anchors['r']            = [2, 0.1]
 anchors['id_targets']   = [0, 1]
-anchors['t']            = [0, 'same']
+anchors['t']            = [0, 0]
 anchors['p']            = [0, 'same']
-anchors['zoom']         = [1., 1]
+anchors['zoom']         = [10, 60]
 anchors['extent']       = [10, 'same']
 
 data = camera_tools.get_camera_trajectory(targets, anchors)
@@ -43,14 +45,15 @@ data = camera_tools.get_camera_trajectory(targets, anchors)
 FRAME_DUMP_PATH="/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/pysphviewer/media/frames"
 h = 0
 for i in data:
-    i['xsize'] = 1920
+    i['xsize'] = 1080
     i['ysize'] = 1080
     i['roll'] = 0
     S.update_camera(**i)
     R = sph.Render(S)
     img = R.get_image()
     # R.set_logscale()
-    plt.imsave(f'{FRAME_DUMP_PATH}{os.sep}fr_' + str('%04d.png' % h), img, cmap='cubehelix')
+    plt.imsave(f'{FRAME_DUMP_PATH}{os.sep}fr_' + str('%04d.png' % h), img**0.1, cmap='cubehelix')
 
     print('fr_' + str('%04d.png' % h))
     h += 1
+# %%

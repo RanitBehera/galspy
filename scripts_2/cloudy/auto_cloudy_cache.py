@@ -1,12 +1,13 @@
 import numpy,os,pickle,itertools, subprocess,time
 from concurrent.futures import ThreadPoolExecutor
 import threading
+import time
 
 BPASS_CACHE_FILE = "/mnt/home/student/cranit/RANIT/Repo/galspy/cache/bpass_chab_300M.ch"
-CLOUDY_RUN_ROOT_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/cache_root"
-CLOUDY_TEMPLATE_SCRIPT = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/spectral_synthesis/BPASS/bpass_cloudy.in"
+CLOUDY_RUN_ROOT_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/cloudy/dump/primodial"
+# CLOUDY_TEMPLATE_SCRIPT = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/spectral_synthesis/BPASS/bpass_cloudy.in"
 CACHE_OUT_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/cache"
-
+SUFFIX = "primodial"
 
 # =====================
 with open(BPASS_CACHE_FILE,"rb") as fp:
@@ -53,7 +54,8 @@ L(nu) = $__LNORM__ at 456.0 Ryd
 radius linear parsec 1
 sphere
 hden 2
-abundances "solar_GASS10.abn"
+#abundances "solar_GASS10.abn"
+abundances "primordial.abn"
 #
 iterate
 stop temprature 100
@@ -112,9 +114,18 @@ def RunCloudyInstance(ZT):
     Z,T=ZT
     CDIR = CLOUDY_RUN_ROOT_DIR + os.sep + f"Z_{Z}" + os.sep + f"T_{T}"
     
+    while not os.path.exists(CDIR+os.sep+"script.in"):
+        print("[ WAITING ]",RDIR,"for script.in")
+        time.sleep(1)
+    
+    while not os.path.exists(CDIR+os.sep+"LinesList.dat"):
+        print("[ WAITING ]",RDIR,"for LinesList.dat")
+        time.sleep(1)
+    
     RDIR = f"Z={Z} > log T={T}"
     print("[ STRATING ]",RDIR)
     
+
     os.chdir(CDIR)
     s=time.time()
     result = subprocess.run(["cloudy","-r","script"],
@@ -168,7 +179,7 @@ with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
 # =========================
 # May be cloudy getting run before the input script is created
 # fix this. Cloudy not outputting in few folder mostly in Z_0.00001 which run first
-
+# exit()
 print("Storing Cache ...")
 
 # ========================
@@ -194,10 +205,10 @@ for Z in Z_KEYS:
 print("Saving Pickle ...")
 filename = BPASS_CACHE_FILE.split("/")[-1].removesuffix(".ch").replace("bpass","cloudy")
 
-with open(CACHE_OUT_DIR + os.sep + f"{filename}.out","wb") as fp:
+with open(CACHE_OUT_DIR + os.sep + f"{filename}_{SUFFIX}.out","wb") as fp:
     pickle.dump(CACHE_METALLICITY_DICT1,fp)
 
-with open(CACHE_OUT_DIR + os.sep + f"{filename}.in","wb") as fp:
+with open(CACHE_OUT_DIR + os.sep + f"{filename}_{SUFFIX}.in","wb") as fp:
     pickle.dump(CACHE_METALLICITY_DICT2,fp)
 
 print("Saved At :",CACHE_OUT_DIR)

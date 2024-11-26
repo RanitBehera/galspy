@@ -6,38 +6,31 @@ import pickle
 
 de = DustExtinction()
 
-with open("cache/bpass_chab_300M.ch","rb") as fp:
+with open("cache/bpass_chab_300M.in","rb") as fp:
     tspec:dict = pickle.load(fp)
-WL = tspec["0.02"]["WL"][700:10000]
-flux = tspec["0.02"]["8.0"][700:10000]
+WL = tspec["0.02"]["WL"][700:30000]
+flux = tspec["0.02"]["8.0"][700:30000]
 
 fig = plt.figure()
 
-if True:
-    Al1=de.ALam(WL,"MW",5,3.1)
-    Al2=de.ALam(WL,"LMC",5,3.1)
-    Al3=de.ALam(WL,"SMC_BAR",5,3.1)
-    Al4=de.ALam(WL,"Calzetti",5,3.1)
-    # plt.plot(1e4/WL,Al1/5,label="MW")
-    # plt.plot(1e4/WL,Al2/5,label="LMC")
-    # plt.plot(1e4/WL,Al3/5,label="SMC_BAR")
-    plt.plot(WL,Al1,label="MW")
-    plt.plot(WL,Al2,label="LMC")
-    plt.plot(WL,Al3,label="SMC_BAR")
-    plt.plot(WL,Al4,label="Calzetti")
+
+# ============================
+# Al4=de.get_kappa(WL,"Calzetti")
+# plt.plot(WL,Al4,label="Calzetti")
+
+# # Calzetti lam vs kappa(lam)
+# x = [952.6807029019818, 1060.630006754609, 1205.5993565580898, 1379.906384600052, 2654.9732539157512, 8180.539667637443]
+# y = [15, 13.781163434903046, 12.03601108033241, 10.90027700831025, 7.548476454293629, 2.479224376731302]
+# plt.plot(x,y)
 
 
-if False:
-    tau_lam = de.GetOpticalDepth(WL,"MW",5,1)
-    plt.plot(WL,flux)
-    plt.plot(WL,flux*np.exp(-tau_lam))
-    plt.plot(WL,np.exp(-tau_lam2),'--')
-    plt.yscale("log")
+# ============================
+plt.plot(WL,flux)
+WL,rflux = de.get_reddened_spectrum(WL,flux,"Calzetti",1)
+plt.plot(WL,rflux)
+plt.yscale("log")
+plt.xscale('log')
 
-
-# plt.axvline(5500)
-# plt.legend()
-# plt.axvline(1/(2700*1e-10/1e-6))
-# plt.axvline(1/(5500*1e-10/1e-6),ls='--')
-plt.legend()
+# ============================
 plt.show()
+
