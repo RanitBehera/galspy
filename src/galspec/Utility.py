@@ -1,7 +1,7 @@
 import numpy
 from scipy.optimize import curve_fit
 
-def ContinnumFinder(X,Y,Xs:float,Xe:float,N:int=10,mask:callable=None,sigma=0.001):
+def ContinnumFinder(X,Y,Xs:float,Xe:float,N:int=10,mask:callable=None):
     """
     Finds the approximate continnum for a noisy data.
     - X : Array for the X data.
@@ -12,27 +12,29 @@ def ContinnumFinder(X,Y,Xs:float,Xe:float,N:int=10,mask:callable=None,sigma=0.00
     - mask : filter out regions.
     """
 
-    # find array for X start and end
-    X, Y = numpy.row_stack((X,Y))
-
+    # Indices of finding region
     ind_start = numpy.argmin(numpy.abs(X-Xs))
     ind_end = numpy.argmin(numpy.abs(X-Xe))
 
-    # Moving Average
+    # Data of finding region
     data_X  = X[ind_start:ind_end+1]
     data_Y  = Y[ind_start:ind_end+1]
+        
+    # Moving Average
     kernel = numpy.ones(int(2*N+1)) / int(2*N+1)
     avg_Y   = numpy.convolve(data_Y,kernel,mode="same")
-    
+
+  
     # Moving Y-Weighted Average
     CX,CY=[],[]
     for i in range(N,len(data_X)-N-1):
         chunk       = data_Y[i-N:i+N+1]
         chunk_avg   = avg_Y[i]
-        chunk_max   = max(chunk)
-        delta       = (chunk - chunk_max)
-        weights     = numpy.exp(-(delta**2)/sigma)
-        # weights     = numpy.exp(delta/sigma)
+        chunk_var   = numpy.var(chunk)
+        chunk_max   = numpy.max(chunk)
+        delta       = (chunk - chunk_avg)
+        weights     = numpy.exp(-(delta**2)/chunk_var)
+        # weights     = numpy.exp(delta/chunk_var)
         chunk_wavg  = numpy.sum(chunk * weights) / numpy.sum(weights) 
 
         CX.append(data_X[i])
@@ -42,17 +44,18 @@ def ContinnumFinder(X,Y,Xs:float,Xe:float,N:int=10,mask:callable=None,sigma=0.00
     return CX,CY
 
 
-def SlopeFinder(ang,flam,ang_start,ang_end,ang_repr,flam_repr,guess):
+def SlopeFinder(ang,flam,ang_start,ang_end,ang_repr,guess):
     log_ang = numpy.log10(ang)
     log_flam = numpy.log10(flam)
-    ang_start,ang_end,ang_repr = numpy.log10(numpy.row_stack((ang_start,ang_end,ang_repr)))
-    CX,CY = ContinnumFinder(log_ang,log_flam,ang_start,ang_end,100)
+    log_ang_start,log_ang_end,log_ang_repr = numpy.log10(numpy.row_stack((ang_start,ang_end,ang_repr)))
+    CX,CY = ContinnumFinder(log_ang,log_flam,log_ang_start,log_ang_end,30)
     
-    log_flam_repr = numpy.log10(flam_repr)
-    def logflam(log_lam,beta):
-        return log_flam_repr + beta*(log_lam-ang_repr)
 
-    X_HR = numpy.linspace(10**ang_start,10**ang_end,100)
+    log_flam_repr = log_flam[numpy.argmin(numpy.abs(log_ang-log_ang_repr))]
+    def logflam(log_lam,beta):
+        return log_flam_repr + beta*(log_lam-log_ang_repr)
+
+    X_HR = numpy.logspace(log_ang_start,log_ang_end,100)
     popt,pcov = curve_fit(logflam,CX,CY,guess)
     beta=popt[0]
     Y_HR = logflam(numpy.log10(X_HR),beta)

@@ -12,6 +12,8 @@ import time
 import os
 import pickle
 from galspec.Utility import LuminosityToABMagnitude
+from galspec.Dust import DustExtinction
+from galspec.Utility import SlopeFinder
 
 
 from astropy.cosmology import FlatLambdaCDM
@@ -114,14 +116,16 @@ class _SPMPixel:
         return hist_x,hist_y
     
 
-    def GetSpectra(self):
-        if _SPMPixel._spec_cache_stellar is None:
-            with open("cache/cloudy_chab_300M_solar.in","rb") as fp:
-                _SPMPixel._spec_cache_stellar = pickle.load(fp)
+    def GetSpectra(self,
+                   cache_stellar_path="cache/cloudy_chab_300M_solar.in",
+                   cache_nebular_path="cache/cloudy_chab_300M_solar.out"):
+        # if _SPMPixel._spec_cache_stellar is None:
+        with open(cache_stellar_path,"rb") as fp:
+            _SPMPixel._spec_cache_stellar = pickle.load(fp)
 
-        if _SPMPixel._spec_cache_nebular is None:
-            with open("cache/cloudy_chab_300M_solar.out","rb") as fp:
-                _SPMPixel._spec_cache_nebular = pickle.load(fp)        
+        # if _SPMPixel._spec_cache_nebular is None:
+        with open(cache_nebular_path,"rb") as fp:
+            _SPMPixel._spec_cache_nebular = pickle.load(fp)        
 
         WL = _SPMPixel._spec_cache_stellar["0.00001"]["WL"]
         TOTAL_FLUX_STELLAR = numpy.zeros(len(WL))
@@ -756,17 +760,18 @@ class SpectroPhotoMetry:
         uv_stellar = 0*self.mass_map
         uv_total = 0*self.mass_map
 
+
         wls,_,_ = self.SPMGrid[0,0].GetSpectra()
         mask1 = wls>start
         mask2 = wls<stop
         mask = mask1 & mask2
-
 
         print("Getting Pixelwise channels ...")
         for row in range(self.resolution[0]):
             for clm in range(self.resolution[1]):
                 print(row*self.resolution[1]+clm)
                 pixel:_SPMPixel=self.SPMGrid[row,clm]
+
                 wave,spec_st,spec_nb=pixel.GetSpectra()
                 spec_tot = spec_st + spec_nb
 
@@ -782,32 +787,76 @@ class SpectroPhotoMetry:
 
 
         return MAB_S,MAB_T
+    
+
+
+
+    def get_table(self,start,stop,lrepr,stellar_spec_file,nebular_spec_file):
+        uv_stellar = 0*self.mass_map
+        uv_total = 0*self.mass_map
+        
+        uv_stellar_red = 0*self.mass_map
+        uv_total_red = 0*self.mass_map
+
+        wls,_,_ = self.SPMGrid[0,0].GetSpectra()
+        mask1 = wls>start
+        mask2 = wls<stop
+        mask = mask1 & mask2
+
+        de = DustExtinction()
+
+        summed_spec_st = 0*wls
+        summed_spec_st_red = 0*wls
+        summed_spec_tot = 0*wls
+        summed_spec_tot_red = 0*wls
+
+        for row in range(self.resolution[0]):
+            for clm in range(self.resolution[1]):
+                print(row*self.resolution[1]+clm)
+                pixel:_SPMPixel=self.SPMGrid[row,clm]
+
+                wave,spec_st,spec_nb=pixel.GetSpectra(stellar_spec_file,nebular_spec_file)
+                spec_tot = spec_st + spec_nb
+
+                uv_stellar[row,clm] = numpy.mean(spec_st[mask])
+                uv_total[row,clm]= numpy.mean(spec_tot[mask])
+
+                _,spec_st_red = de.get_reddened_spectrum(wave,spec_st,"Calzetti",0.2)
+                _,spec_tot_red = de.get_reddened_spectrum(wave,spec_tot,"Calzetti",0.2)
+
+                uv_stellar_red[row,clm] = numpy.mean(spec_st_red[mask])
+                uv_total_red[row,clm]= numpy.mean(spec_tot_red[mask])
+                
+
+                summed_spec_st +=spec_st
+                summed_spec_st_red += spec_st_red
+
+
+                summed_spec_tot +=spec_tot
+                summed_spec_tot_red += spec_tot_red
+
+        # M_AB
+
+        LUV_S = numpy.sum(uv_stellar)
+        LUV_T = numpy.sum(uv_total)
+
+        LUV_S_red = numpy.sum(uv_stellar_red)
+        LUV_T_red = numpy.sum(uv_total_red)
+
+        MAB_S = LuminosityToABMagnitude(LUV_S,lrepr)
+        MAB_T = LuminosityToABMagnitude(LUV_T,lrepr)
+
+        MAB_S_red = LuminosityToABMagnitude(LUV_S_red,lrepr)
+        MAB_T_red = LuminosityToABMagnitude(LUV_T_red,lrepr)
+
+
+        # UV_Beta
+        _,_,beta_S = SlopeFinder(wls,summed_spec_st,1300,3000,1500,-2)
+        _,_,beta_S_red = SlopeFinder(wls,summed_spec_st_red,1300,3000,1500,-2)
+        _,_,beta_T = SlopeFinder(wls,summed_spec_tot,1300,3000,1500,-2)
+        _,_,beta_T_red = SlopeFinder(wls,summed_spec_tot_red,1300,3000,1500,-2)
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        return MAB_S,MAB_S_red,MAB_T,MAB_T_red, beta_S,beta_S_red,beta_T,beta_T_red

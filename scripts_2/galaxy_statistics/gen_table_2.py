@@ -4,12 +4,18 @@ import matplotlib.pyplot as plt
 from galspec.SPM import SpectroPhotoMetry
 from concurrent.futures import ThreadPoolExecutor
 
-# MPGADGET_OUTPUT_DIR = "/mnt/home/student/cranit/Data/MP_Gadget/Nishi/L50N640"
 MPGADGET_OUTPUT_DIR = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS"
 SNAP_NUM = 43
 GROUP_OFFSET = 0
 
 print("SPM")
+
+# SUFFIX = "solar"
+SUFFIX = "primordial"
+
+STELLAR_FILE = f"/mnt/home/student/cranit/RANIT/Repo/galspy/cache/cloudy_chab_300M_{SUFFIX}.in"
+NEBULAR_FILE = f"/mnt/home/student/cranit/RANIT/Repo/galspy/cache/cloudy_chab_300M_{SUFFIX}.out"
+
 
 root = galspy.NavigationRoot(MPGADGET_OUTPUT_DIR)
 PIG = root.PIG(SNAP_NUM)
@@ -18,40 +24,28 @@ def DoFor(GO):
     try:
         spm=SpectroPhotoMetry(MPGADGET_OUTPUT_DIR,SNAP_NUM)
         spm.target_PIG_Group(1+GO)
-        # spm.target_PIG_Group(1+GROUP_OFFSET,100,[-43,-20,-30])
-        # spm.target_PIG_Group(1+GROUP_OFFSET,1,[0,0,0])
-        # spm.show_region()
-
-        # spm.show_mass_metallicity_scatter()
-
         spm.project_to_plane()
-        # spm.show_projected_points()
-
         spm.generate_pixelwise_grid(grid_resolution=(1,1),mode="NGB")
-        # spm.show_star_mass_map()
-        # spm.show_pixelwise_histogram()
-        # spm.show_pixelwise_spectra()
-
-        # spm.show_rgb_channels([1450,2500,4450],[100,100,100])
-        # spm.show_uv_channels(1200,2600)
-
-        MAB_S,MAB_T=spm.get_MAB(1200,2600,1400)
-        return MAB_S,MAB_T
+        MAB_S,MAB_S_red,MAB_T,MAB_T_red, beta_S,beta_S_red,beta_T,beta_T_red = spm.get_table(1200,2600,1400,STELLAR_FILE,NEBULAR_FILE)
     except:
-        pass
-    finally:
-        with open(FILE, 'a') as f:
-            numpy.savetxt(f, numpy.column_stack((g,S,T)), fmt='%d %.02f %.02f')
+        MAB_S,MAB_S_red,MAB_T,MAB_T_red, beta_S,beta_S_red,beta_T,beta_T_red = 0,0,0,0,0,0,0,0
+    
+    with open(FILE, 'a') as f:
+        numpy.savetxt(f, numpy.column_stack((GO,MAB_S,MAB_S_red,MAB_T,MAB_T_red, beta_S,beta_S_red,beta_T,beta_T_red)),
+                        fmt='%d %.03f %.03f %.03f %.03f %.03f %.03f %.03f %.03f')
 
 
-# DoFor(0)
+
 
 # =============================
-FILE = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/LuvAB/MUVAB.txt"
-# with open(FILE, 'a') as f:
-#     f.write("#PIGID STAR TOTAL\n")
+FILE = f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/galaxy_statistics/data/table2_{SUFFIX}.txt"
+
+with open(FILE,"w") as fp:
+    fp.write("#GID(0) MAB_ST(1) MAB_ST_RED(2) MAB_TOT(3) MAB_TOT_RED(4) beta_ST(5) beta_ST_RED(6) beta_TOT(7) beta_TOT_RED(8)")
 
 FROM    = 0
-TO      = 10000
-for g in range(FROM,TO+1):DoFor(g)
+TO      = 50000
+for g in range(FROM,TO+1):
+    print("GID :",g)
+    DoFor(g)
 

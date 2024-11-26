@@ -6,10 +6,20 @@ import pickle
 
 de = DustExtinction()
 
-with open("cache/bpass_chab_300M.in","rb") as fp:
+with open("cache/cloudy_chab_300M_solar.in","rb") as fp:
     tspec:dict = pickle.load(fp)
-WL = tspec["0.02"]["WL"][700:30000]
-flux = tspec["0.02"]["8.0"][700:30000]
+WL = tspec["0.02"]["WL"]
+flux = tspec["0.02"]["8.0"]
+
+mask1 = WL>700
+mask2 = WL<30000
+mask = mask1 & mask2
+
+WL = WL[mask]
+flux = flux[mask]
+
+
+
 
 fig = plt.figure()
 

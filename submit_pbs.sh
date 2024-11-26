@@ -12,7 +12,7 @@
 
 # ===== JOB =====
 cd $PBS_O_WORKDIR
-exec > stdout.txt 2>&1
+exec > $PBS_O_WORKDIR/stdout_pbs/stdout_primordial.txt 2>&1
 
 source $HOME/anaconda3/etc/profile.d/conda.sh
 echo "[ STARTED ] $(date)"
@@ -24,7 +24,7 @@ while [[ "$CONDA_DEFAULT_ENV" != "galspy" ]]; do
 done
 echo "Environment found."
 
-python $HOME/RANIT/Repo/galspy/scripts/SPM/stellar_spm_steps.py
+python $HOME/RANIT/Repo/galspy/scripts_2/galaxy_statistics/gen_table_2.py
 echo "[ ENDED ] $(date)"
 
 

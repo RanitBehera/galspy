@@ -35,9 +35,9 @@ anchors['sim_times']    = [0.0, 1.0]
 anchors['id_frames']    = [0, 50]
 anchors['r']            = [2, 0.1]
 anchors['id_targets']   = [0, 1]
-anchors['t']            = [0, 0]
+anchors['t']            = [0, 90]
 anchors['p']            = [0, 'same']
-anchors['zoom']         = [10, 60]
+anchors['zoom']         = [10, 10]
 anchors['extent']       = [10, 'same']
 
 data = camera_tools.get_camera_trajectory(targets, anchors)
