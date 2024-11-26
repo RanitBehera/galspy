@@ -116,11 +116,11 @@ class _SPMPixel:
 
     def GetSpectra(self):
         if _SPMPixel._spec_cache_stellar is None:
-            with open("cache/cloudy_chab_300M.in","rb") as fp:
+            with open("cache/cloudy_chab_300M_solar.in","rb") as fp:
                 _SPMPixel._spec_cache_stellar = pickle.load(fp)
 
         if _SPMPixel._spec_cache_nebular is None:
-            with open("cache/cloudy_chab_300M.out","rb") as fp:
+            with open("cache/cloudy_chab_300M_solar.out","rb") as fp:
                 _SPMPixel._spec_cache_nebular = pickle.load(fp)        
 
         WL = _SPMPixel._spec_cache_stellar["0.00001"]["WL"]
