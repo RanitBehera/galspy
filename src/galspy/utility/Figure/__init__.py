@@ -1,1 +1,1 @@
-from galspy.utility.Figure.MassFunction import MassFunctionFigure
+# from galspy.utility.Figure.MassFunction import MassFunctionFigure

@@ -12,7 +12,8 @@
 
 # ===== JOB =====
 cd $PBS_O_WORKDIR
-exec > $PBS_O_WORKDIR/stdout_pbs/stdout_primordial.txt 2>&1
+SUFFIX=primordial
+exec > $PBS_O_WORKDIR/stdout_pbs/stdout_$SUFFIX.txt 2>&1
 
 source $HOME/anaconda3/etc/profile.d/conda.sh
 echo "[ STARTED ] $(date)"

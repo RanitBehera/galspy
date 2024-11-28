@@ -33,6 +33,7 @@ def _mass_function_from_mass_list(Mass,VOLUME,LogBinStep):
 
 
 #https://bdiemer.bitbucket.io/colossus/lss_mass_function.html
+# Colossus returns in (Mpc/h)^3
 def _mass_function_literature(sim_cosmology, model_name, redshift,mass_range,q_out,mdef="fof"):
     cosmology.setCosmology("my_cosmo",sim_cosmology)
     mass_func = mass_function.massFunction(mass_range, redshift, mdef = mdef, model = model_name, q_out = 'dndlnM')

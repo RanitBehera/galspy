@@ -40,10 +40,10 @@ def DoFor(GO):
 # =============================
 FILE = f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/galaxy_statistics/data/table2_{SUFFIX}.txt"
 
-with open(FILE,"w") as fp:
-    fp.write("#GID(0) MAB_ST(1) MAB_ST_RED(2) MAB_TOT(3) MAB_TOT_RED(4) beta_ST(5) beta_ST_RED(6) beta_TOT(7) beta_TOT_RED(8)")
+# with open(FILE,"w") as fp:
+#     fp.write("#GO(0) MAB_ST(1) MAB_ST_RED(2) MAB_TOT(3) MAB_TOT_RED(4) beta_ST(5) beta_ST_RED(6) beta_TOT(7) beta_TOT_RED(8)\n")
 
-FROM    = 0
+FROM    = 33179
 TO      = 50000
 for g in range(FROM,TO+1):
     print("GID :",g)

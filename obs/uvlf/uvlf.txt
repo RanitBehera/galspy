@@ -1,0 +1,7 @@
+#Author Year z MUV MUV_p MUV_n phi phi_p phi_n phi_exp phi_unit
+Harikane_et_al. 2024 7 -23.7 -1 -1 2.3 +5.3 -1.9 -9 Mpc-3_mag-1
+Harikane_et_al. 2024 7 -23.2 -1 -1 1.6 +3.7 -1.3 -7 Mpc-3_mag-1
+Harikane_et_al. 2024 7 -22.7 -1 -1 4.8 +4.6 -2.6 -7 Mpc-3_mag-1
+Harikane_et_al. 2024 7 -22.2 -1 -1 1.1 +0.4 -0.4 -6 Mpc-3_mag-1
+Harikane_et_al. 2024 7 -21.7 -1 -1 2.4 +3.3 -1.7 -5 Mpc-3_mag-1
+Harikane_et_al. 2024 7 -21.2 -1 -1 1.2 +2.8 -1.1 -5 Mpc-3_mag-1
