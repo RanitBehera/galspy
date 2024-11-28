@@ -39,7 +39,7 @@ blobnames.remove("header")
 print("Scanning Intersection")
 
 def Checkblob(blobname:str):
-    X,Y,Z = root.PART(SNAP_NUM).Gas.Position([blobname]).T
+    X,Y,Z = root.PART(SNAP_NUM).Star.Position([blobname]).T          #<------
     inX = (np.max(X)>=bxn) and (np.min(X)<=bxp)
     inY = (np.max(Y)>=byn) and (np.min(Y)<=byp)
     inZ = (np.max(Z)>=bzn) and (np.min(Z)<=bzp)
