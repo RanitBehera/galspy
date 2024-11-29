@@ -1,4 +1,3 @@
-# %%
 import galspy
 import matplotlib.pyplot as plt
 
@@ -10,14 +9,15 @@ BLOBS = ['000000', '00000D', '00000E', '000032', '000033', '000040', '000042', '
 print("Reading Blobs ...")
 energy_per_unit_mass = ROOT.PART(43).Gas.InternalEnergy(BLOBS)
 mass = ROOT.PART(43).Gas.Mass(BLOBS)
-density = ROOT.PART(43).Gas.Density(BLOBS)
 print("Read Blobs")
 
-# %%
+energy = energy_per_unit_mass*mass*1e10
+
 # FROM CODE
 # /*Get the equilibrium temperature at given internal energy.
-# density is total gas density in protons/cm^3
-# Internal energy is in ergs/g.
+#     density is total gas density in protons/cm^3
+#     Internal energy is in ergs/g.
+#     helium is a mass fraction*/
 
 
 

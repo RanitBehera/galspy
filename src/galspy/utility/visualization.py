@@ -107,7 +107,8 @@ class CubeVisualizer:
         ax.set_xlabel("X",fontsize=18)
         ax.set_ylabel("Y",fontsize=18)
         ax.set_zlabel("Z",fontsize=18)
-        
+
+
         # Limit Axis Range
         if self.spanmode == "AxisWise":
             pass
@@ -163,6 +164,16 @@ class CubeVisualizer:
         # ax.set_aspect('equal', adjustable='datalim')
         # ax.tight_layout()
 
+        # Hide labels and ticks
+        # ax.axis("off")
+        ax.set_zticks([],[])
+        ax.set_xticks([],[])
+        ax.set_yticks([],[])
+        # ax.xaxis.set_tick_params(pad=-100)
+
+
+
+
     def draw_annotate(self):
         ax = self.axis3d
         for text in self._text_bank:
@@ -191,7 +202,7 @@ class CubeVisualizer:
             ax.add_artist(a)
 
 
-    def viewangle(self,elv=20,azim=40+35):
+    def viewangle(self,elv=20,azim=75):
         self.axis3d.view_init(elv,azim)
 
     def plot(self):
@@ -212,3 +223,4 @@ class CubeVisualizer:
         
         if show:plt.show()
         else:return self.axis3d
+

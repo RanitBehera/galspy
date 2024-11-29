@@ -206,7 +206,8 @@ class SpectroPhotoMetry:
         self.gather_particles_in_region()
 
     def target_PIG_Group(self,pig_groupid,zoom=1,offset=[0,0,0]):
-        location = self._PIG.FOFGroups.MassCenterPosition()[pig_groupid]   
+        location = self._PIG.FOFGroups.MassCenterPosition()[pig_groupid]
+        # print(location)
         pig_stars_pos = self._PIG.Star.Position()
         pig_stars_gid = self._PIG.Star.GroupID()
         target_group_mask = (pig_stars_gid==pig_groupid)
@@ -233,6 +234,9 @@ class SpectroPhotoMetry:
         ZLB = (self._target_location[2] - (self._target_size/2))
         ZUB = (self._target_location[2] + (self._target_size/2))
 
+        # print("XB",XLB,XUB)
+        # print("YB",YLB,YUB)
+        # print("ZB",ZLB,ZUB)
 
         # Read Star Fields
         part_star_pos   = self._PART.Star.Position()
@@ -279,6 +283,7 @@ class SpectroPhotoMetry:
         self.target_bh_vel      = part_bh_vel[mask]
         self.target_bh_mass     = part_bh_mass[mask]
 
+        # print(self.target_bh_mass)
 
         self.shift_origin()
         self.reorient()
@@ -353,8 +358,9 @@ class SpectroPhotoMetry:
     
 
     def show_projected_points(self):
-        plt.plot(self._Up_star,self._Vp_star,'.r',ms=5,alpha=0.3)
-        plt.plot(self._Up_bh,self._Vp_bh,'+k',ms=30,alpha=1)
+        plt.figure(figsize=(4,4))
+        plt.plot(self._Up_star,self._Vp_star,'.r',ms=2,alpha=0.3)
+        plt.plot(self._Up_bh,self._Vp_bh,'+k',ms=20,alpha=1)
         plt.axis('equal')
         # ----- Bring target to center of projected plane
         span_Up = numpy.max(self._Up_star) - numpy.min(self._Up_star)
@@ -363,9 +369,14 @@ class SpectroPhotoMetry:
         plt.xlim(-span/2,span/2)
         plt.ylim(-span/2,span/2)
         plt.gca().set_adjustable("box")
-        plt.axvline(0,ls='--',color='k',lw=1)
-        plt.axhline(0,ls='--',color='k',lw=1)
+        plt.xlabel("X (ckpc/h)")
+        plt.ylabel("Y (ckpc/h)")
+        # plt.axvline(0,ls='--',color='k',lw=1)
+        # plt.axhline(0,ls='--',color='k',lw=1)
         # -----
+        plt.xticks([-5,0,5])
+        plt.yticks([-5,0,5])
+        plt.subplots_adjust(bottom=0.2)
         plt.show()
 
 
@@ -451,23 +462,29 @@ class SpectroPhotoMetry:
 
     def show_star_mass_map(self):
         # TODO : Transpose
-        img=plt.imshow(self.mass_map,cmap='grey')
-        plt.colorbar(img)
-        self._show_scale(plt.gca())
+        img=plt.imshow(self.mass_map,cmap='grey',extent=[numpy.min(self._Up_star),numpy.max(self._Up_star),numpy.min(self._Vp_star),numpy.max(self._Vp_star)])
+        plt.colorbar(img, orientation='horizontal',location="top", pad=0.02,fraction=0.047,label="$\Sigma$ in $M_\odot$")
+        # self._show_scale(plt.gca())
+        plt.xticks([-5,0,5])
+        plt.yticks([-5,0,5])
+        plt.subplots_adjust(bottom=0.15)
+        plt.xlabel("X (ckpc/h)")
+        plt.ylabel("Y (ckpc/h)")
         plt.show()
 
     
 
 
     def show_pixelwise_histogram(self):
-        fig = plt.figure(figsize=(10,5))
-        gs = GridSpec(3,2,figure=fig)
+        fig1 = plt.figure(figsize=(5,5))
+        fig2 = plt.figure(figsize=(6,9))
 
-        ax1 = fig.add_subplot(gs[:,0])
+        ax1 = fig1.gca()
 
-        ax2 = fig.add_subplot(gs[0,1])
-        ax3 = fig.add_subplot(gs[1,1])
-        ax4 = fig.add_subplot(gs[2,1])
+        gs = GridSpec(3,1,figure=fig2)
+        ax2 = fig2.add_subplot(gs[0])
+        ax3 = fig2.add_subplot(gs[1])
+        ax4 = fig2.add_subplot(gs[2])
 
 
         img=ax1.imshow(self.mass_map**self.contrast_exponent,cmap='grey',origin='upper')
@@ -476,7 +493,7 @@ class SpectroPhotoMetry:
 
         divider = make_axes_locatable(ax1)
         cax = divider.append_axes("top", size="5%", pad=0.1)
-        cbar = fig.colorbar(img,cax=cax,label="$M_\odot$",orientation="horizontal",location="top")
+        cbar = fig1.colorbar(img,cax=cax,label="$M_\odot$",orientation="horizontal",location="top")
     
 
         def ShowHistogram(pixel:_SPMPixel):
@@ -509,11 +526,12 @@ class SpectroPhotoMetry:
             pixel = self.SPMGrid[iy,ix]
             ShowHistogram(pixel)
             
-            fig.canvas.draw()
+            fig1.canvas.draw()
+            fig2.canvas.draw()
 
 
 
-        fig.canvas.mpl_connect('button_press_event', onclick)
+        fig1.canvas.mpl_connect('button_press_event', onclick)
 
         ax1.set_xlabel("Pixel Index")
         ax1.set_ylabel("Pixel Index")

@@ -8,6 +8,8 @@ cache
 study
 stdout.txt
 **/data
+**/data*
 **/media
+**/images
 **/dump
 stdout_pbs
