@@ -34,10 +34,10 @@ def Plot(i,BOX,Z,boxsize_mpc):
 
     h=0.6736
     boxsize_mpc=boxsize_mpc/h
-    # M,phi,err = LuminosityFunction(MAB_ks,(boxsize_mpc)**3,0.5)
-    # mask=(M< -18)&(M> -27)&(phi>1e-6)
-    # M,phi,err=M[mask],phi[mask],err[mask]
-    # ax.plot(M,phi,label="Scaling",c='k')
+    M,phi,err = LuminosityFunction(MAB_ks,(boxsize_mpc)**3,0.5)
+    mask=(M< -18)&(M> -27)&(phi>1e-6)
+    M,phi,err=M[mask],phi[mask],err[mask]
+    ax.plot(M,phi,label="Scaling",c='k')
     # ==============
     M,phi,err = LuminosityFunction(MAB_ST_p,(boxsize_mpc)**3,0.5)
     mask=(M< -18)&(M> -27)&(phi>1e-7)
@@ -124,6 +124,11 @@ err_phip = np.array([0.50,2.34])*(1e-6)
 err_phin = np.array([0.30,1.56])*(1e-6)
 donnan=axs[0].errorbar(MUV,phi,(err_phin,err_phip),fmt='.',capsize=4,label="Donnan et al. (2023)",color='darkred')
 
+MUV = np.array([-22.2,-21.2])
+phi = np.array([5.3e-7, 1.3e-5])
+err_phip = np.array([5.2e-7,3.1e-5])
+err_phin = np.array([2.9e-7,1.2e-5])
+harikane=axs[0].errorbar(MUV,phi,(err_phin,err_phip),fmt='.',capsize=4,label="Harikane et al. (2024)",color='darkgreen')
 
 # z=9, 
 MUV = np.array([-22.05,-21.55,-21.05,-20.55,-20.05,-19.55,-18.80])
@@ -137,16 +142,28 @@ err_phip = np.array([0.40,3.98])*(1e-6)
 err_phin = np.array([0.14,1.95])*(1e-6)
 axs[1].errorbar(MUV,phi,(err_phin,err_phip),fmt='.',capsize=4,label="Donnan et al. (2023)",color='darkred')
 
-
+MUV = np.array([-22.0,-21.0,-20.0,-19.0])
+phi = np.array([6.6,5.1,2.9,3.5])*(1e-6)
+err_phip = np.array([7.1,7.0,3.2,3.7])*(1e-6)
+err_phin = np.array([4.7,3.8,2.2,2.4])*(1e-6)
+axs[1].errorbar(MUV,phi,(err_phin,err_phip),fmt='.',capsize=4,label="Harikane et al. (2024)",color='darkgreen')
 
 
 # z=10
+MUV = np.array([-23.5,-21.6,-20.6,-19.6,-18.6,-17.6])
+phi = np.array([6.8e-8,1.0e-6,8.7e-6,2.6e-5,1.9e-4,6.3e-4])
+err_phip = np.array([0,2.3e-6,20.5e-6,2.8e-5,4.7e-4,15.8e-4])
+err_phin = np.array([0,0.9e-6,8.4e-6,1.8e-5,1.9e-4,6.3e-4])
+axs[2].errorbar(MUV,phi,(err_phin,err_phip),fmt='.',capsize=4,label="Harikane et al. (2024)",color='darkgreen')
 
 
 
 
 
 
-leg=axs[0].legend(handles=[adams,donnan],fontsize=12, loc='upper right',ncol=1,frameon=False,bbox_to_anchor=(1,1),markerfirst=False)
+leg=axs[0].legend(handles=[adams,donnan,harikane],fontsize=12, loc='upper right',ncol=1,frameon=False,bbox_to_anchor=(1,1),markerfirst=False)
 plt.subplots_adjust(bottom=0.2,left=0.15,right=0.98)
 plt.show()
+
+
+###### NOTE THE < or > signs in the phi values in the Harikane PAPER!!

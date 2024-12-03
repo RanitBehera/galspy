@@ -20,7 +20,7 @@ PIG = root.PIG(SNAP_NUM)
 
 def DoFor(GO):
     spm=SpectroPhotoMetry(MPGADGET_OUTPUT_DIR,SNAP_NUM)
-    spm.target_PIG_Group(1+GO,40,[-4,-3,-1])
+    spm.target_PIG_Group(1+GO,30,[-4,-3,-1])
     # spm.target_PIG_Group(1+GROUP_OFFSET,100,[-43,-20,-30])
     # spm.target_PIG_Group(1+GROUP_OFFSET,1,[0,0,0])
     # spm.show_region()
@@ -30,15 +30,15 @@ def DoFor(GO):
     spm.project_to_plane()
     # spm.show_projected_points()
 
-    spm.generate_pixelwise_grid(grid_resolution=(12,12),mode="NGB")
+    spm.generate_pixelwise_grid(grid_resolution=(32,32),mode="NGB")
     # spm.show_star_mass_map()
     # spm.show_pixelwise_histogram()
     # spm.show_pixelwise_spectra()
 
     spm.show_rgb_channels([1450,2500,4450],[100,100,100])
-    return
     # spm.show_uv_channels(1200,2600)
 
+    return
     MAB_S,MAB_T=spm.get_MAB(1200,2600,1400)
     return MAB_S,MAB_T
 

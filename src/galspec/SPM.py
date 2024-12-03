@@ -607,15 +607,18 @@ class SpectroPhotoMetry:
         
         
         
-        fig = plt.figure(figsize=(10,5))
-        gs = GridSpec(2,4,figure=fig)
+        fig1 = plt.figure(figsize=(10,5))
+        fig2 = plt.figure(figsize=(10,5))
 
-        axB = fig.add_subplot(gs[0,0])
-        axG = fig.add_subplot(gs[0,1])
-        axR = fig.add_subplot(gs[0,2])
-        axRGB = fig.add_subplot(gs[0,3])
 
-        axSpec = fig.add_subplot(gs[1,:])
+        gs1 = GridSpec(1,4,figure=fig1)
+        axSpec = fig2.gca()
+
+        axB = fig1.add_subplot(gs1[0,0])
+        axG = fig1.add_subplot(gs1[0,1])
+        axR = fig1.add_subplot(gs1[0,2])
+        axRGB = fig1.add_subplot(gs1[0,3])
+
         
         blue=0*self.mass_map
         green=0*self.mass_map
@@ -633,27 +636,6 @@ class SpectroPhotoMetry:
                 blue[row,clm]=numpy.mean(spec_st[band_low[0]:band_high[0]])
                 green[row,clm]=numpy.mean(spec_st[band_low[1]:band_high[1]])
                 red[row,clm]=numpy.mean(spec_st[band_low[2]:band_high[2]])
-
-        # ind_pairs =[]
-        # for row in range(self.resolution[0]):
-        #     for clm in range(self.resolution[1]):
-        #         ind_pairs.append((row,clm))
-
-        # def GetForIndPair(ind_pair):
-        #     row,clm=ind_pairs
-        #     print(row*self.resolution[1]+clm)
-        #     pixel:_SPMPixel=self.SPMGrid[row,clm]
-        #     wave,spec_st,spec_nb=pixel.GetSpectra()
-        #     spec_tot = spec_st + spec_nb
-
-        #     blue[row,clm]=numpy.mean(spec_st[band_low[0]:band_high[0]])
-        #     green[row,clm]=numpy.mean(spec_st[band_low[1]:band_high[1]])
-        #     red[row,clm]=numpy.mean(spec_st[band_low[2]:band_high[2]])
-
-        # with Pool(8) as pool:
-        #     pool.map(GetForIndPair)
-
-
 
 
         cmap_blue = mcolors.LinearSegmentedColormap.from_list('custom_blue', ['black', 'blue'])
@@ -728,9 +710,10 @@ class SpectroPhotoMetry:
             # self.iy=iy
             ShowPixelSpectra(pixel)
             
-            fig.canvas.draw()
+            fig1.canvas.draw()
+            fig2.canvas.draw()
 
-        fig.canvas.mpl_connect('button_press_event', onclick)
+        fig1.canvas.mpl_connect('button_press_event', onclick)
 
         plt.show()
 

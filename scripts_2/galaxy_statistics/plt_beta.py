@@ -8,7 +8,7 @@ import matplotlib.lines as mlines
 
 
 
-SetMyStyle()
+SetMyStyle(14)
 
 
 TABLE_PATH = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/galaxy_statistics/data"
@@ -31,13 +31,15 @@ maskt=(b1t<-1)&maskM
 # M2,b2s,b2t = GMST,beta_ST_p,beta_TOT_p
 
 
-plt.plot(M1[masks],b1s[masks],'.',label="Stellar")
-plt.plot(M1[maskt],b1t[maskt],'.',label="Stellar + Nebular")
+plt.plot(M1[masks],b1s[masks],'.',label="Stellar",ms=2)
+plt.plot(M1[maskt],b1t[maskt],'.',label="Stellar + Nebular",ms=2)
 
 plt.axhline(-2.4,color='k',ls='--',lw=1)
 plt.xlim(left=1e8)
 plt.xscale("log")
-plt.xlabel("$M/M_\odot$",fontsize=14)
-plt.ylabel("$\\beta_{UV}$",fontsize=14)
-plt.legend()
+plt.xlabel("$M/M_\odot$",fontsize=16)
+plt.ylabel("$\\beta_{UV}$",fontsize=16)
+plt.legend(title="z=8",title_fontsize=16,frameon=False)
+plt.ylim(-3,-2)
+plt.subplots_adjust(bottom=0.15)
 plt.show()
