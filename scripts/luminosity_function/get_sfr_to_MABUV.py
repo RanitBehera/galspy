@@ -1,11 +1,11 @@
 import galspy
 import numpy,os
 
-MPGADGET_OUTPUT_DIR = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS"
-SNAP_NUM = 43
+MPGADGET_OUTPUT_DIR = "/mnt/home/student/cranit/NINJA/simulations/L250N2040/SNAPS"
 
+Z=10
 root = galspy.NavigationRoot(MPGADGET_OUTPUT_DIR)
-PIG = root.PIG(SNAP_NUM)
+PIG = root.PIG(root.SnapNumFromZ(Z))
 
 SFR = PIG.FOFGroups.StarFormationRate()
 SFR*=(1e10/3.08568e+16) * 365 * 24 * 3600 # M_sun /year
@@ -23,6 +23,6 @@ M_AB = -2.5*numpy.log10(f_nu/3631/Jy)
 
 print(M_AB)
 
-# numpy.savetxt("/mnt/home/student/cranit/RANIT/Repo/galspy/study/LuvAB/MUVAB_SFR.txt",M_AB)
+numpy.savetxt(f"/mnt/home/student/cranit/RANIT/Repo/galspy/study/LuvAB/MUVAB_SFR_L250N2050_z{Z}.txt",M_AB)
 
 

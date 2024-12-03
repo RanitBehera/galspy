@@ -14,6 +14,7 @@ import pickle
 from galspec.Utility import LuminosityToABMagnitude
 from galspec.Dust import DustExtinction
 from galspec.Utility import SlopeFinder
+from multiprocessing.pool import Pool
 
 
 from astropy.cosmology import FlatLambdaCDM
@@ -206,12 +207,14 @@ class SpectroPhotoMetry:
         self.gather_particles_in_region()
 
     def target_PIG_Group(self,pig_groupid,zoom=1,offset=[0,0,0]):
-        location = self._PIG.FOFGroups.MassCenterPosition()[pig_groupid]
+        location = self._PIG.FOFGroups.MassCenterPosition()[pig_groupid-1]
         # print(location)
         pig_stars_pos = self._PIG.Star.Position()
         pig_stars_gid = self._PIG.Star.GroupID()
+        # print(len(pig_stars_pos))
         target_group_mask = (pig_stars_gid==pig_groupid)
         target_group_star_pos = pig_stars_pos[target_group_mask]
+        # print(len(target_group_star_pos))
         target_group_span_x = numpy.max(target_group_star_pos[:,0]) - numpy.min(target_group_star_pos[:,0])
         target_group_span_y = numpy.max(target_group_star_pos[:,1]) - numpy.min(target_group_star_pos[:,1])
         target_group_span_z = numpy.max(target_group_star_pos[:,2]) - numpy.min(target_group_star_pos[:,2])
@@ -269,19 +272,19 @@ class SpectroPhotoMetry:
 
 
         # Read BH Fields
-        part_bh_pos     = self._PART.BlackHole.Position()
-        part_bh_vel     = self._PART.BlackHole.Velocity()
-        part_bh_mass    = self._PART.BlackHole.BlackholeMass()
+        # part_bh_pos     = self._PART.BlackHole.Position()
+        # part_bh_vel     = self._PART.BlackHole.Velocity()
+        # part_bh_mass    = self._PART.BlackHole.BlackholeMass()
         
         # bound mask
-        mask_x = (XLB<=part_bh_pos[:,0]) & (part_bh_pos[:,0]<=XUB)
-        mask_y = (YLB<=part_bh_pos[:,1]) & (part_bh_pos[:,1]<=YUB)
-        mask_z = (ZLB<=part_bh_pos[:,2]) & (part_bh_pos[:,2]<=ZUB)
-        mask = mask_x & mask_y & mask_z
+        # mask_x = (XLB<=part_bh_pos[:,0]) & (part_bh_pos[:,0]<=XUB)
+        # mask_y = (YLB<=part_bh_pos[:,1]) & (part_bh_pos[:,1]<=YUB)
+        # mask_z = (ZLB<=part_bh_pos[:,2]) & (part_bh_pos[:,2]<=ZUB)
+        # mask = mask_x & mask_y & mask_z
 
-        self.target_bh_pos      = part_bh_pos[mask]
-        self.target_bh_vel      = part_bh_vel[mask]
-        self.target_bh_mass     = part_bh_mass[mask]
+        # self.target_bh_pos      = part_bh_pos[mask]
+        # self.target_bh_vel      = part_bh_vel[mask]
+        # self.target_bh_mass     = part_bh_mass[mask]
 
         # print(self.target_bh_mass)
 
@@ -292,7 +295,7 @@ class SpectroPhotoMetry:
 
     def shift_origin(self):
         self.target_star_pos = self.target_star_pos - self._target_location
-        self.target_bh_pos = self.target_bh_pos - self._target_location
+        # self.target_bh_pos = self.target_bh_pos - self._target_location
 
 
         # self.get_angular_momentum_direction()
@@ -327,7 +330,7 @@ class SpectroPhotoMetry:
     def show_region(self):
         cv=CubeVisualizer()
         cv.add_points(self.target_star_pos,points_size=5,points_color='r',points_alpha=0.1)
-        cv.add_points(self.target_bh_pos,points_size=20,points_color='k',points_alpha=1)
+        # cv.add_points(self.target_bh_pos,points_size=20,points_color='k',points_alpha=1)
         cv.show()
 
 
@@ -352,15 +355,15 @@ class SpectroPhotoMetry:
         # TODO : Project to (U,V) coordinate
         self._Up_star   = self.target_star_pos[:,0]
         self._Vp_star   = self.target_star_pos[:,1]
-        self._Up_bh     = self.target_bh_pos[:,0]
-        self._Vp_bh     = self.target_bh_pos[:,1]
+        # self._Up_bh     = self.target_bh_pos[:,0]
+        # self._Vp_bh     = self.target_bh_pos[:,1]
 
     
 
     def show_projected_points(self):
         plt.figure(figsize=(4,4))
         plt.plot(self._Up_star,self._Vp_star,'.r',ms=2,alpha=0.3)
-        plt.plot(self._Up_bh,self._Vp_bh,'+k',ms=20,alpha=1)
+        # plt.plot(self._Up_bh,self._Vp_bh,'+k',ms=20,alpha=1)
         plt.axis('equal')
         # ----- Bring target to center of projected plane
         span_Up = numpy.max(self._Up_star) - numpy.min(self._Up_star)
@@ -388,10 +391,11 @@ class SpectroPhotoMetry:
         span_Up_star = numpy.max(self._Up_star) - numpy.min(self._Up_star)
         span_Vp_star = numpy.max(self._Vp_star) - numpy.min(self._Vp_star)
 
-        span_Up_bh = numpy.max(self._Up_bh) - numpy.min(self._Up_bh)
-        span_Vp_bh = numpy.max(self._Vp_bh) - numpy.min(self._Vp_bh)
+        # span_Up_bh = numpy.max(self._Up_bh) - numpy.min(self._Up_bh)
+        # span_Vp_bh = numpy.max(self._Vp_bh) - numpy.min(self._Vp_bh)
 
-        span = max([span_Up_star,span_Vp_star,span_Up_bh,span_Vp_bh])
+        span = max([span_Up_star,span_Vp_star])
+        # span = max([span_Up_star,span_Vp_star,span_Up_bh,span_Vp_bh])
 
         span*=2 # To keep everything well inside field boundary
         #TODO:Better solution to fix slight offset of index. for (50,50) index should go to 0-49. case of 50.04
@@ -409,12 +413,13 @@ class SpectroPhotoMetry:
         prow_star = numpy.int32((upper_edge - self._Vp_star)/ grid_drow)
         pclm_star = numpy.int32((self._Up_star - left_edge)/ grid_dclm)
 
-        prow_bh = numpy.int32((upper_edge - self._Vp_bh)/ grid_drow)
-        pclm_bh = numpy.int32((self._Up_bh - left_edge)/ grid_dclm)
+        # prow_bh = numpy.int32((upper_edge - self._Vp_bh)/ grid_drow)
+        # pclm_bh = numpy.int32((self._Up_bh - left_edge)/ grid_dclm)
 
         # print(max(prow),max(pclm))
 
-        mass    = self.target_star_mass*1e10
+        MASS_UNIT = 1e10/0.6736
+        mass    = self.target_star_mass*MASS_UNIT       #<-------
         age     = self.target_star_age_in_Myr
         Z       = self.target_star_metallicity
 
@@ -429,10 +434,10 @@ class SpectroPhotoMetry:
             pixel:_SPMPixel=grid[prow_star[n],pclm_star[n]]
             pixel.AddStar(mass[n],age[n],Z[n])
         
-        # Distribute BH
-        for n in range(len(self.target_bh_pos)):
-            pixel:_SPMPixel=grid[prow_bh[n],pclm_bh[n]]
-            pixel.AddBlackhole(mass[n])
+        # # Distribute BH
+        # for n in range(len(self.target_bh_pos)):
+        #     pixel:_SPMPixel=grid[prow_bh[n],pclm_bh[n]]
+        #     pixel.AddBlackhole(mass[n])
         
         
         # Pixelwise Generate grid
@@ -477,7 +482,7 @@ class SpectroPhotoMetry:
 
     def show_pixelwise_histogram(self):
         fig1 = plt.figure(figsize=(5,5))
-        fig2 = plt.figure(figsize=(6,9))
+        fig2 = plt.figure(figsize=(6,7))
 
         ax1 = fig1.gca()
 
@@ -499,19 +504,23 @@ class SpectroPhotoMetry:
         def ShowHistogram(pixel:_SPMPixel):
             hist_x,hist_y=pixel.GetHistogram("Mass")
             ax2.bar(hist_x,hist_y,width=0.08,align='center')
-            
+            ax2.set_xlim(6,7)
+            starres=self._PIG.Header.MassTable()[4]*1e10/0.6736
+            ax2.axvspan(ax2.get_xlim()[0],numpy.log10(starres),color='k',alpha=0.05,zorder=-10)
+
+
             hist_x,hist_y=pixel.GetHistogram("Age")
             ax3.bar(hist_x,hist_y,width=0.08,align='center')
-           
+
             hist_x,hist_y=pixel.GetHistogram("Metallicity")
             ax4.bar(hist_x,hist_y,width=0.08,align='center')
             
-            ax2.set_xlabel("Mass")
-            ax3.set_xlabel("Age (Myr)")
-            ax4.set_xlabel("Metallicity")
+            ax2.set_xlabel("log$_{10}$ Mass $(M_\odot)$")
+            ax3.set_xlabel("log$_{10}$ Age (yr)")
+            ax4.set_xlabel("log$_{10}$ Metallicity $(Z)$")
 
             for ax in [ax2,ax3,ax4]:
-                ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+                ax.yaxis.set_major_locator(MaxNLocator(integer=True,nbins=3))
 
 
 
@@ -529,17 +538,21 @@ class SpectroPhotoMetry:
             fig1.canvas.draw()
             fig2.canvas.draw()
 
-
-
         fig1.canvas.mpl_connect('button_press_event', onclick)
 
         ax1.set_xlabel("Pixel Index")
         ax1.set_ylabel("Pixel Index")
 
-        ax2.set_xlabel("Mass")
-        ax3.set_xlabel("Age (Myr)")
+        ax2.set_xlabel("log$_{10}$ Mass $(M_\odot)$")
+        ax3.set_xlabel("log$_{10}$ Age (yr)")
+        ax4.set_xlabel("log$_{10}$ Metallicity $(Z)$")
+        
         for ax in [ax2,ax3,ax4]:
             ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+            ax.grid(True, which='both', axis='y',alpha=0.2)
+            ax.grid(False, which='both', axis='x')
+
+        fig2.subplots_adjust(hspace=0.6)
         plt.show()
 
     
@@ -597,18 +610,19 @@ class SpectroPhotoMetry:
         fig = plt.figure(figsize=(10,5))
         gs = GridSpec(2,4,figure=fig)
 
-        axR = fig.add_subplot(gs[0,0])
+        axB = fig.add_subplot(gs[0,0])
         axG = fig.add_subplot(gs[0,1])
-        axB = fig.add_subplot(gs[0,2])
+        axR = fig.add_subplot(gs[0,2])
         axRGB = fig.add_subplot(gs[0,3])
 
         axSpec = fig.add_subplot(gs[1,:])
         
-        red=0*self.mass_map
-        green=0*self.mass_map
         blue=0*self.mass_map
+        green=0*self.mass_map
+        red=0*self.mass_map
 
         print("Getting Pixelwise channels ...")
+
         for row in range(self.resolution[0]):
             for clm in range(self.resolution[1]):
                 print(row*self.resolution[1]+clm)
@@ -616,39 +630,61 @@ class SpectroPhotoMetry:
                 wave,spec_st,spec_nb=pixel.GetSpectra()
                 spec_tot = spec_st + spec_nb
 
-                red[row,clm]=numpy.mean(spec_st[band_low[0]:band_high[0]])
+                blue[row,clm]=numpy.mean(spec_st[band_low[0]:band_high[0]])
                 green[row,clm]=numpy.mean(spec_st[band_low[1]:band_high[1]])
-                blue[row,clm]=numpy.mean(spec_st[band_low[2]:band_high[2]])
+                red[row,clm]=numpy.mean(spec_st[band_low[2]:band_high[2]])
 
-        cmap_red = mcolors.LinearSegmentedColormap.from_list('custom_red', ['black', 'red'])
-        cmap_green = mcolors.LinearSegmentedColormap.from_list('custom_green', ['black', 'green'])
+        # ind_pairs =[]
+        # for row in range(self.resolution[0]):
+        #     for clm in range(self.resolution[1]):
+        #         ind_pairs.append((row,clm))
+
+        # def GetForIndPair(ind_pair):
+        #     row,clm=ind_pairs
+        #     print(row*self.resolution[1]+clm)
+        #     pixel:_SPMPixel=self.SPMGrid[row,clm]
+        #     wave,spec_st,spec_nb=pixel.GetSpectra()
+        #     spec_tot = spec_st + spec_nb
+
+        #     blue[row,clm]=numpy.mean(spec_st[band_low[0]:band_high[0]])
+        #     green[row,clm]=numpy.mean(spec_st[band_low[1]:band_high[1]])
+        #     red[row,clm]=numpy.mean(spec_st[band_low[2]:band_high[2]])
+
+        # with Pool(8) as pool:
+        #     pool.map(GetForIndPair)
+
+
+
+
         cmap_blue = mcolors.LinearSegmentedColormap.from_list('custom_blue', ['black', 'blue'])
+        cmap_green = mcolors.LinearSegmentedColormap.from_list('custom_green', ['black', 'green'])
+        cmap_red = mcolors.LinearSegmentedColormap.from_list('custom_red', ['black', 'red'])
 
 
 
 
-        max_r = numpy.max(red)
-        max_g = numpy.max(green)
         max_b = numpy.max(blue)
+        max_g = numpy.max(green)
+        max_r = numpy.max(red)
         max_rgb = numpy.max(numpy.row_stack((red,green,blue)))
 
-        # red = red/max_r
-        # green = green/max_g
-        # blue = blue/max_b
+        red = red/max_r
+        green = green/max_g
+        blue = blue/max_b
 
-        axR.imshow(red,cmap=cmap_red)
-        axG.imshow(green,cmap=cmap_green)
         axB.imshow(blue,cmap=cmap_blue)
+        axG.imshow(green,cmap=cmap_green)
+        axR.imshow(red,cmap=cmap_red)
 
         
         clr_img = numpy.stack((red, green, blue), axis=-1)
-        clr_img = clr_img / numpy.max(clr_img)
+        # clr_img = clr_img / numpy.max(clr_img)
         axRGB.imshow(clr_img)
 
-        self._show_scale(axR)
-        self._show_scale(axG)
-        self._show_scale(axB)
-        self._show_scale(axRGB)
+        # self._show_scale(axR)
+        # self._show_scale(axG)
+        # self._show_scale(axB)
+        # self._show_scale(axRGB)
 
         # axR.contour(red, levels=4, colors='white', linewidths=0.5,alpha=0.5)
         # axG.contour(green, levels=4, colors='white', linewidths=0.5,alpha=0.5)
@@ -665,13 +701,13 @@ class SpectroPhotoMetry:
             # import numpy as np
             # np.savetxt(f"/mnt/home/student/cranit/RANIT/Repo/galspy/study/hpc_proposal/pixel_{self.ix}_{self.iy}.txt",np.column_stack([x,y]))
             axSpec.set_yscale('log')
-            axSpec.legend()
+            axSpec.legend(frameon=False,fontsize=12)
             # axSpec.set_xscale('log')
             axSpec.set_xlim(500,8000)
-            axSpec.set_ylim(max(st+nb)/1e3,10*max(y))
-            axSpec.axvspan(band_low[0],band_high[0],fc='r',ec=None,alpha=0.1)
+            axSpec.set_ylim(max(st+nb)/1e5,10*max(st+nb))
+            axSpec.axvspan(band_low[0],band_high[0],fc='b',ec=None,alpha=0.1)
             axSpec.axvspan(band_low[1],band_high[1],fc='g',ec=None,alpha=0.1)
-            axSpec.axvspan(band_low[2],band_high[2],fc='b',ec=None,alpha=0.1)
+            axSpec.axvspan(band_low[2],band_high[2],fc='r',ec=None,alpha=0.1)
 
         def onclick(event):
             if not event.inaxes in [axR,axG,axB,axRGB]: return
@@ -830,7 +866,7 @@ class SpectroPhotoMetry:
 
         for row in range(self.resolution[0]):
             for clm in range(self.resolution[1]):
-                print(row*self.resolution[1]+clm)
+                # print(row*self.resolution[1]+clm)
                 pixel:_SPMPixel=self.SPMGrid[row,clm]
 
                 wave,spec_st,spec_nb=pixel.GetSpectra(stellar_spec_file,nebular_spec_file)

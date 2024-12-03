@@ -4,10 +4,10 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from galspy.utility.Figure.Beautification import SetMyStyle
-from galspy.utility.MassFunction import MassFunction,MassFunctionLiterature, LMF_OPTIONS
 from matplotlib import ticker
 import pickle
 import matplotlib.lines as mlines
+from astropy.cosmology import FlatLambdaCDM
 
 
 # =====================================
@@ -22,7 +22,7 @@ BOXES = [
 ]
 # Curves will be cached here if not available for quick plot in future
 CURVE_CACHE_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_ppt/BBGB_2024/data"
-RECACHE = False
+RECACHE = True
 
 # Redshifts in axes, will be filled row wise first
 REDSHIFTS = [10,9,8,7,6,5]
@@ -39,6 +39,60 @@ fig.subplots_adjust(hspace=0.05,wspace=0.05)
 # fig.tight_layout()
 
 
+
+# ===========================================
+# =========== OBSERVATIONAL FITS ============
+# ===========================================
+# Calabro et al. (2024)
+# https://arxiv.org/abs/2402.17829v1
+# Table 1 (3rd row) and Figure 4
+def Calabro2024_Fit(M):
+    m=0.76
+    q=-6.0
+    log_M = np.log10(M)
+    x=log_M
+    y = m*x + q
+    log_SFR = y
+    SFR = 10**log_SFR
+    return M,SFR
+
+# -------------------------------------------
+# Schreiber et al. (2014)
+# https://arxiv.org/abs/1409.5433
+# Equation 9
+def Schreiber2014_Fit(M,z):
+    M=np.array(M)
+    m = np.log10(M/1e9) 
+    m0=0.5
+    a0=1.5
+    a1=0.3
+    m1=0.36
+    a2=2.5
+    r=np.log10(1+z)
+
+    def Fit(m):
+        return (m - m0 + a0*r - a1*(np.max([0,m-m1-a2*r]))**2)
+    
+    log_SFR = np.array([Fit(mi) for mi in m])
+    SFR = 10**log_SFR
+    return M,SFR
+
+
+
+# -------------------------------------------
+# Speagle et al. (2014)
+# https://arxiv.org/abs/1405.2041
+# Abstract
+def Speagle2014_Fit(M,t):
+    # t in Gyr
+    slope = 0.84 - 0.026*t
+    offset = 6.51 - 0.11*t
+    log_SFR = slope * np.log10(M) - offset
+    SFR = 10**log_SFR
+    return M,SFR
+
+
+
 # =====================================
 # Add plots
 # =====================================
@@ -49,7 +103,7 @@ for i,z in enumerate(REDSHIFTS):
     for simname,snapdir,clr in BOXES:
         
         # Get filepath
-        filename = f"{simname}_hmf_z{str(np.round(z,2))}.txt"
+        filename = f"{simname}_msq_z{str(np.round(z,2))}.txt"
         filepath = os.path.join(CURVE_CACHE_DIR,filename)
 
         # Cache curves if file doesn't exist or recache is true
@@ -61,37 +115,45 @@ for i,z in enumerate(REDSHIFTS):
             if not snap_num > -1:
                 raise ValueError(f"Snapshot for redshift z={z} not found in directory:\n{snapdir}")
 
+            h=1
             pig = snap_root.PIG(snap_num)
-            dm_mass = (pig.FOFGroups.MassByType().T)[1] * 1e10  #M_solar/h
+            star_mass = (pig.FOFGroups.MassByType().T)[4] * (1e10/h)  #M_solar
+            sfr = pig.FOFGroups.StarFormationRate().T
+            # sfr*=(1e10/3.08568e+16) * 365 * 24 * 3600 # M_sun /year
+            halo_mass       = pig.FOFGroups.Mass() * (1e10/h)
 
-            box_size = pig.Header.BoxSize()/1000    #Mpc/h
-            M,phi,err = MassFunction(dm_mass,box_size) 
-
-            np.savetxt(filepath,np.column_stack((M,phi,err)),header=f"Mass phi err; Munit=Mo/h; Lunit=Mpc/h; boxsize={box_size}Mpc/h")
+            np.savetxt(filepath,np.column_stack((star_mass,sfr,halo_mass)),header=f"M_star SFR M_halo; Munit=Mo; SFRUnit=Mo/yr;")
         
-        COSMOLOGY = {'flat': True,'H0': 67.36,'Om0': 0.3153,'Ob0': 0.0493,'sigma8': 0.811,'ns': 0.9649}
 
         # Box Mass Function
-        M,phi,err = np.loadtxt(filepath).T
-        grad = np.gradient(phi)
-        mask1 = (grad<0)
-        M_ps,phi_ps = MassFunctionLiterature("Press-Schechter",COSMOLOGY,z,M,'dn/dlnM')
-        mask2 = phi>phi_ps
+        Mstar,sfr,Mhalo = np.loadtxt(filepath).T
+        z_to_mask = {5:3e11,6:2e11,7:1e11,8:9e10,9:8e10,10:7e10}
+        mask_lim=z_to_mask[int(z)]
+        mask1 = (Mhalo>mask_lim)
+        mask2 = (Mstar>0)
         mask = mask1 & mask2
-        M,phi,err = M[mask],phi[mask],err[mask]
-        hndl=ax.plot(M,phi,lw=2,c=clr,label=simname)
-        box_hands.append(hndl[0])
+        Mstar = Mstar[mask]
+        sfr = sfr[mask]
 
-        ax.fill_between(M,phi-0.9*err,phi+0.9*err,color=clr,alpha=0.2)
+        ax.plot(Mstar,sfr,'.',ms=2,c=clr)
 
+        # Observational
+        M=np.logspace(6,11,100)
+        M,SFR = Calabro2024_Fit(M)
+        ax.plot(M,SFR)
 
+        M,SFR = Schreiber2014_Fit(M,z)
+        ax.plot(M,SFR)
 
-    # Literature Mass Function
-    mass_hr     = np.logspace(MASS_RANGE[0],MASS_RANGE[-1],100)
-    M,dn_dlogM = MassFunctionLiterature("Seith-Tormen",COSMOLOGY,z,mass_hr,'dn/dlnM')
-    ax.plot(M,dn_dlogM,ls='--',c='k',lw=1,alpha=0.5)
-    M,dn_dlogM = MassFunctionLiterature("Press-Schechter",COSMOLOGY,z,mass_hr,'dn/dlnM')
-    ax.plot(M,dn_dlogM,ls=':',c='k',lw=1,alpha=0.5)
+        cosmo = FlatLambdaCDM(H0=67.36, Om0=0.3153)
+        # atropy lookbacktime in in Gyrs
+        lbt_inf = cosmo.lookback_time(999999)
+        lbt_z = cosmo.lookback_time(z)
+        age = (lbt_inf -lbt_z).value
+
+        M,SFR = Speagle2014_Fit(M,age)
+        ax.plot(M,SFR)
+
 
 
     # =====================================
@@ -103,14 +165,14 @@ for i,z in enumerate(REDSHIFTS):
     ax.xaxis.set_minor_formatter(ticker.NullFormatter())
     ax.yaxis.set_major_formatter(ticker.ScalarFormatter())
     ax.yaxis.set_minor_formatter(ticker.NullFormatter())
-    
+    continue
     # set xticks only for last row
     ax.set_xlim(10**(7.5),10**(14.5))
     xticks = np.array([8,10,12,14])     # In log10 scale
     ax.set_xticks(10**xticks,[])
     if int(i/NCLMS)==(NROWS-1):
         ax.set_xticks(10**xticks,[f"$10^{{{xt}}}$" for xt in xticks],fontsize=14)
-        ax.set_xlabel("Halo Mass $(M_\odot/$h$)$",fontsize=16)
+        ax.set_xlabel("Stellar Mass $(M_\odot/$h$)$",fontsize=16)
 
     # set yticks only for first column
     ax.set_ylim(1e-8,1e4)
@@ -118,7 +180,7 @@ for i,z in enumerate(REDSHIFTS):
     ax.set_yticks(10.0**yticks,[])
     if int(i%NCLMS)==0:
         ax.set_yticks(10.0**yticks,[f"$10^{{{yt}}}$" for yt in yticks],fontsize=14)
-        ax.set_ylabel(" $\phi$ (Mpc/h)$^{-3}$",fontsize=16)
+        ax.set_ylabel("SFR",fontsize=16)
 
     ax.xaxis.set_tick_params(which="major",direction="in",top=True,pad=4)
     ax.yaxis.set_tick_params(which="major",direction="in",right=True,pad=4)

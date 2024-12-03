@@ -7,12 +7,12 @@ import sphviewer as sph
 import os
 import pickle
 
-SUFFIX = "star"
+SUFFIX = "gas"
 
-with open(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/pysphviewer/data_spm/pos_{SUFFIX}.dat","rb") as fp:
+with open(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/pysphviewer/data/pos_{SUFFIX}.dat","rb") as fp:
     pos=pickle.load(fp)/1000
 
-with open(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/pysphviewer/data_spm/mass_{SUFFIX}.dat","rb") as fp:
+with open(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/pysphviewer/data/mass_{SUFFIX}.dat","rb") as fp:
     mass=pickle.load(fp)
 
 
@@ -35,7 +35,7 @@ targets = [subject1,subject2]
 anchors = {}
 anchors['sim_times']    = [0.0, 1.0]
 anchors['id_frames']    = [0, 300]
-anchors['r']            = [0.01, 'same']
+anchors['r']            = [2, 'same']
 anchors['id_targets']   = [0, 1]
 anchors['t']            = [0, 'same']
 anchors['p']            = [0, 359]
@@ -54,7 +54,10 @@ for i in data:
     R = sph.Render(S)
     img = R.get_image()
     # R.set_logscale()
-    plt.imsave(f'{FRAME_DUMP_PATH}{os.sep}fr_' + str('%04d.png' % h), img, cmap='cubehelix')
+    img=img**0.3
+    # img=1/(1+np.exp(-1*(img-0.5)))
+    # img=np.clip((img/1)**0.3,0,)
+    plt.imsave(f'{FRAME_DUMP_PATH}{os.sep}fr_' + str('%04d.png' % h), img, cmap='plasma')
 
     print('fr_' + str('%04d.png' % h))
     h += 1

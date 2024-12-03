@@ -1,8 +1,8 @@
 #!/bin/bash
-#PBS -N "MAB"
+#PBS -N "MAB8"
 #PBS -q "regular"
 #PBS -l walltime=24:00:00
-#PBS -l select=1:ncpus=1
+#PBS -l select=1:ncpus=4
 #PBS -o "/dev/null"
 #PBS -e "/dev/null"
 #PBS -j oe
@@ -12,8 +12,11 @@
 
 # ===== JOB =====
 cd $PBS_O_WORKDIR
-SUFFIX=primordial
-exec > $PBS_O_WORKDIR/stdout_pbs/stdout_$SUFFIX.txt 2>&1
+# SUFFIX=primordial
+SUFFIX=solar
+BOX=L150N2040
+Z=10
+exec > $PBS_O_WORKDIR/stdout_pbs/stdout_$SUFFIX_$BOX_$Z.txt 2>&1
 
 source $HOME/anaconda3/etc/profile.d/conda.sh
 echo "[ STARTED ] $(date)"

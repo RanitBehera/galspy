@@ -30,20 +30,20 @@ def DoFor(GO):
     spm.project_to_plane()
     # spm.show_projected_points()
 
-    spm.generate_pixelwise_grid(grid_resolution=(32,32),mode="NGB")
+    spm.generate_pixelwise_grid(grid_resolution=(12,12),mode="NGB")
     # spm.show_star_mass_map()
-    spm.show_pixelwise_histogram()
+    # spm.show_pixelwise_histogram()
     # spm.show_pixelwise_spectra()
-    return
 
-    # spm.show_rgb_channels([1450,2500,4450],[100,100,100])
+    spm.show_rgb_channels([1450,2500,4450],[100,100,100])
+    return
     # spm.show_uv_channels(1200,2600)
 
     MAB_S,MAB_T=spm.get_MAB(1200,2600,1400)
     return MAB_S,MAB_T
 
 
-DoFor(0)
+DoFor(1)
 
 # =============================
 FILE = "/mnt/home/student/cranit/RANIT/Repo/galspy/study/LuvAB/MUVAB.txt"

@@ -5,7 +5,7 @@ import pickle,os
 
 PATH = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS"
 ROOT = galspy.NavigationRoot(PATH)
-SAVEDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/pysphviewer/data_spm"
+SAVEDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/pysphviewer/data"
 
 
 print("Reading centers")
@@ -17,7 +17,7 @@ print(CX,CY,CZ)
 
 
 if True:
-    SPAN = 100
+    SPAN = 2500
     # BLOBS = ['000000', '00000E', '000032', '000033', '000040', '000042', '000043', '00006A', '00006B', '000075', '000076']            #<----DM
     BLOBS = ['000000', '00002E', '00002F', '00003D', '00003E', '000075']    #<----Gas
     # BLOBS = ['000000', '000001', '00002E', '00002F', '000039', '00003A', '00003B', '00003D', '000075']    #<----Star
@@ -27,12 +27,13 @@ if True:
         fp.write("# lengths in ckpc/h\n")
         fp.write(f"{CX},{CY},{CZ}\n{SPAN},{SPAN},{SPAN}")
 
-    # print("Reading particle pos")
+    print("Reading particle pos")
     X,Y,Z = ROOT.PART(43).Gas.Position(BLOBS).T          #<------
 
 
     print("Reading particle mass")
-    M = ROOT.PART(43).Gas.Mass(BLOBS)                    #<------
+    # M = ROOT.PART(43).Gas.Mass(BLOBS)                    #<------
+    M = ROOT.PART(43).Gas.InternalEnergy(BLOBS)                    #<------
     # M = ROOT.PART(43).BlackHole.BlackholeMass(BLOBS)                    #<------
 
     

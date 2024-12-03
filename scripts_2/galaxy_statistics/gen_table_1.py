@@ -2,9 +2,14 @@ import galspy
 import numpy as np
 import pickle
 
-MPGADGET_OUTPUT_DIR = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS"
-SNAP_NUM = 43
+BOX = "L250N2040"
+MPGADGET_OUTPUT_DIR = f"/mnt/home/student/cranit/NINJA/simulations/{BOX}/SNAPS"
+
 ROOT = galspy.NavigationRoot(MPGADGET_OUTPUT_DIR)
+Z=8
+SNAP_NUM = ROOT.SnapNumFromZ(Z)
+
+
 
 h=0.6736
 MASS_UNIT = 1e10/h
@@ -35,12 +40,12 @@ table = np.column_stack((GID,GMDM,GMST,GMBH,NST,NBH,acc,Mdot_edd,L_edd))
 table=table[:50000,:]
 
 
-np.savetxt("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/galaxy_statistics/data/table1.txt",table,
+np.savetxt(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/galaxy_statistics/data/table1_{BOX}_{Z}.txt",table,
            header="GID(0) GMDM(1) GMST(2) GMBH(3) NST(4) NBH(5) bh_acc/(Mo/yr)(6) Mdot_edd/(Mo/yr)(7) L_edd/Lo(8)",comments='#',
            fmt="%d %g %g %g %d %d %g %g %g")
 
-with open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/galaxy_statistics/data/table1.pcl","wb") as fp:
-    pickle.dump(table,fp)
+# with open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/galaxy_statistics/data/table1.pcl","wb") as fp:
+#     pickle.dump(table,fp)
 
 print("SAVED")
 

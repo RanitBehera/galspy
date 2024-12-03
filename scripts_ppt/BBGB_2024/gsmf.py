@@ -22,7 +22,7 @@ BOXES = [
 ]
 # Curves will be cached here if not available for quick plot in future
 CURVE_CACHE_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_ppt/BBGB_2024/data"
-RECACHE = False
+RECACHE = True
 
 # Redshifts in axes, will be filled row wise first
 REDSHIFTS = [10,9,8,7,6,5]
@@ -54,17 +54,18 @@ for i,z in enumerate(REDSHIFTS):
         # Cache curves if file doesn't exist or recache is true
         snap_root = galspy.NavigationRoot(snapdir)
         snap_num  = snap_root.SnapNumFromZ(z)
-        if not os.path.exists(filepath) or RECACHE:    
+        if not os.path.exists(filepath) or RECACHE:  
+            print("Caching",simname,"z=",z)
             if not snap_num > -1:
                 raise ValueError(f"Snapshot for redshift z={z} not found in directory:\n{snapdir}")
 
             pig = snap_root.PIG(snap_num)
-            sm_mass = (pig.FOFGroups.MassByType().T)[4] * 1e10
+            sm_mass = (pig.FOFGroups.MassByType().T)[4] * (1e10 /0.6736)  # M_solar
 
-            box_size = pig.Header.BoxSize()/1000    #Mpc/h
+            box_size = ((pig.Header.BoxSize()/0.6736)/1000)    #Mpc
             M,phi,err = MassFunction(sm_mass,box_size) 
 
-            np.savetxt(filepath,np.column_stack((M,phi,err)),header=f"Mass phi err; Munit=Mo/h; Lunit=Mpc/h; boxsize={box_size}Mpc/h")
+            np.savetxt(filepath,np.column_stack((M,phi,err)),header=f"Mass phi err; Munit=Mo; Lunit=Mpc; boxsize={box_size}Mpc")
         
 
         # Box Mass Function
@@ -96,7 +97,7 @@ for i,z in enumerate(REDSHIFTS):
     ax.set_xticks(10**xticks,[])
     if int(i/NCLMS)==(NROWS-1):
         ax.set_xticks(10**xticks,[f"$10^{{{xt}}}$" for xt in xticks],fontsize=14)
-        ax.set_xlabel("Stellar Mass $(M_\odot/$h$)$",fontsize=16)
+        ax.set_xlabel("Stellar Mass $(M_\odot)$",fontsize=16)
 
     # set yticks only for first column
     ax.set_ylim(1e-8,1.5e1)
@@ -104,7 +105,7 @@ for i,z in enumerate(REDSHIFTS):
     ax.set_yticks(10.0**yticks,[])
     if int(i%NCLMS)==0:
         ax.set_yticks(10.0**yticks,[f"$10^{{{yt}}}$" for yt in yticks],fontsize=14)
-        ax.set_ylabel(" $\phi$ (Mpc/h)$^{-1}$",fontsize=16)
+        ax.set_ylabel(" $\phi$ (Mpc$^{-3}$)",fontsize=16)
 
     ax.xaxis.set_tick_params(which="major",direction="in",top=True,pad=4)
     ax.yaxis.set_tick_params(which="major",direction="in",right=True,pad=4)
@@ -161,9 +162,9 @@ p8n=p8*(1-1/10**np.array([0.84,0.64,0.57,0.60,0.78,1.64]))
 z8.errorbar(M[:len(p8)],p8,[p8n,p8p],fmt='o',capsize=4,color=CLR,ms=4)
 
 
-z5_hands.append(song2016)
-z6_hands.append(song2016)
-z7_hands.append(song2016)
+# z5_hands.append(song2016)
+# z6_hands.append(song2016)
+# z7_hands.append(song2016)
 z8_hands.append(song2016)
 
 
@@ -214,10 +215,10 @@ p10p=np.array([15.8,0.258,0.1997])*1e-4
 p10n=np.array([7.8,0.146,0.0729])*1e-4
 z10.errorbar(M,p10,[p10n,p10p],[Merrn,Merrp],fmt='o',capsize=4,color=CLR,ms=4)
 
-z6_hands.append(stefanon2021)
-z7_hands.append(stefanon2021)
-z8_hands.append(stefanon2021)
-z9_hands.append(stefanon2021)
+# z6_hands.append(stefanon2021)
+# z7_hands.append(stefanon2021)
+# z8_hands.append(stefanon2021)
+# z9_hands.append(stefanon2021)
 z10_hands.append(stefanon2021)
 
 
@@ -262,10 +263,10 @@ p9p=p9*(10**np.array([0.25,0.24,0.31,0.40,0.54,0.64,0.61])-1)
 p9n=p9*(1-1/10**np.array([0.64,0.52,1.54,np.inf,np.inf,np.inf,np.inf]))
 z9.errorbar(M[:len(p9)],p9,[p9n,p9p],fmt='o',capsize=4,color=CLR,ms=5)
 
-z5_hands.append(weibel2024)
-z6_hands.append(weibel2024)
-z7_hands.append(weibel2024)
-z8_hands.append(weibel2024)
+# z5_hands.append(weibel2024)
+# z6_hands.append(weibel2024)
+# z7_hands.append(weibel2024)
+# z8_hands.append(weibel2024)
 z9_hands.append(weibel2024)
 
 
