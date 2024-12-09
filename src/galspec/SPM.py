@@ -118,15 +118,15 @@ class _SPMPixel:
     
 
     def GetSpectra(self,
-                   cache_stellar_path="cache/cloudy_chab_300M_solar.in",
-                   cache_nebular_path="cache/cloudy_chab_300M_solar.out"):
+                   cache_stellar_path="cache/cloudy_chab_300M_primordial.in",
+                   cache_nebular_path="cache/cloudy_chab_300M_primordial.out"):
         # if _SPMPixel._spec_cache_stellar is None:
         with open(cache_stellar_path,"rb") as fp:
             _SPMPixel._spec_cache_stellar = pickle.load(fp)
 
         # if _SPMPixel._spec_cache_nebular is None:
         with open(cache_nebular_path,"rb") as fp:
-            _SPMPixel._spec_cache_nebular = pickle.load(fp)        
+            _SPMPixel._spec_cache_nebular = pickle.load(fp)     
 
         WL = _SPMPixel._spec_cache_stellar["0.00001"]["WL"]
         TOTAL_FLUX_STELLAR = numpy.zeros(len(WL))
@@ -558,20 +558,27 @@ class SpectroPhotoMetry:
     
 
     def show_pixelwise_spectra(self):
-        fig,axes = plt.subplots(1,2,figsize=(10, 5))
-        ax1,ax2 = axes
+        fig1 = plt.figure(figsize=(5,5))
+        fig2 = plt.figure(figsize=(10,5))
+        
+        ax1=fig1.gca()
+        ax2=fig2.gca()
 
         img=ax1.imshow(self.mass_map**self.contrast_exponent,cmap='grey',origin='upper')
         self._show_scale(ax1)
 
         divider = make_axes_locatable(ax1)
         cax = divider.append_axes("top", size="5%", pad=0.1)
-        cbar = fig.colorbar(img,cax=cax,label="$M_\odot$",orientation="horizontal",location="top")
+        cbar = fig1.colorbar(img,cax=cax,label="$M_\odot$",orientation="horizontal",location="top")
+
 
         def ShowPixelSpectra(pixel:_SPMPixel):
             wl,st,nb=pixel.GetSpectra()
             ax2.plot(wl,st,label="Stellar")
             ax2.plot(wl,nb,label="Nebular")
+            # fc=2
+            # numpy.savetxt(f"/mnt/home/student/cranit/RANIT/Repo/galspy/study/BBGB/spec_{fc}_st.txt",numpy.column_stack((wl,st)))
+            # numpy.savetxt(f"/mnt/home/student/cranit/RANIT/Repo/galspy/study/BBGB/spec_{fc}_nb.txt",numpy.column_stack((wl,nb)))
             ax2.plot(wl,st+nb,label="Total")
             ax2.set_yscale('log')
             ax2.set_xscale('log')
@@ -591,10 +598,11 @@ class SpectroPhotoMetry:
             pixel = self.SPMGrid[iy,ix]
             ShowPixelSpectra(pixel)
             
-            fig.canvas.draw()
+            fig1.canvas.draw()
+            fig2.canvas.draw()
 
 
-        fig.canvas.mpl_connect('button_press_event', onclick)
+        fig1.canvas.mpl_connect('button_press_event', onclick)
         ax1.set_xlabel("Pixel Index")
         ax1.set_ylabel("Pixel Index")
         plt.show()
@@ -620,11 +628,18 @@ class SpectroPhotoMetry:
         axRGB = fig1.add_subplot(gs1[0,3])
 
         
-        blue=0*self.mass_map
-        green=0*self.mass_map
-        red=0*self.mass_map
+        # blue=0*self.mass_map
+        # green=0*self.mass_map
+        # red=0*self.mass_map
+        blue=numpy.zeros(self.resolution)
+        green=numpy.zeros(self.resolution)
+        red=numpy.zeros(self.resolution)
 
         print("Getting Pixelwise channels ...")
+
+        def get_index(wavelengths,needed_wavelength):
+            return numpy.argmin(numpy.abs(wavelengths-needed_wavelength))
+
 
         for row in range(self.resolution[0]):
             for clm in range(self.resolution[1]):
@@ -632,10 +647,10 @@ class SpectroPhotoMetry:
                 pixel:_SPMPixel=self.SPMGrid[row,clm]
                 wave,spec_st,spec_nb=pixel.GetSpectra()
                 spec_tot = spec_st + spec_nb
-
-                blue[row,clm]=numpy.mean(spec_st[band_low[0]:band_high[0]])
-                green[row,clm]=numpy.mean(spec_st[band_low[1]:band_high[1]])
-                red[row,clm]=numpy.mean(spec_st[band_low[2]:band_high[2]])
+                
+                blue[row,clm]=numpy.mean(spec_st[get_index(wave,band_low[0]):get_index(wave,band_high[0])],dtype=numpy.float64)
+                green[row,clm]=numpy.mean(spec_st[get_index(wave,band_low[1]):get_index(wave,band_high[1])],dtype=numpy.float64)
+                red[row,clm]=numpy.mean(spec_st[get_index(wave,band_low[2]):get_index(wave,band_high[2])],dtype=numpy.float64)
 
 
         cmap_blue = mcolors.LinearSegmentedColormap.from_list('custom_blue', ['black', 'blue'])
@@ -650,9 +665,13 @@ class SpectroPhotoMetry:
         max_r = numpy.max(red)
         max_rgb = numpy.max(numpy.row_stack((red,green,blue)))
 
-        red = red/max_r
-        green = green/max_g
         blue = blue/max_b
+        green = green/max_g
+        red = red/max_r
+
+        print("Blue",blue)
+        print("Green",green)
+        print("Red",red)
 
         axB.imshow(blue,cmap=cmap_blue)
         axG.imshow(green,cmap=cmap_green)
@@ -680,8 +699,8 @@ class SpectroPhotoMetry:
             axSpec.plot(wl,st,label="Stellar")
             axSpec.plot(wl,nb,label="Nebular")
             axSpec.plot(wl,st+nb,label="Total")
-            # import numpy as np
-            # np.savetxt(f"/mnt/home/student/cranit/RANIT/Repo/galspy/study/hpc_proposal/pixel_{self.ix}_{self.iy}.txt",np.column_stack([x,y]))
+            # numpy.savetxt(f"/mnt/home/student/cranit/RANIT/Repo/galspy/study/BBGB/pixel_{self.ix}_{self.iy}_stellar.txt",numpy.column_stack([wl,st]))
+            # numpy.savetxt(f"/mnt/home/student/cranit/RANIT/Repo/galspy/study/BBGB/pixel_{self.ix}_{self.iy}_stellar.txt",numpy.column_stack([wl,nb]))
             axSpec.set_yscale('log')
             axSpec.legend(frameon=False,fontsize=12)
             # axSpec.set_xscale('log')
@@ -690,6 +709,7 @@ class SpectroPhotoMetry:
             axSpec.axvspan(band_low[0],band_high[0],fc='b',ec=None,alpha=0.1)
             axSpec.axvspan(band_low[1],band_high[1],fc='g',ec=None,alpha=0.1)
             axSpec.axvspan(band_low[2],band_high[2],fc='r',ec=None,alpha=0.1)
+            
 
         def onclick(event):
             if not event.inaxes in [axR,axG,axB,axRGB]: return
@@ -718,12 +738,13 @@ class SpectroPhotoMetry:
         plt.show()
 
     def show_uv_channels(self,ang_start,ang_stop):
-        fig = plt.figure(figsize=(10,5))
-        gs = GridSpec(2,2,figure=fig)
+        fig1 = plt.figure(figsize=(10,5))
+        fig2 = plt.figure(figsize=(10,5))
+        fig3 = plt.figure(figsize=(10,5))
 
-        ax_UVSt     = fig.add_subplot(gs[0,0])
-        ax_UVTot    = fig.add_subplot(gs[0,1])
-        axSpec   = fig.add_subplot(gs[1,:])
+        ax_UVSt     = fig1.gca()
+        ax_UVTot    = fig2.gca()
+        axSpec   = fig3.gca()
 
         uv_stellar = 0*self.mass_map
         uv_total = 0*self.mass_map
@@ -748,9 +769,13 @@ class SpectroPhotoMetry:
 
         cmap_grey = mcolors.LinearSegmentedColormap.from_list('custom_red', ['black', 'white'])        
 
-        ax_UVSt.imshow(uv_stellar,cmap=cmap_grey)
-        ax_UVTot.imshow(uv_total,cmap=cmap_grey)
+        ax_UVSt.imshow(uv_stellar,cmap=cmap_grey,extent=[numpy.min(self._Up_star),numpy.max(self._Up_star),numpy.min(self._Vp_star),numpy.max(self._Vp_star)])
+        ax_UVTot.imshow(uv_total,cmap=cmap_grey,extent=[numpy.min(self._Up_star),numpy.max(self._Up_star),numpy.min(self._Vp_star),numpy.max(self._Vp_star)])
 
+        ax_UVTot.set_xlabel("X (ckpc/h)")
+        ax_UVTot.set_ylabel("Y (ckpc/h)")
+        ax_UVSt.set_xlabel("X (ckpc/h)")
+        ax_UVSt.set_ylabel("Y (ckpc/h)")
 
 
 
@@ -785,9 +810,12 @@ class SpectroPhotoMetry:
             # self.iy=iy
             ShowPixelSpectra(pixel)
             
-            fig.canvas.draw()
+            fig1.canvas.draw()
+            fig2.canvas.draw()
+            fig3.canvas.draw()
 
-        fig.canvas.mpl_connect('button_press_event', onclick)
+        fig1.canvas.mpl_connect('button_press_event', onclick)
+        fig2.canvas.mpl_connect('button_press_event', onclick)
 
         plt.show()
 

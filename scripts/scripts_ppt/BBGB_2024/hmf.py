@@ -73,11 +73,18 @@ for i,z in enumerate(REDSHIFTS):
 
         # Box Mass Function
         M,phi,err = np.loadtxt(filepath).T
-        grad = np.gradient(phi)
-        mask1 = (grad<0)
-        M_ps,phi_ps = MassFunctionLiterature("Press-Schechter",COSMOLOGY,z,M,'dn/dlnM')
-        mask2 = phi>phi_ps
-        mask = mask1 & mask2
+        # grad = np.gradient(phi)
+        # mask1 = (grad<0)
+        # M_ps,phi_ps = MassFunctionLiterature("Press-Schechter",COSMOLOGY,z,M,'dn/dlnM')
+        # mask2 = phi>phi_ps
+        # mask = mask1 & mask2
+        if simname=="L150N2040":
+            maskM=M>(32*1e10*0.00293499)
+        if simname=="L250N2040":
+            maskM=M>(32*1e10*0.0135179)
+        maskP=phi>1e-7
+        mask=maskM&maskP
+
         M,phi,err = M[mask],phi[mask],err[mask]
         hndl=ax.plot(M,phi,lw=2,c=clr,label=simname)
         box_hands.append(hndl[0])

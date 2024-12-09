@@ -51,8 +51,8 @@ plt.xlabel("Wavelength $(\\AA)$",fontsize=14)
 
 def on_plot_hover(event):
     for i,fill in enumerate(fills):
-        fill.set_facecolor((*(clrs[i]),0.1))
-        fill.set_edgecolor((0,0,0,0.1))
+        fill.set_facecolor((*(clrs[i]),1))
+        fill.set_edgecolor((0,0,0,1))
         fill.set_linewidth(1)
         vlines[i].set_alpha(0)
         annots[i].set_visible(False)

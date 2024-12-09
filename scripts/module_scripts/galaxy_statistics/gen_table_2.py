@@ -21,7 +21,7 @@ NEBULAR_FILE = f"/mnt/home/student/cranit/RANIT/Repo/galspy/cache/cloudy_chab_30
 
 root = galspy.NavigationRoot(MPGADGET_OUTPUT_DIR)
 
-RED = 8                 #<-------
+RED = 10                 #<-------
 SNAP_NUM = root.SnapNumFromZ(RED)
 
 
@@ -61,5 +61,5 @@ from multiprocessing import Pool
 
 if __name__=="__main__":
     with Pool(24) as pool:
-        result=pool.map(DoFor,range(0,50001))
+        result=pool.map(DoFor,range(0,30001))
 

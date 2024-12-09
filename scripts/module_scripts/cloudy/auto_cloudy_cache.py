@@ -3,10 +3,14 @@ from concurrent.futures import ThreadPoolExecutor
 import threading
 import time
 
+
+
 BPASS_CACHE_FILE = "/mnt/home/student/cranit/RANIT/Repo/galspy/cache/bpass_chab_300M.ch"
-CLOUDY_RUN_ROOT_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/cloudy/dump/primodial"
+# CLOUDY_RUN_ROOT_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/cloudy/dump/primodial"
+CLOUDY_RUN_ROOT_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/temp/show_anirban/run_root"
 # CLOUDY_TEMPLATE_SCRIPT = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/spectral_synthesis/BPASS/bpass_cloudy.in"
-CACHE_OUT_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/cache"
+# CACHE_OUT_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/cache"
+CACHE_OUT_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/temp/show_anirban/cache_out"
 SUFFIX = "primodial"
 
 # =====================
@@ -156,25 +160,25 @@ def print_lock(msg,**kwargs):
 
 with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
     print_lock("Creating Directories ...")
-    # executor.map(CreateDir, ZT_COMBS)
+    executor.map(CreateDir, ZT_COMBS)
 
     print_lock("Coverting BPASS SEDs to Cloudy Format ...")
-    # executor.map(Writefor, ZT_COMBS)
-    # print_lock("".ljust(32),end='\r')
+    executor.map(Writefor, ZT_COMBS)
+    print_lock("".ljust(32),end='\r')
     
     print_lock("Generating Cloudy input scripts ...")
-    # executor.map(GenerateCloudyInputs, ZT_COMBS)
-    # print_lock("".ljust(32),end='\r')
+    executor.map(GenerateCloudyInputs, ZT_COMBS)
+    print_lock("".ljust(32),end='\r')
 
     print_lock("Generating LinesList file ...")
-    # executor.map(GenLinesList, ZT_COMBS)
-    # print_lock("".ljust(32),end='\r')
+    executor.map(GenLinesList, ZT_COMBS)
+    print_lock("".ljust(32),end='\r')
 
     print_lock("Running Batch Cloudy ...")
-    # executor.map(RunCloudyInstance, ZT_COMBS)
+    executor.map(RunCloudyInstance, ZT_COMBS)
 
     print_lock("Varifyting Status ...")
-    # executor.map(VarifyCloudyRunStatus, ZT_COMBS)
+    executor.map(VarifyCloudyRunStatus, ZT_COMBS)
 
 # =========================
 # May be cloudy getting run before the input script is created

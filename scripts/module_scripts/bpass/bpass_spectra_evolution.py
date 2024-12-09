@@ -5,12 +5,13 @@ import galspy.utility.Figure.Beautification as bty
 from galspec.Utility import SlopeFinder
 
 # ================
-Z = "0.00001"
+Z = "0.02"
 LAM_MASK = [100,10000]
 # ================
 
 
-specs:dict = BPASSCache("cache/bpass_chab_300M.ch").Read()
+# specs:dict = BPASSCache("cache/bpass_chab_300M.ch").Read()
+specs:dict = BPASSCache("cache/cloudy_chab_300M_solar.out").Read()
 Zspecs  = specs[Z]
 Tkeys   = specs["T_KEYS"] 
 WL      = Zspecs["WL"]
@@ -21,9 +22,9 @@ ax:plt.Axes
 clrs = bty.GetGradientColorList((0,0,1),(1,0,0),51)
 for i,Tkey in enumerate(Tkeys):
     # if i==1:break
-    if not i%10==0: continue
+    # if not i%10==0: continue
     # if Tkey not in ["6.0","6.7","7.0","7.7","8.0","8.7","9.0"]: continue
-    OFFSET = 1#/(100**i)
+    OFFSET = 1/(100**i)
     Tspec   = specs[Z][Tkey]
 
     if "LAM_MASK" in locals():MASK = slice(*LAM_MASK,1)
@@ -44,7 +45,7 @@ for i,Tkey in enumerate(Tkeys):
 ax.set_xscale("log")
 ax.set_yscale("log")
 
-if "LAM_MASK" in locals():ax.set_xlim(*LAM_MASK)
+# if "LAM_MASK" in locals():ax.set_xlim(*LAM_MASK)
 # else:ax.set_xlim(1,1e5)
 
 ax.axvspan(3646,7000,color='k',alpha=0.1,ec=None)

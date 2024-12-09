@@ -13,6 +13,8 @@ SE = TD1.GetSoftExcess(freq,0.9)
 # PLOT
 fig,axs = plt.subplots(1,2)
 ax1,ax2 =axs
+ax1:plt.Axes
+ax2:plt.Axes
 
 ax1.plot(freq,L1*(1e7/1e24),'g--',label='Thin Disk',lw=1)
 ax1.plot(freq,SE*(1e7/1e24),'r--',label='Soft Excess',lw=1)
