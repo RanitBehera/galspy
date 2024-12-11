@@ -74,6 +74,7 @@ class CubeVisualizer:
 
     def update_axis_range(self):
         if not self._need_bound_update: return
+        # TODO: fails if we draw only arrows and there are no points
         all_pos = numpy.concatenate([point_dict["POSITION"] for point_dict in self._points_bank])
         ox,oy,oz = numpy.min(all_pos.T,axis=1)
         sx,sy,sz = numpy.max(all_pos.T,axis=1)
@@ -166,9 +167,9 @@ class CubeVisualizer:
 
         # Hide labels and ticks
         # ax.axis("off")
-        ax.set_zticks([],[])
-        ax.set_xticks([],[])
-        ax.set_yticks([],[])
+        # ax.set_zticks([],[])
+        # ax.set_xticks([],[])
+        # ax.set_yticks([],[])
         # ax.xaxis.set_tick_params(pad=-100)
 
 
@@ -198,7 +199,7 @@ class CubeVisualizer:
             vector  = arrow["TO"]
             clr     = arrow["CLR"]
             width   = arrow["WIDTH"]
-            a = Arrow3D(*(zip(origin,vector)), mutation_scale=20,lw=width, arrowstyle="-|>", color=clr)
+            a = Arrow3D(*(zip(origin,vector)), mutation_scale=4,lw=width, arrowstyle="-|>", color=clr)
             ax.add_artist(a)
 
 
