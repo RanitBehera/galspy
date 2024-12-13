@@ -4,6 +4,7 @@ import galspy.FileTypes.BigFile as bf
 import galspy.FileTypes.ConfigFile as cf
 import galspy.utility.PIGQuery as pq
 import numpy
+import bigfile as bigf
 
 class _Folder:
     def __init__(self,path:str) -> None:

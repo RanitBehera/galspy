@@ -8,7 +8,7 @@ SNAP_NUM = 43
 
 
 center_kpc = root.PIG(SNAP_NUM).FOFGroups.MassCenterPosition()[1]
-span_kpc   = 1000*np.ones(3)
+span_kpc   = 2500*np.ones(3)
 
 print(f"Scan Center : (ckpc/h)".ljust(32,"-"))
 print(f"  - x : {center_kpc[0]:.2f}")
