@@ -1,11 +1,16 @@
 import galspy
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.cluster import DBSCAN, KMeans
+from sklearn.cluster import HDBSCAN
+from sklearn.mixture import GaussianMixture
+from sklearn.cluster import MeanShift, estimate_bandwidth
 from galspy.utility.visualization import CubeVisualizer
 
 # a=np.array([43129,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43129,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43129,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43129,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130,43130])
 # b=a.sum()
 # print(b)
+
 
 
 print("="*60)
@@ -60,13 +65,13 @@ print(f"  * Mass of single star particle {single_star_mass:.02} M_solar/h.")
 print(f"  * Maximum group stellar mass in GroupID {max_gsm_gid} with {max_gsm:.02} M_solar/h corresponding to {round(max_gsm/single_star_mass)} star count in group.")
 print(f"  * Found {len(cids)} groups with cluster definition of {CLDEF} star particles corresponding to minimum cluster stellar mass of {min_clmass:.02} M_solar/h.")
 
-print()
-proceed = ""
-while proceed.strip()=="":
-    proceed = input("Proceed?[y/n] : ")
+# print()
+# proceed = ""
+# while proceed.strip()=="":
+#     proceed = input("Proceed?[y/n] : ")
 
-if proceed.lower() not in ['y']:
-    exit()
+# if proceed.lower() not in ['y']:
+#     exit()
 
 
 print()
@@ -89,70 +94,75 @@ def FindPeaks(cid):
     star_pos = spos[sgid==cid] 
     x,y,z=star_pos.T
     print(f"  * Found {len(star_pos)} stars.")
-    print(f"  * Creating bounding box.")
-    # origin
-    ox,oy,oz = np.min(x),np.min(y),np.min(z)
-    x,y,z=x-ox,y-oy,z-oz
-    sx,sy,sz = np.max(x),np.max(y),np.max(z)
-    span_kpc = max([sx,sy,sz])+1e-10
-    # Added small length so that the end boundary particle will fall inside the range when mapped.
-    # Otherwise it will get grid index 100 in  grid of size 100 where idnex should range from 0-99.
-    print(f"  * Spanned over {span_kpc:.02f} kpc/h.")
+ 
+    points=star_pos
+    # === K-Mean
+    kmeans = KMeans(n_clusters=7)
+    kmeans.fit(points)
+    cluster_centers = kmeans.cluster_centers_
+    labels = kmeans.labels_
+    # Limitations : n_cluster, Randomness in centroid seed
+
+    # === Mean-Shift
+    # bandwidth = estimate_bandwidth(points, quantile=0.2, n_samples=len(points))
+    # ms = MeanShift(bandwidth=bandwidth, bin_seeding=True)
+    # ms.fit(points)
+    # cluster_centers = ms.cluster_centers_
+    # labels = ms.labels_
+    # Limitations : Too many cluster centers.
+
+
+    # === DBSCAN
+    # dbscan = DBSCAN(eps=5, min_samples=10)
+    # labels = dbscan.fit_predict(points)
+    # clustered_points = points[labels != -1]
+    # cluster_centers= []
+    # for label in labels[labels!=-1]:
+    #     cpoints = points[labels == label]
+    #     ccenter = np.mean(cpoints, axis=0)
+    #     cluster_centers.append(ccenter)
+    # cluster_centers=np.array(cluster_centers)
+    # Limitations: No cluster centers. Mean or Median can be taken as further steps. Relatively Expensive.
+
+
+    # === Gaussian Mixture
+    # gmm=GaussianMixture(7)
+    # gmm.fit(points)
+    # labels = gmm.predict(points)
+    # cluster_centers =  gmm.means_
+
+    # === Affinity Propagation/OPTICS
+    # Ridiculously slow
+
+    # === 
     
-    gr = 100
-    print(f"  * Creating grid of dimension {gr}x{gr}x{gr}.")
-    grid = np.ones((gr,gr,gr))
-    # 8MB for 100x100x100
-    # np.ones() instead of np.zeros() so that when log scaled,
-    # zero count cells will become zero instead of -inf.
 
-    print(f"  * Mapping coordinates to grid indices.")
-    ix=np.int32(gr*(x/span_kpc))
-    jy=np.int32(gr*(y/span_kpc))
-    kz=np.int32(gr*(z/span_kpc))
+    print(labels)
 
-    print("  * Filling grids.")
-    # for i,j,k in zip(ix,jy,kz):
-        # grid[i,j,k] +=1  
-    # grid[ix,jy,kz]+=1
-    # Above numpy method is a simultaneous operation.
-    # Can't handle filling when cell indices are repeated.
-    # For this the following method works and gives same result as bruteforce loop above.
-    np.add.at(grid, (ix, jy, kz), 1)
-    print(f"  * Maximum cell count {int(np.max(grid))}.")
+    # VISUALISATION
+    fig1=plt.figure()
+    fig2 = plt.figure()
+    ax1=fig1.add_subplot(111, projection='3d') 
+    ax2=fig2.add_subplot(111, projection='3d') 
 
+    cv1=CubeVisualizer(ax1)
+    cv1.add_points(star_pos,1,'k',1)
+    cv1.add_points([hcm[cid-1]],300,'r',1,'+')
+
+    cv=CubeVisualizer(ax2)
+    cv.add_points(cluster_centers,300,'k',points_marker='+')
+    cv.add_points(points[labels ==0],1,'r')
+    cv.add_points(points[labels==1],1,'g')
+    cv.add_points(points[labels ==2],1,'b')
+    cv.add_points(points[labels ==3],1,'c')
+    cv.add_points(points[labels ==4],1,'y')
+    cv.add_points(points[labels ==5],1,'m')
+
+    cv.show(False)
+    cv1.show(False)
+
+    plt.show()    
     
-    print("  * Post-processing cells for log scale.")
-    grid = np.log10(grid)
-
-    print("  * Normalising cells.")
-    grid /= np.max(grid)
-
-
-    clim=0.8 
-    sharpness=1000
-    print(f"  * Increasing contrast centered at {clim} with sharpness {sharpness}.")
-    u=sharpness*(grid-clim)
-    # grid=1/(1+(np.exp(-u))) # This version gives overflow erros. The folloing version doesn't being the same function.
-    # grid=np.exp(np.min(u,0))/(1+(np.exp(-np.abs(u))))
-
-
-    print("  * Finding peaks.")
-    peaks = np.array(np.where(grid>0.9)).T
-
-    print(f"  * Found {len(peaks)} peaks.")
-
-    print("  * Remapping peak cells grid indices to bouding box coordinates.")
-    peak_cell_pos   = peaks*(span_kpc/gr)
-
-    print("  * Shifting bounding box to its global location.")
-    pcpx,pcpy,pcpz=peak_cell_pos.T
-    pcpx,pcpy,pcpz=pcpx+ox,pcpy+oy,pcpz+oz
-    peak_pos = np.column_stack((pcpx,pcpy,pcpz))
-
-    [print(t) for t in peak_pos]
-    print()
-    print(hcm[cid-1])
 
 
 
@@ -162,7 +172,7 @@ print()
 print("[ ANALYSING GROUPS ]")
 lencids = len(cids)
 for i,cid in enumerate(cids):
-    if not cid==2:continue
+    if not cid==1:continue
     print(f"- GroupID : {cid} ({i+1}/{lencids})")
     FindPeaks(cid)
 
@@ -170,12 +180,7 @@ for i,cid in enumerate(cids):
 
 exit()
 
-# Visualise particles
-# gid=4
-# cv=CubeVisualizer()
-# cv.add_points(star_pos_fof[star_gid_fof==gid],1,'r')
-# cv.add_points([halo_cm[gid-1]],100,'k')
-# cv.show()
+
 
 
 

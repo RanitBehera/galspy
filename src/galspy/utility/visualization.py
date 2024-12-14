@@ -39,7 +39,8 @@ class CubeVisualizer:
     def __init__(self,ax:plt.Axes=None,spanmode:_BOX_MODE="MaxAxis") -> None:
         if ax==None:
             ax=plt.axes(projection="3d")
-        if not ax.name=="3d": raise Exception("ERROR : Axes type is not 3d")
+        if not ax.name=="3d": 
+            raise Exception("ERROR : Axes type is not 3d")
         
         self.axis3d = ax
         self._points_bank = []
@@ -53,12 +54,13 @@ class CubeVisualizer:
 
         self._need_bound_update=True
 
-    def add_points(self,pos:list[list[float]],points_size=1,points_color='k',points_alpha=1):
+    def add_points(self,pos:list[list[float]],points_size=1,points_color='k',points_alpha=1,points_marker='.'):
         self._points_bank.append({
             "POSITION"  : pos,
             "SIZE"      : points_size,
             "COLOR"     : points_color,
-            "ALPHA"     : points_alpha
+            "ALPHA"     : points_alpha,
+            "MARKER"    : points_marker
         })
         self._need_bound_update = True
     
@@ -212,7 +214,8 @@ class CubeVisualizer:
             sz=points_dict["SIZE"]
             pc=points_dict["COLOR"]
             al=points_dict["ALPHA"]
-            self.axis3d.scatter(x,y,z,s=sz,color=pc,ec='none',alpha=al)
+            mark=points_dict["MARKER"]
+            self.axis3d.scatter(x,y,z,s=sz,color=pc,ec='none',alpha=al,marker=mark)
         return self.axis3d
 
     def show(self,show=True):

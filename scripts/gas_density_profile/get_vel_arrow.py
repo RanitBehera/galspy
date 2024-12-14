@@ -42,7 +42,7 @@ uvels = np.array([v / np.linalg.norm(v) for v in vel])
 v_rad = np.array([np.dot(a, b) for a, b in zip(vel, uvecs)])
 v_theta = np.array([np.dot(a, b) for a, b in zip(uvels, uvecs)])
 
-mask = (v_theta>0)&(v_rad>0)
+mask = (v_theta>0.9)&(v_rad>0)
 pos=pos[mask]
 vel=vel[mask]
 
