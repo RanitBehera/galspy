@@ -129,20 +129,20 @@ def FindPeaks(cid):
     print("  * Normalising cells.")
     grid /= np.max(grid)
 
-    plt.hist(grid.flatten(),bins=100)
-    plt.show()
+    # plt.hist(grid.flatten(),bins=100)
+    # plt.show()
 
 
-    clim=0.8 
-    sharpness=1000.0
+    clim=0.2
+    sharpness=100.0
     print(f"  * Increasing contrast centered at {clim} with sharpness {sharpness}.")
     u=sharpness*(grid-clim)
     # grid=1/(1+(np.exp(-u))) # This version gives overflow erros. The folloing version doesn't being the same function.
-    plt.hist(grid.flatten(),bins=100)
-    plt.show()
-    grid=np.exp(np.fmin(u,0))/(1.+(np.exp(-np.abs(u))))
-    plt.hist(grid.flatten(),bins=100)
-    plt.show()
+    # plt.hist(grid.flatten(),bins=100)
+    # plt.show()
+    # grid=np.exp(np.fmin(u,0))/(1.+(np.exp(-np.abs(u))))
+    # plt.hist(grid.flatten(),bins=100)
+    # plt.show()
 
 
     print("  * Finding peaks.")
@@ -160,9 +160,14 @@ def FindPeaks(cid):
 
     [print(t) for t in peak_pos]
     print()
-    print(hcm[cid-1])
+    hcmi=hcm[cid-1]
+    print(hcmi)
 
-
+    cv=CubeVisualizer()
+    cv.add_points(star_pos,points_color='r',points_alpha=0.1)
+    cv.add_points(peak_pos,points_color='b',points_marker="+",points_size=500)
+    cv.add_points([hcmi],points_marker="+",points_size=500,points_color='k')
+    cv.show()
 
 
 
@@ -170,7 +175,7 @@ print()
 print("[ ANALYSING GROUPS ]")
 lencids = len(cids)
 for i,cid in enumerate(cids):
-    if not cid==2:continue
+    if not cid==1:continue
     print(f"- GroupID : {cid} ({i+1}/{lencids})")
     FindPeaks(cid)
 

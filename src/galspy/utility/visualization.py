@@ -54,7 +54,7 @@ class CubeVisualizer:
 
         self._need_bound_update=True
 
-    def add_points(self,pos:list[list[float]],points_size=1,points_color='k',points_alpha=1,points_marker='.'):
+    def add_points(self,pos:list[list[float]],points_size=1,points_color=None,points_alpha=1,points_marker='.'):
         self._points_bank.append({
             "POSITION"  : pos,
             "SIZE"      : points_size,
@@ -215,7 +215,7 @@ class CubeVisualizer:
             pc=points_dict["COLOR"]
             al=points_dict["ALPHA"]
             mark=points_dict["MARKER"]
-            self.axis3d.scatter(x,y,z,s=sz,color=pc,ec='none',alpha=al,marker=mark)
+            self.axis3d.scatter(x,y,z,s=sz,color=pc,ec=None,alpha=al,marker=mark)
         return self.axis3d
 
     def show(self,show=True):

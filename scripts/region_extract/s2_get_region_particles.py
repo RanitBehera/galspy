@@ -6,20 +6,18 @@ import pickle,os
 PATH = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS"
 ROOT = galspy.NavigationRoot(PATH)
 SAVEDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/region_extract/data"
-SPAN = 2500 #kpc
-SUFFIX="gas_1"
+SPAN = 10000 #kpc
+gid=243
+SUFFIX=f"gas_{gid}"
 
 print("Reading centers")
-CX,CY,CZ = ROOT.PIG(43).FOFGroups.MassCenterPosition()[1]       #1 for gid
-CX += -4
-CY += -3
-CZ += -1
-print(CX,CY,CZ)
-CVX,CVY,CVZ = ROOT.PIG(43).FOFGroups.MassCenterVelocity()[1]       #1 for gid
+CX,CY,CZ = ROOT.PIG(43).FOFGroups.MassCenterPosition()[gid-1]       #1 for gid
+CX,CY,CZ=1923.20963528,128692.01446128,115465.83527536
+CVX,CVY,CVZ = ROOT.PIG(43).FOFGroups.MassCenterVelocity()[gid-1]       #1 for gid
 
 
 if True:
-    BLOBS = ['000000', '00002E', '00002F', '000030', '00003D', '00003E', '00003F', '000075']
+    BLOBS = ['000000', '000010', '000011', '000065', '000066', '000067', '000076']
     ROOT
 
     with open(SAVEDIR+os.sep+f"region_info_{SUFFIX}.txt","w") as fp:
@@ -40,6 +38,7 @@ if True:
     sml = ROOT.PART(43).Gas.SmoothingLength(BLOBS)          #<-------
     inteng = ROOT.PART(43).Gas.InternalEnergy(BLOBS)
     Zm = ROOT.PART(43).Gas.Metallicity(BLOBS)                    #<------
+    NH1 = ROOT.PART(43).Gas.NeutralHydrogenFraction(BLOBS)                    #<------
 
     
 
@@ -62,6 +61,7 @@ if True:
     sml=sml[mask]
     inteng=inteng[mask]
     Zm=Zm[mask]
+    NH1=NH1[mask]
     print(f"Found {len(M)} particles with masking.")
 
     print("stacking")
@@ -95,6 +95,10 @@ if True:
     with open(SAVEDIR+os.sep+f"ie_{SUFFIX}.dat","wb") as fp:    #<-----
         pickle.dump(inteng,fp)
     print("Internal Energy dumped.")
+
+    with open(SAVEDIR+os.sep+f"NHI_{SUFFIX}.dat","wb") as fp:    #<-----
+        pickle.dump(NH1,fp)
+    print("Neutral Hydrogen Fraction dumped.")
 
 
 

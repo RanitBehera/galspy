@@ -7,7 +7,8 @@ root = galspy.NavigationRoot(L150N2040)
 SNAP_NUM = 43
 
 
-center_kpc = root.PIG(SNAP_NUM).FOFGroups.MassCenterPosition()[1]
+# center_kpc = root.PIG(SNAP_NUM).FOFGroups.MassCenterPosition()[1]
+center_kpc = np.array([1923.20963528,128692.01446128,115465.83527536])
 span_kpc   = 2500*np.ones(3)
 
 print(f"Scan Center : (ckpc/h)".ljust(32,"-"))
