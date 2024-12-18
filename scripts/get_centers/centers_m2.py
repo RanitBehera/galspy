@@ -81,6 +81,11 @@ hcm = PIG.FOFGroups.MassCenterPosition()
 print("Done")
 
 
+# Check DM profile
+# dmpos = PIG.DarkMatter.Position()
+# dmgid = PIG.DarkMatter.GroupID()
+
+
 
 from scipy.ndimage import gaussian_filter
 def HistProfile(signal,bins=1000):
@@ -90,7 +95,7 @@ def HistProfile(signal,bins=1000):
     # Gaussian Smooth
     sm_logcount= gaussian_filter(logcount, sigma=2)
     # Peaks
-    peak_indices,_ = find_peaks(sm_logcount,height=np.log10(1),prominence=0.5)
+    peak_indices,_ = find_peaks(sm_logcount,prominence=0.5,)#,height=np.log10(10))
     peaks = bin[peak_indices]
 
     return bin,sm_logcount,peaks
@@ -122,14 +127,30 @@ def FindPeaks(cid):
     # axs[2].axvline(hcmz,color='k',ls='--',lw=1)
     # for p in peaksz:
     #     axs[2].axvline(p,color='k',lw=1)
+
+    plt.show()
+
+    # return
+    # DM Check 
+    # dm_pos = dmpos[dmgid==cid]
+    # x,y,z=dm_pos.T
+
+    # bin,sm_logcount,peaksx = HistProfile(x)
+    # axs[0].plot(bin,sm_logcount)
+
+    # bin,sm_logcount,peaksy = HistProfile(y)
+    # axs[1].plot(bin,sm_logcount)
+
+    # bin,sm_logcount,peaksy = HistProfile(z)
     # axs[2].plot(bin,sm_logcount)
-    # axs[2].axvline(hcmz,color='k',ls='--',lw=1)
-    # for p in peaks:
-    #     axs[2].axvline(p,color='k',lw=1)
+
+
     
-    candiadtes = list(itertools.product(peaksx,peaksy,peaksz))
+    # return
+    
+    candidates = list(itertools.product(peaksx,peaksy,peaksz))
     n_clusters = np.max([len(peaksx),len(peaksy),len(peaksz)])
-    # Tried : Directly feeding to k-mean. farthest lon waonderer gets priority
+    # Tried : Directly feeding to k-mean. farthest lone wonderer gets priority
 
 
     # KdTree
@@ -138,7 +159,7 @@ def FindPeaks(cid):
     # Rejection 1 : Neareast star particle should be within 10kpc.
     # Rejection 2 : Nearest 10 star particle shpuld have small spread.
     candidates1 = []
-    for cand in candiadtes:
+    for cand in candidates:
         distance,_ = tree.query(cand,k=10)
         if distance[0]>10:continue
         spread = np.std(distance)
@@ -162,31 +183,56 @@ def FindPeaks(cid):
                 centers.append(centroid)
                 break
 
+    # Radius Determination
+    # fig,axs = plt.subplots(len(centers),1)
+    # axs:list[plt.Axes]
+    cntr_rad=[]
+    for i,cntr in enumerate(centers):
+        distance,_ = tree.query(cntr,k=len(star_pos))
+        count,edge=np.histogram(distance,bins=1000)
+        logcount=np.log10(1+count)
+        sm_logcount= gaussian_filter(logcount, sigma=5)
+
+        bin=0.5*(edge[:-1]+edge[1:])
+        # axs[i].plot(bin,sm_logcount)
+
+        trigers=np.sign(np.gradient(sm_logcount))
+        # axs[i].plot(bin[:-1],trigers)
+        trigers=np.diff(trigers)
+        # axs[i].plot(bin[:-1],trigers)
+        rad = bin[np.where(trigers>0)][0]
+        # axs[i].axvline(rad)
+        cntr_rad.append([cntr,rad])
 
 
+    # Sphere coliision detection and shrink
+    for a,(anchor,arad) in enumerate(cntr_rad):
+        for t,(target,trad) in enumerate(cntr_rad):
+            if a>=t:continue
+            ctr_dist = np.linalg.norm(target-anchor)
+            rad_sum   = arad + trad
+            if rad_sum<ctr_dist:continue
+            
+            ratio =rad_sum/ctr_dist
+            cntr_rad[a]=[anchor,arad/ratio]
+            cntr_rad[t]=[target,trad/ratio]
 
-
-    # K-means
-    # kmeans = KMeans(n_clusters=n_clusters)
-    # kmeans.fit(star_pos)
-    # cluster_centers = kmeans.cluster_centers_
-    # labels = kmeans.labels_
-
-
-
-
-    # plt.show()
 
 
     cv=CubeVisualizer()
     cv.add_points(star_pos,points_alpha=1,points_color='r')
     cv.add_points([hcm],points_color='k',points_size=2000,points_marker='+')
-    # cv.add_points(candiadtes,points_color='b',points_size=300,points_marker='+')
+    # cv.add_points(candidates,points_color='b',points_size=300,points_marker='+')
     # cv.add_points(candidates1,points_color='b',points_size=300,points_marker='+')
     cv.add_points(centers,points_color='b',points_size=2000,points_marker='+')
+    for cntr,rad in cntr_rad:
+        cv.add_sphere_wire(cntr,rad,"b")
+    
     ax=cv.show(False)
-    ax.set_title(f"N={len(centers)}")
+    ax.set_title(f"GID {cid} : N={len(centers)}")
     plt.show()
+
+
 
 
 
@@ -194,9 +240,8 @@ print()
 print("[ ANALYSING GROUPS ]")
 lencids = len(cids)
 for i,cid in enumerate(cids):
-    if not cid==32:continue
+    if not cid==1:continue
     # if cid>20:break
-    fig=plt.figure(str(cid))
     print(f"- GroupID : {cid} ({i+1}/{lencids})")
     FindPeaks(cid)
 
