@@ -20,7 +20,7 @@ fig.subplots_adjust(hspace=0.05,wspace=0.05)
 # fig.tight_layout()
 
 
-TABLE_PATH = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/galaxy_statistics/data"
+TABLE_PATH = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/module_scripts/galaxy_statistics/data"
 
 
 
@@ -81,11 +81,11 @@ def Plot(i,BOX,Z,boxsize_mpc):
     ax.invert_xaxis()
 
     ax.annotate(f"z={Z}",xy=(0,1),xytext=(8,-8),xycoords="axes fraction",textcoords="offset pixels",va="top",ha="left",fontsize=14)
-    return
+    return ax
 
 
-Plot(0,"L150N2040",8,150)
-Plot(1,"L150N2040",9,150)
+ax8=Plot(0,"L150N2040",8,150)
+ax9=Plot(1,"L150N2040",9,150)
 # Plot(2,"L150N2040",10,150)
 # Plot(0,"L250N2040",8,250)
 # Plot(1,"L250N2040",9,250)
@@ -104,11 +104,17 @@ axs[0].figure.legend(handles=extra_hands,loc='upper center',frameon=False,bbox_t
 
 
 
+# ===================================
+# Add Scale Relation
+L150N2040 = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS"
+root = galspy.NavigationRoot(L150N2040)
+SNAP_NUM = 43
+PART = root.PART(SNAP_NUM)
 
 
 
 
-
+# ===================================
 
 
 # OBS

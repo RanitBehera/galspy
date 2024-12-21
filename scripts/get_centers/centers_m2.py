@@ -15,7 +15,7 @@ SNAPSPATH = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS/"
 SNAPNUM=43
 MASSUNIT=1e10
 
-# Cluster Defibition.
+# Cluster Definition.
 # Number of stars a halo should have to further post process.
 # Linked to minimum stellar mass in the cluster.
 CLDEF = 32     
@@ -72,6 +72,7 @@ print()
 print("[ READING PIG ]")
 print("- STAR Positions : ",end="",flush=True)
 spos = PIG.Star.Position()
+smass = PIG.Star.Mass()
 print("Done")
 print("- STAR GroupIDs : ",end="",flush=True)
 sgid = PIG.Star.GroupID()
@@ -95,13 +96,14 @@ def HistProfile(signal,bins=1000):
     # Gaussian Smooth
     sm_logcount= gaussian_filter(logcount, sigma=2)
     # Peaks
-    peak_indices,_ = find_peaks(sm_logcount,prominence=0.5,)#,height=np.log10(10))
+    peak_indices,_ = find_peaks(sm_logcount,prominence=0.5)#,height=np.log10(10))
     peaks = bin[peak_indices]
 
     return bin,sm_logcount,peaks
 
 def FindPeaks(cid):
     star_pos = spos[sgid==cid] 
+    star_mass = smass[sgid==cid]
     x,y,z=star_pos.T
     hcm = PIG.FOFGroups.MassCenterPosition()[cid-1]
     hcmx,hcmy,hcmz = hcm
@@ -128,10 +130,10 @@ def FindPeaks(cid):
     # for p in peaksz:
     #     axs[2].axvline(p,color='k',lw=1)
 
-    plt.show()
-
+    # plt.show()
     # return
-    # DM Check 
+
+    # ===== DM Check 
     # dm_pos = dmpos[dmgid==cid]
     # x,y,z=dm_pos.T
 
@@ -153,7 +155,7 @@ def FindPeaks(cid):
     # Tried : Directly feeding to k-mean. farthest lone wonderer gets priority
 
 
-    # KdTree
+    # ===== KdTree
     tree = KDTree(star_pos)
 
     # Rejection 1 : Neareast star particle should be within 10kpc.
@@ -167,7 +169,7 @@ def FindPeaks(cid):
         candidates1.append(cand)
 
     
-    # Optimize Centers
+    # ===== Optimize Centers
     centers = []
     for cand in candidates1:
         centroid = cand
@@ -183,8 +185,9 @@ def FindPeaks(cid):
                 centers.append(centroid)
                 break
 
-    # Radius Determination
+    # ===== Radius Determination
     # fig,axs = plt.subplots(len(centers),1)
+    # if len(centers)==1:axs=[axs]
     # axs:list[plt.Axes]
     cntr_rad=[]
     for i,cntr in enumerate(centers):
@@ -197,15 +200,19 @@ def FindPeaks(cid):
         # axs[i].plot(bin,sm_logcount)
 
         trigers=np.sign(np.gradient(sm_logcount))
-        # axs[i].plot(bin[:-1],trigers)
+        # axs[i].plot(bin,trigers)
         trigers=np.diff(trigers)
         # axs[i].plot(bin[:-1],trigers)
         rad = bin[np.where(trigers>0)][0]
         # axs[i].axvline(rad)
         cntr_rad.append([cntr,rad])
+        # axs[i].set_ylabel(f"cx={cntr[0]:.02f}\ncy={cntr[1]:.02f}\ncz={cntr[2]:.02f}",rotation=0)
 
 
-    # Sphere coliision detection and shrink
+    # plt.show()
+
+
+    # ===== Sphere collision detection and shrink
     for a,(anchor,arad) in enumerate(cntr_rad):
         for t,(target,trad) in enumerate(cntr_rad):
             if a>=t:continue
@@ -219,36 +226,77 @@ def FindPeaks(cid):
 
 
 
-    cv=CubeVisualizer()
-    cv.add_points(star_pos,points_alpha=1,points_color='r')
-    cv.add_points([hcm],points_color='k',points_size=2000,points_marker='+')
-    # cv.add_points(candidates,points_color='b',points_size=300,points_marker='+')
+
+
+
+
+    # cv=CubeVisualizer()
+
+    # Get Stellar mass
+    sub_st_mass = []
+    table =[]
+    stmass_from_fof = ((PIG.FOFGroups.MassByType().T)[4])[cid-1]
+    stmass_from_sum = np.sum(star_mass)
+    for i,(anchor,arad) in enumerate(cntr_rad):
+        instar_ind = tree.query_ball_point(anchor,arad)
+        in_stars = star_pos[instar_ind]
+        in_stars_mass = star_mass[instar_ind]
+
+
+        nsubs=len(cntr_rad)
+        table.append([cid,nsubs,i+1,len(star_pos),len(in_stars),stmass_from_fof,stmass_from_fof,np.sum(in_stars_mass),anchor[0],anchor[1],anchor[2],arad])
+
+        # cv.add_points(in_stars,points_alpha=1)
+
+
+    # cv.add_points(star_pos,points_alpha=0.5,points_color='r')
+    # cv.add_points([hcm],points_color='k',points_size=2000,points_marker='+')
+    # cv.add_points(candidates,points_color='b',points_size=30,points_marker='+')
     # cv.add_points(candidates1,points_color='b',points_size=300,points_marker='+')
-    cv.add_points(centers,points_color='b',points_size=2000,points_marker='+')
-    for cntr,rad in cntr_rad:
-        cv.add_sphere_wire(cntr,rad,"b")
+    # cv.add_points(centers,points_color='r',points_size=2000,points_marker='+')
+    # for cntr,rad in cntr_rad:
+        # cv.add_sphere_wire(cntr,rad,"b")
     
-    ax=cv.show(False)
-    ax.set_title(f"GID {cid} : N={len(centers)}")
-    plt.show()
+    # ax=cv.show(False)
+    # ax.set_title(f"GID {cid} : N={len(centers)}")
+    # plt.show()
+
+    np.savetxt(fp, np.array(table), fmt='%d %d %d %d %d %.08f %.8f %.8f %.8f %.8f %.8f %.8f')
+    fp.flush()
 
 
+FILENAME = "subokay.txt"
 
+fp = open(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/get_centers/data/{FILENAME}",'w')
+fp.write("# gid nsubs subid nstar_group nstar_sub st_mass_fof st_mass_sum st_mass_sub cx cy cz cr\n")
+fp.close()
 
+fp = open(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/get_centers/data/{FILENAME}",'a')
 
 print()
 print("[ ANALYSING GROUPS ]")
 lencids = len(cids)
+
+okay = [2,3,4,21,22,31,56,58,64,75,89,103,132,173,178,182,190,194,211,214,266,293,323,362,372,398,416,430,524,545,596,604,606,607,624,647,678,740,750,755,757,764,782,797,849,852,881,890,924,934,1015,1027,1037,1051,1084,1091,1204,1317,1329,1450,1521,1592,1621,1647,1682,1715,1799,1834,1853,1882,1887,1941,2085,2732,2822,2974,2995,3146,3172,3295,3835,6305]
+
 for i,cid in enumerate(cids):
-    if not cid==1:continue
+    # if not cid==69699:continue
     # if cid>20:break
+
+    if cid not in okay:continue
+
     print(f"- GroupID : {cid} ({i+1}/{lencids})")
-    FindPeaks(cid)
+    try:
+        FindPeaks(cid)
+    except:
+        # pass
+        fp.write(f"#{cid}\n")
+        continue
 
+# Intresting gids to look:
+# 1,13
 
-
-
-
+fp.close()
 
 
 
