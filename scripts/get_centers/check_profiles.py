@@ -51,8 +51,9 @@ for file in FILES:
 axs[0].axhline(n_igm)
 axs[0].set_xscale("log")
 axs[0].set_yscale("log")
-
-
+axs[0].axvline((10000/0.6736)/(1+7))
+axs[0].set_xlabel("Radius (pkpc)")
+axs[0].set_ylabel("nH ($cm^{-3}$)")
 
 st_arr = []
 NH_arr=[]
@@ -68,5 +69,8 @@ NH_arr=np.array(NH_arr)
 axs[1].plot(st_arr*1e10/0.6736,NH_arr,'.',ms=10)
 axs[1].set_xscale("log")
 axs[1].set_yscale("log")
+
+axs[1].set_xlabel("Cluster Stellar Mass ($M_\odot$)")
+axs[1].set_ylabel("Column Density (gm $cm^{-2}$)")
 
 plt.show()

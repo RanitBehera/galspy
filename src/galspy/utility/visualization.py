@@ -33,7 +33,7 @@ class Arrow3D(FancyArrowPatch):
 
 
 
-_BOX_MODE = Literal["AxisWise","MaxAxis"]
+_BOX_MODE = Literal["AxisWise","MaxAxis","FixedAxis"]
 
 class CubeVisualizer:
     def __init__(self,ax:plt.Axes=None,spanmode:_BOX_MODE="MaxAxis") -> None:
@@ -94,6 +94,34 @@ class CubeVisualizer:
     
     def get_axis_span(self):
         return self.bound - self.origin
+
+    def get_axis_anchors(self):
+        self.update_axis_range()
+        
+        OX,OY,OZ = self.origin
+        LX,LY,LZ = self.bound
+
+        SX = LX - OX
+        SY = LY - OY
+        SZ = LZ - OZ
+
+        MaxSpan = max([SX,SY,SZ])
+        
+        CX = OX + SX/2
+        CY = OY + SY/2
+        CZ = OZ + SZ/2
+
+        OX = CX - MaxSpan/2
+        LX = CX + MaxSpan/2
+        OY = CY - MaxSpan/2
+        LY = CY + MaxSpan/2
+        OZ = CZ - MaxSpan/2
+        LZ = CZ + MaxSpan/2
+
+        return OX,LX,OY,LY,OZ,LZ
+
+
+
 
     def get_axis(self):
         return self.axis3d

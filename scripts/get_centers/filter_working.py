@@ -11,6 +11,16 @@ mask_single = nsubs==1
 gid,nsubs,subid,nstar_group,nstar_sub,st_mass_fof,st_mass_sum,st_mass_sub,cx,cy,cz,cr=table[mask_single].T
 
 
+
+plt.plot(st_mass_fof,st_mass_sub,'.')
+
+
+plt.show()
+
+
+
+exit()
+
 # Filter for single system
 unique_gids = np.int64(np.unique(gid))
 subsum = {}
@@ -24,9 +34,15 @@ subsum=np.array(list(subsum.values()))
 recovery_fraction = subsum/st_mass_fof
 
 
-mask_rec = (recovery_fraction>0.95)&(recovery_fraction<1.0)
+mask_rec = (recovery_fraction>0.2)&(recovery_fraction<1.0)
 
 okgid=np.int32(gid[mask_rec])
+
+
+plt.plot(st_mass_fof,subsum,'.')
+
+
+plt.show()
 
 
 # ====

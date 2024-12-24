@@ -86,6 +86,9 @@ print("Done")
 # dmpos = PIG.DarkMatter.Position()
 # dmgid = PIG.DarkMatter.GroupID()
 
+# gaspos = PIG.Gas.Position()
+# gasgid = PIG.Gas.GroupID()
+
 
 
 from scipy.ndimage import gaussian_filter
@@ -109,31 +112,29 @@ def FindPeaks(cid):
     hcmx,hcmy,hcmz = hcm
 
 
-    # fig,axs = plt.subplots(3,1)
-    # axs:list[plt.Axes]
+    fig,axs = plt.subplots(3,1)
+    axs:list[plt.Axes]
 
     bin,sm_logcount,peaksx = HistProfile(x)
-    # axs[0].plot(bin,sm_logcount)
-    # axs[0].axvline(hcmx,color='k',ls='--',lw=1)
-    # for p in peaksx:
-    #     axs[0].axvline(p,color='k',lw=1)
+    axs[0].plot(bin,sm_logcount)
+    axs[0].axvline(hcmx,color='k',ls='--',lw=1)
+    for p in peaksx:
+        axs[0].axvline(p,color='k',lw=1)
 
     bin,sm_logcount,peaksy = HistProfile(y)
-    # axs[1].plot(bin,sm_logcount)
-    # axs[1].axvline(hcmy,color='k',ls='--',lw=1)
-    # for p in peaksy:
-    #     axs[1].axvline(p,color='k',lw=1)
+    axs[1].plot(bin,sm_logcount)
+    axs[1].axvline(hcmy,color='k',ls='--',lw=1)
+    for p in peaksy:
+        axs[1].axvline(p,color='k',lw=1)
 
     bin,sm_logcount,peaksz = HistProfile(z)
-    # axs[2].plot(bin,sm_logcount)
-    # axs[2].axvline(hcmz,color='k',ls='--',lw=1)
-    # for p in peaksz:
-    #     axs[2].axvline(p,color='k',lw=1)
+    axs[2].plot(bin,sm_logcount)
+    axs[2].axvline(hcmz,color='k',ls='--',lw=1)
+    for p in peaksz:
+        axs[2].axvline(p,color='k',lw=1)
 
-    # plt.show()
-    # return
 
-    # ===== DM Check 
+    # # ===== DM Check 
     # dm_pos = dmpos[dmgid==cid]
     # x,y,z=dm_pos.T
 
@@ -146,9 +147,24 @@ def FindPeaks(cid):
     # bin,sm_logcount,peaksy = HistProfile(z)
     # axs[2].plot(bin,sm_logcount)
 
+    # # ===== Gas Check 
+    # gas_pos = gaspos[gasgid==cid]
+    # x,y,z=gas_pos.T
 
+    # bin,sm_logcount,peaksx = HistProfile(x)
+    # axs[0].plot(bin,sm_logcount)
+
+    # bin,sm_logcount,peaksy = HistProfile(y)
+    # axs[1].plot(bin,sm_logcount)
+
+    # bin,sm_logcount,peaksy = HistProfile(z)
+    # axs[2].plot(bin,sm_logcount)
+
+
+    plt.show()
     
-    # return
+    
+
     
     candidates = list(itertools.product(peaksx,peaksy,peaksz))
     n_clusters = np.max([len(peaksx),len(peaksy),len(peaksz)])
@@ -186,9 +202,9 @@ def FindPeaks(cid):
                 break
 
     # ===== Radius Determination
-    # fig,axs = plt.subplots(len(centers),1)
-    # if len(centers)==1:axs=[axs]
-    # axs:list[plt.Axes]
+    fig,axs = plt.subplots(len(centers),1)
+    if len(centers)==1:axs=[axs]
+    axs:list[plt.Axes]
     cntr_rad=[]
     for i,cntr in enumerate(centers):
         distance,_ = tree.query(cntr,k=len(star_pos))
@@ -197,19 +213,19 @@ def FindPeaks(cid):
         sm_logcount= gaussian_filter(logcount, sigma=5)
 
         bin=0.5*(edge[:-1]+edge[1:])
-        # axs[i].plot(bin,sm_logcount)
+        axs[i].plot(bin,sm_logcount)
 
         trigers=np.sign(np.gradient(sm_logcount))
         # axs[i].plot(bin,trigers)
         trigers=np.diff(trigers)
         # axs[i].plot(bin[:-1],trigers)
         rad = bin[np.where(trigers>0)][0]
-        # axs[i].axvline(rad)
+        axs[i].axvline(rad)
         cntr_rad.append([cntr,rad])
         # axs[i].set_ylabel(f"cx={cntr[0]:.02f}\ncy={cntr[1]:.02f}\ncz={cntr[2]:.02f}",rotation=0)
 
 
-    # plt.show()
+    plt.show()
 
 
     # ===== Sphere collision detection and shrink
@@ -230,7 +246,7 @@ def FindPeaks(cid):
 
 
 
-    # cv=CubeVisualizer()
+    cv=CubeVisualizer()
 
     # Get Stellar mass
     sub_st_mass = []
@@ -249,54 +265,54 @@ def FindPeaks(cid):
         # cv.add_points(in_stars,points_alpha=1)
 
 
-    # cv.add_points(star_pos,points_alpha=0.5,points_color='r')
-    # cv.add_points([hcm],points_color='k',points_size=2000,points_marker='+')
+    cv.add_points(star_pos,points_alpha=0.5,points_color='r')
+    cv.add_points([hcm],points_color='k',points_size=2000,points_marker='+')
     # cv.add_points(candidates,points_color='b',points_size=30,points_marker='+')
     # cv.add_points(candidates1,points_color='b',points_size=300,points_marker='+')
-    # cv.add_points(centers,points_color='r',points_size=2000,points_marker='+')
-    # for cntr,rad in cntr_rad:
-        # cv.add_sphere_wire(cntr,rad,"b")
+    cv.add_points(centers,points_color='r',points_size=2000,points_marker='+')
+    for cntr,rad in cntr_rad:
+        cv.add_sphere_wire(cntr,rad,"b")
     
-    # ax=cv.show(False)
-    # ax.set_title(f"GID {cid} : N={len(centers)}")
-    # plt.show()
+    ax=cv.show(False)
+    ax.set_title(f"GID {cid} : N={len(centers)}")
+    plt.show()
 
-    np.savetxt(fp, np.array(table), fmt='%d %d %d %d %d %.08f %.8f %.8f %.8f %.8f %.8f %.8f')
-    fp.flush()
+    # np.savetxt(fp, np.array(table), fmt='%d %d %d %d %d %.08f %.8f %.8f %.8f %.8f %.8f %.8f')
+    # fp.flush()
 
 
 FILENAME = "subokay.txt"
 
-fp = open(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/get_centers/data/{FILENAME}",'w')
-fp.write("# gid nsubs subid nstar_group nstar_sub st_mass_fof st_mass_sum st_mass_sub cx cy cz cr\n")
-fp.close()
+# fp = open(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/get_centers/data/{FILENAME}",'w')
+# fp.write("# gid nsubs subid nstar_group nstar_sub st_mass_fof st_mass_sum st_mass_sub cx cy cz cr\n")
+# fp.close()
 
-fp = open(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/get_centers/data/{FILENAME}",'a')
+# fp = open(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/get_centers/data/{FILENAME}",'a')
 
 print()
 print("[ ANALYSING GROUPS ]")
 lencids = len(cids)
 
-okay = [2,3,4,21,22,31,56,58,64,75,89,103,132,173,178,182,190,194,211,214,266,293,323,362,372,398,416,430,524,545,596,604,606,607,624,647,678,740,750,755,757,764,782,797,849,852,881,890,924,934,1015,1027,1037,1051,1084,1091,1204,1317,1329,1450,1521,1592,1621,1647,1682,1715,1799,1834,1853,1882,1887,1941,2085,2732,2822,2974,2995,3146,3172,3295,3835,6305]
+# okay = [2,3,4,21,22,31,56,58,64,75,89,103,132,173,178,182,190,194,211,214,266,293,323,362,372,398,416,430,524,545,596,604,606,607,624,647,678,740,750,755,757,764,782,797,849,852,881,890,924,934,1015,1027,1037,1051,1084,1091,1204,1317,1329,1450,1521,1592,1621,1647,1682,1715,1799,1834,1853,1882,1887,1941,2085,2732,2822,2974,2995,3146,3172,3295,3835,6305]
 
 for i,cid in enumerate(cids):
-    # if not cid==69699:continue
+    if not cid==9:continue
     # if cid>20:break
 
-    if cid not in okay:continue
+    # if cid not in okay:continue
 
     print(f"- GroupID : {cid} ({i+1}/{lencids})")
-    try:
-        FindPeaks(cid)
-    except:
-        # pass
-        fp.write(f"#{cid}\n")
-        continue
+    # try:
+    FindPeaks(cid)
+    # except:
+    #     # pass
+    #     fp.write(f"#{cid}\n")
+    #     continue
 
 # Intresting gids to look:
 # 1,13
 
-fp.close()
+# fp.close()
 
 
 
