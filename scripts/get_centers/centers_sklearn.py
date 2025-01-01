@@ -175,7 +175,7 @@ def FindPeaks(cid):
     u,c = u[srt],c[srt]
     # lower limit
     mask = c>100
-    u,c=u[mask],c[mask]
+    # u,c=u[mask],c[mask]
 
     cc = cluster_centers[u]
 
@@ -197,7 +197,7 @@ print()
 print("[ ANALYSING GROUPS ]")
 lencids = len(cids)
 for i,cid in enumerate(cids):
-    if not cid==1:continue
+    if not cid==13:continue
     print(f"- GroupID : {cid} ({i+1}/{lencids})")
     FindPeaks(cid)
 

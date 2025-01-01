@@ -55,6 +55,7 @@ class CubeVisualizer:
         self._need_bound_update=True
 
     def add_points(self,pos:list[list[float]],points_size=1,points_color=None,points_alpha=1,points_marker='.'):
+        if len(pos)==0:return
         self._points_bank.append({
             "POSITION"  : pos,
             "SIZE"      : points_size,
@@ -120,8 +121,16 @@ class CubeVisualizer:
 
         return OX,LX,OY,LY,OZ,LZ
 
-
-
+    def get_anchor_points(self):
+        ox,lx,oy,ly,oz,lz = self.get_axis_anchors()
+        pts_zl=(0.5*(ox+lx),0.5*(oy+ly),oz)
+        pts_zu=(0.5*(ox+lx),0.5*(oy+ly),lz)
+        pts_yl=(0.5*(ox+lx),oy,0.5*(oz+lz))
+        pts_yu=(0.5*(ox+lx),ly,0.5*(oz+lz))
+        pts_xl=(ox,0.5*(oy+ly),0.5*(oz+lz))
+        pts_xu=(lx,0.5*(oy+ly),0.5*(oz+lz))
+        pts=numpy.array([pts_zl,pts_zu,pts_yl,pts_yu,pts_xl,pts_xu])
+        return pts
 
     def get_axis(self):
         return self.axis3d
