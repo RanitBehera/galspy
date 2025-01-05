@@ -19,6 +19,9 @@ def GetHitogramProfilePeaks(data,bins=250,apply_log10=True):
     # Treat as signal
     signal = hist
     
+    # Detection limit
+    # signal = np.where(signal>1,signal,0)
+
     if apply_log10:
         signal = np.log10(signal+1)
 
@@ -33,7 +36,7 @@ def GetHitogramProfilePeaks(data,bins=250,apply_log10=True):
 
 
 def FindProjectionPeaks(positions,mass,uselog=True,reclevel=0,**kwargs):
-    print("Recursion Level",reclevel)
+    print("  Recursion Level",reclevel)
     x,y,z=positions.T
     tree = KDTree(positions)
 
@@ -43,7 +46,7 @@ def FindProjectionPeaks(positions,mass,uselog=True,reclevel=0,**kwargs):
     # =========================
     # Adaptipe binning
     spanx,spany,spanz=np.ptp(x),np.ptp(y),np.ptp(z)
-    BIN_SIZE= 0.5#ckpc
+    BIN_SIZE= 0.165*(1+7)/(0.6736)#ckpc
     nbinx,nbiny,nbinz=int(spanx/BIN_SIZE),int(spany/BIN_SIZE),int(spanz/BIN_SIZE)
 
     binx,countx,peaksx = GetHitogramProfilePeaks(x,nbinx,apply_log10=uselog)
@@ -127,21 +130,31 @@ def FindProjectionPeaks(positions,mass,uselog=True,reclevel=0,**kwargs):
         passed_level2.append(c)
 
     centers = passed_level2
-    if len(centers)==0:
-        centers=passed_level1
+    if len(centers)==0:centers=passed_level1
     
+    centers=np.array(centers)
 
     # ===========================
     # 3. OPTIMIZE CENTERS
     # ===========================
     # Meanshift Algorithm
     opt_centers = []
-    for c in centers:
+    for i,c in enumerate(centers):
         centroid = c
         while True:
-            _,idx = tree.query(centroid,k=min(len(positions),100))
+            _,idx = tree.query(centroid,k=min(len(positions),128))
             ngbs = positions[idx]
-            mean = np.mean(ngbs.T,axis=1)
+            
+            # Local neighbours so that far away neighbourhood don't drag the mean
+            ngb_dist = np.linalg.norm(ngbs-centroid,axis=1)  
+            local_mask = ngb_dist<10
+            local_ngbs = ngbs[local_mask]
+            ngbs=local_ngbs
+
+            if len(ngbs)==0:
+                mean = centroid
+            else:
+                mean = np.mean(ngbs.T,axis=1)
             
             if np.linalg.norm(mean-centroid)>1e-3:
                 centroid = mean
@@ -149,12 +162,13 @@ def FindProjectionPeaks(positions,mass,uselog=True,reclevel=0,**kwargs):
                 opt_centers.append(centroid)
                 break
     
+    # opt_centers=np.array(opt_centers)
 
     # Merge nearby centers
     for a,anchor in enumerate(opt_centers):
         for t,target in enumerate(opt_centers):
             if a>=t:continue
-            if np.linalg.norm(target-anchor)<=0.001:
+            if np.linalg.norm(target-anchor)<=5:
                 opt_centers.pop(t)
 
     # opt_centers=np.array(centers)
@@ -164,7 +178,7 @@ def FindProjectionPeaks(positions,mass,uselog=True,reclevel=0,**kwargs):
     # ============================
     # 4. BOUNDARY FINDING
     # ============================
-    _PLOT=False
+    _PLOT=True
     if _PLOT:
         fig,axs= plt.subplots(len(opt_centers),1)
         if len(opt_centers)==1:axs=[axs]
@@ -383,7 +397,7 @@ lencids = len(cids)
 #endregion
 
 DUMP=False
-FILENAME="clusterinfo200_p03.txt"
+FILENAME="clusterinfo700_010125_1.txt"
 if DUMP:
     fp = open(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/get_centers/data/{FILENAME}",'w')
     fp.write("#gid nsubs subid nstar_group nstar_sub st_mass_sum st_mass_sub gid_rec_count gid_rec_count_frac gid_rec_mass gid_rec_mass_frac cx cy cz cr\n")
@@ -396,23 +410,26 @@ if DUMP:
 
 for i,cid in enumerate(cids):
 
-    # LOOK:2007, 2018
 
-    if cid<168:continue
+    # if cid<168:continue
     
-    # if not cid==1:continue
+    if not cid==1:continue
+    # if cid not in [78, 127, 165, 330]:continue
     # if cid>100: continue
     # if cid<2000 or cid>2020: continue
 
     # if cid not in okay:continue
 
+    # ================
     print(f"- GroupID : {cid} ({i+1}/{lencids})",'-'*20)
     # Star
     cpos = spos[sgid==cid]
     cmass = smass[sgid==cid]
     # print(cpos)
-    print("  Star :",np.sum(cmass)*100)
-    
+    # print("  Star :",np.sum(cmass)*100)
+    x,y,z=cpos.T
+    print("x:",np.ptp(x),"\ny:",np.ptp(y),"\nz:",np.ptp(z))
+
     # DM
     # cposdm = dmpos[dmgid==cid]
     # cmassdm = dmmass[dmgid==cid]
@@ -425,11 +442,13 @@ for i,cid in enumerate(cids):
         fig = plt.figure()
         cv = CubeVisualizer()
         cv.add_points(cpos,points_alpha=0.5,points_color='r')
+        
 
-        for cx,cy,cz,r,m,c in table:
+        for i,(cx,cy,cz,r,m,count) in enumerate(table):
             cntr=np.array([cx,cy,cz])
             cv.add_points([cntr],points_color='k',points_size=1000,points_marker='+')
             cv.add_sphere_wire(cntr,r,'b')
+            # cv.add_text(cntr,str(int(i)))
 
 
         ax=cv.show(False)
@@ -450,16 +469,17 @@ if DUMP:
 # 49,50,57,61,73,82,83, 93,111, 112, 129
 # 101,105, 122, 156
 # 168, 185, 188, 191, 276, 290, 297, 337
+# 322,357
 
 
 # Radius
 # 107, 158, 177, 195, 242
 # 244, 262, 280, 292, 316
 
-# Mean Shift
+# Mean Shift - Fixed
 # 78, 127, 165, 330
 
-# Closeby Rejection
+# Closeby Rejection - Fixed with 5ckpc look region
 # 155
 
 # ellipsoid

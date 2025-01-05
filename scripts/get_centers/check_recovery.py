@@ -35,8 +35,9 @@ def DoForFile(FILEPATH,**kwargs):
 fig,axs=plt.subplots(1,2)
 ax1,ax2=axs
 
-DoForFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/get_centers/data/clusterinfo200_p05.txt",c='r',label="p=0.5")
-DoForFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/get_centers/data/clusterinfo200_p03.txt",c='g',label="p=0.3")
+# DoForFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/get_centers/data/clusterinfo200_p05.txt",c='r',label="p=0.5")
+# DoForFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/get_centers/data/clusterinfo200_p03.txt",c='g',label="p=0.3")
+DoForFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/get_centers/data/clusterinfo700_010125.txt",c='g',label="p=0.3")
 
 
 ax1.set_yticks(np.linspace(0,1,11))

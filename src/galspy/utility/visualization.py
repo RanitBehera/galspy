@@ -65,7 +65,7 @@ class CubeVisualizer:
         })
         self._need_bound_update = True
     
-    def add_text(self,pos:list[list[float]],text:str,clr:str):
+    def add_text(self,pos:list[list[float]],text:str,clr:str="k"):
         self._text_bank.append({"POS":pos,"TEXT":text,"CLR":clr})
 
 
