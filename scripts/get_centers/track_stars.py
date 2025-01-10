@@ -3,13 +3,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from galspy.utility.visualization import CubeVisualizer
-
+from astropy.cosmology import FlatLambdaCDM
 
 
 SNAPSPATH = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS/"
 SNAPNUM=43
 
 ROOT = galspy.NavigationRoot(SNAPSPATH)
+
+
 
 TPART = ROOT.PART(SNAPNUM)
 TPIG = ROOT.PIG(SNAPNUM)
@@ -34,6 +36,8 @@ tstar_pos = tstar_pos[mask]
 
 tstar_ids = tstar_ids.astype(np.int64)
 
+# Get max axis span over time
+
 cv=CubeVisualizer()
 cv.add_points(tstar_pos)
 ox,lx,oy,ly,oz,lz = cv.get_axis_anchors()
@@ -48,9 +52,9 @@ pts_xu=(lx,0.5*(oy+ly),0.5*(oz+lz))
 pts=np.array([pts_zl,pts_zu,pts_yl,pts_yu,pts_xl,pts_xu])
 
 
-pts = None
+# pts = None
 for i,sni in enumerate(sn):
-    if sni not in [4,43]:continue
+    # if sni not in [4,43]:continue
     print(i+1,"/",len(sn),":",sni)
     PSNAP = ROOT.PART(int(sni))
     pstar_ids = PSNAP.Star.ID()
@@ -61,6 +65,15 @@ for i,sni in enumerate(sn):
     pstar_pos = pstar_pos[mask]
 
 
+    # Get Age of universe
+    z=PSNAP.Header.Redshift()
+    H0=PSNAP.Header.HubbleParam()*100
+    Ol0=PSNAP.Header.OmegaLambda()
+    Om0=PSNAP.Header.Omega0()
+    cosmo = FlatLambdaCDM(H0=H0, Om0=Om0)
+    age = cosmo.age(z).value*1000 #in Myr
+
+    plt.figure(figsize=(5,5))
     cv=CubeVisualizer()
     cv.add_points(pstar_pos, points_color='r', points_size=10)
 
@@ -77,6 +90,9 @@ for i,sni in enumerate(sn):
         pts=np.array([pts_zl,pts_zu,pts_yl,pts_yu,pts_xl,pts_xu])
 
 
-    # ax=cv.show(False)
-    # plt.savefig(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/get_centers/imgs_star_track/pos_{sni}.png")
-    cv.show()
+    ax=cv.show(False)
+    ax.set_title(f"Age : {age:.02f} Myr")
+    plt.tight_layout()
+    plt.savefig(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/get_centers/imgs_star_track/pos_{sni}.png")
+    
+    # cv.show()

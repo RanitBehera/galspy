@@ -12,5 +12,6 @@ dependencies=[
     "treelib>=1.7.0",
     "bagpipes>=1.0.4",
     "astropy==5.3.4",
-    "hoki==1.7.1"
+    "hoki==1.7.1",
+    "bigfile==0.1.51"
     ]

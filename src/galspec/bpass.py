@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 from typing import Literal
 import os
 import hoki
-
+import numpy
+import pickle
 
 # INTERNAL
 AVAIL_MODEL = Literal[
@@ -139,8 +140,7 @@ class BPASS:
 
 
 # ================
-import numpy
-import pickle
+
 
 
 # Usage

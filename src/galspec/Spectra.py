@@ -162,5 +162,5 @@ class CachedSpectra:
 
 
 # USE
-BPASS = CachedSpectra("abc")
-BPASS.IMF_CHABRIER.UPTO_300M.Pop_Binary.Z_014.T_60.StellarFlux()
+# BPASS = CachedSpectra("abc")
+# BPASS.IMF_CHABRIER.UPTO_300M.Pop_Binary.Z_014.T_60.StellarFlux()
