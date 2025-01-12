@@ -5,6 +5,8 @@ import galspy.FileTypes.ConfigFile as cf
 import galspy.utility.PIGQuery as pq
 import numpy
 import bigfile as bigf
+from astropy.cosmology import FlatLambdaCDM
+
 
 class _Folder:
     def __init__(self,path:str) -> None:
@@ -578,6 +580,9 @@ class _Sim:
         else:
             RuntimeError("More than one box found. Try decereasing the tolerance or check for duplicate snaps.")
             return None
+        
+
+
 
 def NavigationRoot(path:str,rsg_path:str=None):
     if not os.path.isdir(path):
