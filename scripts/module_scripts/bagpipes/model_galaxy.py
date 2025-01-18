@@ -28,7 +28,7 @@ model_components["exponential"] = exp
 model_components["dust"] = dust
 
 # ----------------------------------------
-myfilters=np.loadtxt("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/bagpipes/filters/myfilters.txt",dtype="str")
+myfilters=np.loadtxt("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/module_scripts/bagpipes/filters/myfilters.txt",dtype="str")
 
 # ----------------------------------------
 model = pipes.model_galaxy(model_components,

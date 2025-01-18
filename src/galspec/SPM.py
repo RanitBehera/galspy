@@ -199,7 +199,7 @@ class SpectroPhotoMetry:
     def target_region(self,x,y,z,size_in_kpc):
         self._target_location   = [x,y,z]
         self._target_size       = size_in_kpc
-
+        
         if False:
             offset=numpy.array([-5,-4,1])
             self._target_location=self._target_location+offset

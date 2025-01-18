@@ -37,6 +37,7 @@ def PostProcess(img,convolve=True,mask_count=1):
     
     return img #+ np.maximum(np.random.normal(0.1,0.04,img.shape),0)
 
+
 def OpenCV(img):
     img = img.astype(np.uint8)
     # img = cv2.resize(img, tuple(2*np.array(img.T.shape)), interpolation=cv2.INTER_CUBIC)
@@ -55,10 +56,43 @@ def OpenCV(img):
             ellipse = cv2.fitEllipse(contour)
             center, axes, angle = ellipse
             
+            angle = -angle
+
             # Extract ellipse parameters
             center = (int(center[0]), int(center[1]))
             axes = (int(axes[0] / 2), int(axes[1] / 2))  # Half-length of the axes
             angle = angle  # Rotation angle of the ellipse
+
+
+            cv2.ellipse(bgr_img, ellipse, (0, 0, 255), 1)
+
+            major_axis_end = (int(center[0] + (axes[0]/2) * np.cos(np.deg2rad(angle))),
+                                int(center[1] - (axes[0]/2) * np.sin(np.deg2rad(angle))))
+
+            minor_axis_end = (int(center[0] - (axes[1]/2) * np.sin(np.deg2rad(angle))),
+                                int(center[1] - (axes[1]/2) * np.cos(np.deg2rad(angle))))
+
+
+            cv2.line(bgr_img, center, (major_axis_end), (0, 255, 0), 1)
+            cv2.line(bgr_img, center, (minor_axis_end), (255, 0, 0), 1)
+
+
+
+            text = f"{ellipse_index}"
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            font_scale = 0.5
+            color = (255, 0, 255)
+            thickness = 1
+            text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
+            
+            text_x = center[0] - text_size[0] // 2
+            text_y = center[1] + text_size[1] // 2
+
+            cv2.putText(bgr_img, text, (text_x, text_y), font, font_scale, color, thickness)
+
+
+
+
 
             # Get the bounding box of the ellipse
             min_x = center[0] - axes[0]
@@ -86,9 +120,8 @@ def OpenCV(img):
 
     bgr_img = cv2.cvtColor(bgr_img,cv2.COLOR_BGR2RGB)
 
-    return label_map
 
-
+    return label_map,bgr_img,binary_image,ellipse_index
 
 
 
@@ -113,20 +146,24 @@ def CheckPIG(tgid):
     img_yz = 255*PostProcess(hist_yz)
     img_xz = 255*PostProcess(hist_xz)
 
-    label_map =OpenCV(img_xy)
+    img=img_xy
 
-    # plt.imshow(label_map.T,origin="lower")
-    # plt.show()
+    label,ovrlay,binary,EC =OpenCV(img)
+
+    ovrlay=np.transpose(ovrlay,(1,0,2))
 
 
-    # print(len(tpos))
-    # for xe in xedges_xy[:-1]:
-    #     for ye in yedges_xy[:-1]:
-    #         xi=int((xe-xedges_xy[0])/(xedges_xy[1]-xedges_xy[0]))
-    #         yi=int((ye-yedges_xy[0])/(yedges_xy[1]-yedges_xy[0]))
-            
-    #         if label_map[xi,yi]==-1:continue
-    #         print(xi,yi,":",label_map[xi,yi])
+    plt.imshow(ovrlay,origin="lower")
+    # plt.imshow(binary.T,origin="lower",cmap="gist_gray")
+    plt.title(f"N={EC}")
+    plt.show()
+
+    return
+
+    unq_labels = np.unique(label)[1:]
+    
+    # print(unq_labels)
+
 
     dx=xedges_xy[1]-xedges_xy[0]
     dy=yedges_xy[1]-yedges_xy[0]
@@ -136,13 +173,14 @@ def CheckPIG(tgid):
     xind=xind.clip(None,Nx-1)
     yind=yind.clip(None,Ny-1)
 
-    id_list=[]
-    mass_list=[]
+    id_list=[[] for ul in unq_labels]
+    mass_list=[[] for ul in unq_labels]
     for xi,yi,pid,pmass in zip(xind,yind,tid,tmass):
-        if label_map[xi,yi]!=0:continue
-        # print(xi,yi,label_map[xi,yi])
-        id_list.append(pid)
-        mass_list.append(pmass)
+        l = label[xi,yi]
+        print(l)
+        if l==-1:continue
+        id_list[l].append(pid)
+        mass_list[l].append(pmass)
 
     with open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/cache/specindex.dict","rb") as fp:
         specindex = pickle.load(fp)
@@ -150,26 +188,39 @@ def CheckPIG(tgid):
     with open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/cache/specs.list","rb") as fp:
         speclist = pickle.load(fp)
 
-    tindex=[specindex[iid] for iid in id_list]
-    tspecs=[speclist[ind] for ind in tindex]
-    tspecs=np.array(tspecs)
+    plt.figure()
 
-    total=np.sum(tspecs.T,axis=1)
+    i=0
+    for blob_id_list,blob_mass_list in zip(id_list,mass_list):
+        tspecs=[speclist[specindex[ind]] for ind in blob_id_list]
+        tspecs=np.array(tspecs)
+        blob_mass_list=np.array(blob_mass_list)
+        tspecs *=blob_mass_list[:,None]/1e-4
+        print("mass :",np.sum(blob_mass_list))
 
-    print("mass :",np.sum(mass_list))
+        total=np.sum(tspecs.T,axis=1)
 
-    # plt.plot(speclist[0],total)
-    # plt.xscale("log")
-    # plt.yscale("log")
-    # plt.show()
+        # np.savetxt("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/testspec.txt",np.column_stack((speclist[0],total)))
+
+        plt.plot(speclist[0],total,label=f"{i}")
+        plt.xscale("log")
+        plt.yscale("log")
+        i=i+1
+    
+
+    plt.legend()
+    plt.show()
 
 
 
-for i in range(1,20):
-    if i!=2:continue
-    CheckPIG(i)
-    # try:
-    #     print(i)
-    #     CheckPIG(i)
-    # except:
-    #     print("CHECK :",i)
+
+
+for i in range(1,100):
+    # if i!=1:continue
+    # CheckPIG(i)
+    try:
+        print(i)
+        CheckPIG(i)
+    except:
+        # CheckPIG(i)
+        print("CHECK :",i)

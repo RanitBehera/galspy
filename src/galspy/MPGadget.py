@@ -568,6 +568,10 @@ class _Sim:
                 }
         return COSMOLOGY
     
+    def GetAstropyFlatLCDM(self):
+        cosmology = self.GetCosmology()
+        return FlatLambdaCDM(H0=cosmology["H0"],Om0=cosmology["Om0"])
+    
     def SnapNumFromZ(self,redshift):
         sn,a = numpy.loadtxt(self.mpgadget_outdir+os.sep+"Snapshots.txt").T
         sn = [int(sni) for sni in sn]

@@ -4,16 +4,26 @@ import matplotlib.pyplot as plt
 import os
 
 
-# ------------------------------------
+
 def load_data(ID:str):
     # Temporary now
     # Later relate to sim gid
-    photometry = np.loadtxt("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/module_scripts/bagpipes/data/demo_model.phot")
+    photometry = np.loadtxt("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/bagpipes/data/demo_model.phot")
+    
+    
     return photometry
 
 
-# ------------------------------------
-filt_list = np.loadtxt("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/module_scripts/bagpipes/filters/myfilters.txt", dtype="str")
+
+
+
+
+
+
+
+
+
+filt_list = np.loadtxt("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/bagpipes/filters/myfilters.txt", dtype="str")
 
 # phot_units to 'ergscma' is important as default is myJy and it messes the input values
 galaxy = pipes.galaxy("17433", load_data, spectrum_exists=False, filt_list=filt_list,phot_units="ergscma")
@@ -48,12 +58,6 @@ fit.fit(verbose=False)
 fig = fit.plot_spectrum_posterior(save=False, show=True)
 fig = fit.plot_sfh_posterior(save=False, show=True)
 fig = fit.plot_corner(save=False, show=True)
-
-
-
-
-
-
 
 
 

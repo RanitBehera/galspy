@@ -144,9 +144,9 @@ class CubeVisualizer:
         LX,LY,LZ = self.bound
 
         # Set Label
-        # ax.set_xlabel("X",fontsize=18)
-        # ax.set_ylabel("Y",fontsize=18)
-        # ax.set_zlabel("Z",fontsize=18)
+        ax.set_xlabel("X",fontsize=18)
+        ax.set_ylabel("Y",fontsize=18)
+        ax.set_zlabel("Z",fontsize=18)
 
 
         # Limit Axis Range
@@ -175,7 +175,7 @@ class CubeVisualizer:
         ax.set_xlim3d(OX,LX);ax.set_ylim3d(OY,LY);ax.set_zlim3d(OZ,LZ)
 
         # Hide Axis Ticks
-        ax.set_xticks([]);ax.set_yticks([]);ax.set_zticks([])
+        # ax.set_xticks([]);ax.set_yticks([]);ax.set_zticks([])
         
         # Hide Axis
         # ax.set_axis_off()
