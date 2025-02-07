@@ -2,12 +2,14 @@ import galspy,os
 import numpy as np
 from multiprocessing import Pool
 
-L150N2040 = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS"
+# L150N2040 = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS"
+L150N2040 = "/mnt/home/student/cranit/Data/MP_Gadget/Nishi/L50N1008z05"
+
 root = galspy.NavigationRoot(L150N2040)
-SNAP_NUM = 43
+SNAP_NUM = 174
 
-
-center_kpc = root.PIG(SNAP_NUM).FOFGroups.MassCenterPosition()[1]
+GID=827
+center_kpc = root.PIG(SNAP_NUM).FOFGroups.MassCenterPosition()[GID-1]
 # center_kpc = np.array([1923.20963528,128692.01446128,115465.83527536])
 span_kpc   = 2500*np.ones(3)
 

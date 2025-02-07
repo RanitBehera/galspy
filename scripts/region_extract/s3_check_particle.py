@@ -3,7 +3,7 @@ from galspy.utility.visualization import CubeVisualizer
 import pickle,os
 # from 
 
-SAVEDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/pysphviewer/data"
+SAVEDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/region_extract/data_kanish"
 
 
 # CX,CY,CZ = numpy.loadtxt(SAVEDIR+os.sep+"region_info_star.txt",delimiter=',')[0]   #<-----
@@ -17,15 +17,16 @@ SAVEDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/pysphviewer/data
 
 
 
-CX,CY,CZ = numpy.loadtxt(SAVEDIR+os.sep+"region_info_gas.txt",delimiter=',')[0]   #<-----
+CX,CY,CZ = numpy.loadtxt(SAVEDIR+os.sep+"region_info_gas_1.txt",delimiter=',')[0]   #<-----
 print(CX,CY,CZ)
 
-with open(SAVEDIR+os.sep+"pos_gas.dat","rb") as fp:     #<-----
+with open(SAVEDIR+os.sep+"pos_gas_1.dat","rb") as fp:     #<-----
     pos_gas=pickle.load(fp)
 
-with open(SAVEDIR+os.sep+"mass_gas.dat","rb") as fp:    #<-----
+with open(SAVEDIR+os.sep+"mass_gas_1.dat","rb") as fp:    #<-----
     M_gas=pickle.load(fp)
 
+# print(pos_gas)
 
 # CX,CY,CZ = numpy.loadtxt(SAVEDIR+os.sep+"region_info_bh.txt",delimiter=',')[0]   #<-----
 # print(CX,CY,CZ)

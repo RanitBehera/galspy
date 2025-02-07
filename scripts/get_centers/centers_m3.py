@@ -413,7 +413,7 @@ for i,cid in enumerate(cids):
 
     # if cid<168:continue
     
-    if not cid==10:continue
+    if not cid==1:continue
     # if cid not in [78, 127, 165, 330]:continue
     # if cid>100: continue
     # if cid<2000 or cid>2020: continue

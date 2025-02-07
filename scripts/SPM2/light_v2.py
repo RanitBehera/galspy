@@ -1,4 +1,3 @@
-#%%
 import galspy
 import numpy as np
 import astropy
@@ -7,7 +6,7 @@ from typing import Literal
 import matplotlib.pyplot as plt
 import cv2 as cv
 
-
+from galspy.utility.visualization import CubeVisualizer
 
 class ClumpManager:
     def __init__(self,snapspath:str,snapnum:int,gid:int):
@@ -42,6 +41,10 @@ class ClumpManager:
         res *=(1+z)*self.PIG.Header.HubbleParam()   #cKpc per pixel
         return res
     
+    def ShowCube(self):
+        cv=CubeVisualizer()
+        cv.add_points(self.position)
+        cv.show(False)
 
     def GetProjection(self,direction:Literal["XY","YZ","ZX"]="XY"):
         if direction not in ["XY","YZ","ZX"]:
@@ -70,28 +73,37 @@ class ClumpManager:
 
     def OpenCVPostProcess(self,img):
         # Foreground should be white and background should be black.
-        
-        # Propor Normalise
-        max_count = np.max(img)
-        norm_img = (255*(img/max_count))
-        norm_img = img.astype(np.uint8)
-        unit_count    = 255*(1/max_count)     # single star count normalised value
+        TH_MIN_STAR_COUNT = 2
+        img_th = np.where(img>=TH_MIN_STAR_COUNT,img,0)
+
+        # Datatype Cast
+        # img     = img.astype(np.uint8)
+        img_th  = img_th.astype(np.uint8)
 
         # Binary
-        _,binary = cv.threshold(norm_img,0,255,cv.THRESH_BINARY)
-        _,binary_th = cv.threshold(norm_img,0*unit_count,255,cv.THRESH_BINARY)
+        TH_BIN = 0
+        _,binary = cv.threshold(img.astype(np.uint8),TH_BIN,255,cv.THRESH_BINARY)
+        _,binary_th = cv.threshold(img_th,TH_BIN,255,cv.THRESH_BINARY)
 
         # Morphological Operations
+        # CLOSING - (dilation followed by erosion) : Black dots gets erased
         kernel = np.ones((2,2),np.uint8)
         closed = cv.morphologyEx(binary_th, cv.MORPH_CLOSE, kernel)
+        # OPENING - (erosion followed by dilation) : White dots gets erased
         kernel = np.ones((3,3),np.uint8)
         opened = cv.morphologyEx(closed, cv.MORPH_OPEN, kernel)
+        # DILATION - Nearby mini-islands gets connected
+        kernel = np.ones((10,10),np.uint8)
+        dilated = cv.dilate(opened, kernel,iterations=1)
+            
+
 
         # Ellipse Fitting
-        fit_img = opened
+        fit_img = dilated
+        overlay_img = cv.cvtColor(binary_th,cv.COLOR_GRAY2BGR)
+
         contours, hierarchy = cv.findContours(fit_img,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
-        pixel_label_img = -1*np.ones(binary.shape, dtype=int)
-        overlay_img = cv.cvtColor(fit_img,cv.COLOR_GRAY2BGR)
+        label_img = -1*np.ones(binary.shape, dtype=int)
         ellipse_index = 0
         for contour in contours:
             # Minimum 5 points are required to fit an ellipse
@@ -101,11 +113,49 @@ class ClumpManager:
             # Extract ellipse parameters
             center, axes, angle = ellipse
             center = (int(center[0]), int(center[1]))
-            axes = (int(axes[0] / 2), int(axes[1] / 2))
+            axes = (int(axes[0]/2 ), int(axes[1]/2 ))
             angle = -angle
 
             major_axis_end = (int(center[0] + (axes[0])*np.cos(np.deg2rad(angle))),int(center[1] - (axes[0])*np.sin(np.deg2rad(angle))))
             minor_axis_end = (int(center[0] - (axes[1])*np.sin(np.deg2rad(angle))),int(center[1] - (axes[1])*np.cos(np.deg2rad(angle))))
+
+
+            # Get the bounding box of the ellipse
+            # print(axes)
+            min_x = center[0] - axes[0]
+            max_x = center[0] + axes[0]
+            min_y = center[1] - axes[1]
+            max_y = center[1] + axes[1]
+
+            # for x in range(center[0]-5,center[0]+6):
+            #     label_img[center[1],x]=1
+            # for y in range(center[1]-5,center[1]+6):
+            #     label_img[y,center[0]]=1
+
+            
+
+            # Loop over the bounding box and check if the pixel is inside the ellipse
+            for y in range(min_y, max_y):
+                for x in range(min_x, max_x):
+                    label_img[y,x]=1
+                # break
+                #     # Ensure that the pixel is within image bounds
+                #     if 0 <= x < img.shape[1] and 0 <= y < img.shape[0]:
+                #         # Translate pixel coordinates relative to ellipse center
+                #         dx = y - center[1]
+                #         dy = x - center[0]
+                        
+                #         # Ellipse equation (standard form)
+                #         if (dx**2 / axes[0]**2 + dy**2 / axes[1]**2) <= 1:
+                #             # Assign this pixel to the current ellipse
+                #             label_img[y, x] = ellipse_index
+                #         else:
+                #             label_img[y,x]=-2
+
+            ellipse_index += 1
+
+
+
 
             # Draw Overlays
             cv.ellipse(overlay_img, center,axes,-angle, 0,365,(0, 0, 255), 1)
@@ -113,331 +163,84 @@ class ClumpManager:
             cv.line(overlay_img, center, (minor_axis_end), (255, 0, 0), 1)
 
 
-            ellipse_index += 1
 
 
         overlay_img = cv.cvtColor(overlay_img,cv.COLOR_BGR2RGB)
 
 
-        return binary, binary_th, closed, opened,overlay_img
+        return {
+            "INPUT_IMG"     : img,
+            "BINARY_IMG"    : binary,
+            "BINARY_TH_IMG" : binary_th,
+            "MORPH_CLOSED"  : closed,
+            "MORPH_OPENED"  : opened,
+            "MORPH_DILATED" : dilated,
+            "OVERLAY_IMG"   : overlay_img,
+            "LABEL_IMG"     : label_img,
+            # ---
+            "BLOB_COUNT"    : ellipse_index,
+            "TH_MIN_STAR_COUNT" : TH_MIN_STAR_COUNT
+        }
+    
 
 
 
 SNAPSPATH = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS/"
+SNAPNUM = 43
+
+stellar_mass = galspy.NavigationRoot(SNAPSPATH).PIG(SNAPNUM).FOFGroups.MassByType().T[4]
 
 
-# %%
+##%%
 for i in range(1,100):
-    if not i==5:continue
+    if i not in [1]:continue
     print(i)
-    cm = ClumpManager(SNAPSPATH,43,i)
+    st_mass = stellar_mass[i-1]
+    print("  ","Stellar Mass :",st_mass,"e10")
 
+
+    cm = ClumpManager(SNAPSPATH,SNAPNUM,i)
     img=cm.GetProjection()
+    cvout = cm.OpenCVPostProcess(img)
+    # cm.ShowCube()
 
-    ppimgs = cm.OpenCVPostProcess(img)
 
 
     # PLOT
-    INTERACTIVE = True
-    if INTERACTIVE:
-        plt.figure()
-        plt.imshow(img,cmap="grey")
-        plt.title("Projection Original")
+    fig,axs = plt.subplots(3,4,figsize=(9,6))
+    ax1,ax2,ax3,ax4 = axs[0,0],axs[0,1],axs[0,2],axs[0,3]
+    ax5,ax6,ax7,ax8 = axs[1,0],axs[1,1],axs[1,2],axs[1,3]
+    ax9,ax10,ax11,ax12 = axs[2,0],axs[2,1],axs[2,2],axs[2,3]
 
-        plt.figure()
-        plt.imshow(ppimgs[0],cmap="grey")
-        plt.title(f"Binary")
+    ax1.imshow(cvout["INPUT_IMG"].T,origin='lower',cmap="grey")
+    ax1.set_title("Projection Original")
 
-        plt.figure()
-        plt.imshow(ppimgs[1],cmap="grey")
-        plt.title(f"Binary Thresold")
+    ax2.imshow(cvout["BINARY_IMG"].T,origin='lower',cmap="grey")
+    ax2.set_title(f"Binary")
 
-        plt.figure()
-        plt.imshow(ppimgs[2],cmap="grey")
-        plt.title(f"Morphological (Closed)")
+    ax3.imshow(cvout["BINARY_TH_IMG"].T,origin='lower',cmap="grey")
+    ax3.set_title(f"Binary Thresold : S={cvout['TH_MIN_STAR_COUNT']}")
 
-        plt.figure()
-        plt.imshow(ppimgs[3],cmap="grey")
-        plt.title(f"Morphological (Opened)")
-
-        plt.figure()
-        plt.imshow(ppimgs[4])
-        plt.title(f"Overlay")
-    else:
-        fig,axs = plt.subplots(2,4,figsize=(9,6))
-        ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8 = axs[0,0],axs[0,1],axs[0,2],axs[0,3],axs[1,0],axs[1,1],axs[1,2],axs[1,3]
-
-        ax1.imshow(img,cmap="grey")
-        ax1.set_title("Projection Original")
+    ax4.imshow(cvout["MORPH_CLOSED"].T,origin='lower',cmap="grey")
+    ax4.set_title(f"Morphological (Closed)")
     
-        ax2.imshow(ppimgs[0],cmap="grey")
-        ax2.set_title(f"Binary")
+    ax5.imshow(cvout["MORPH_OPENED"].T,origin='lower',cmap="grey")
+    ax5.set_title(f"Morphological (Opened)")
 
-        ax3.imshow(ppimgs[1],cmap="grey")
-        ax3.set_title(f"Binary Thresold")
+    ax6.imshow(cvout["MORPH_DILATED"].T,origin='lower',cmap="grey")
+    ax6.set_title(f"Morphological (Dilation)")
 
-        ax4.imshow(ppimgs[2],cmap="grey")
-        ax4.set_title(f"Morphological (Closed)")
+    ax7.imshow(np.transpose(cvout["OVERLAY_IMG"],(1,0,2)),origin='lower')
+    ax7.set_title(f"Overlay : N={cvout['BLOB_COUNT']}")
 
-        ax5.imshow(ppimgs[3],cmap="grey")
-        ax5.set_title(f"Morphological (Opened)")
+    ax8.imshow(cvout["LABEL_IMG"].T,origin='lower')
+    ax8.set_title(f"Label Map")
 
-        ax6.imshow(ppimgs[4],cmap="grey")
-        ax6.set_title(f"Overlay")
-
-        for ax in [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8]:
-            ax:plt.Axes
-            ax.set_axis_off()
+    for ax in [globals()[f"ax{i}"] for i in range(1,13)]:
+        ax:plt.Axes
+        ax.set_axis_off()
 
 
     # plt.tight_layout()
     plt.show()
 
-
-
-
-
-
-# %%
-
-
-
-
-# import galspy
-# import numpy as np
-# from scipy import signal
-# import matplotlib.pyplot as plt
-# from scipy.ndimage import maximum_filter
-
-# from galspy.utility.visualization import CubeVisualizer
-# from scipy.ndimage import zoom
-
-# import cv
-# import pickle
-
-
-# SNAPSPATH = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS/"
-# SNAPNUM=43
-# PIG = galspy.NavigationRoot(SNAPSPATH).PIG(SNAPNUM)
-# print("Reading ...")
-# all_star_gid  = PIG.Star.GroupID()
-# all_star_mass = PIG.Star.Mass()
-# all_star_pos  = PIG.Star.Position()
-# all_star_id   = PIG.Star.ID()
-# print("Done")
-
-
-
-# def PostProcess(img,convolve=True,mask_count=1):
-#     if convolve:
-#         kernel = np.array([[0.25,0.25],[0.25,0.25]])
-#         img = signal.convolve2d(img,kernel,"same")
-
-#     img = np.where(img>mask_count,img,0)
-
-#     img=np.log10(1+img)
-#     img=(img/np.max(img))**0.5
-    
-#     return img #+ np.maximum(np.random.normal(0.1,0.04,img.shape),0)
-
-
-# def OpenCV(img):
-#     img = img.astype(np.uint8)
-
-#     _, binary_image = cv.threshold(img, 64, 255, cv.THRESH_BINARY)
-
-#     contours, _ = cv.findContours(binary_image,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
-#     print(contours)
-
-#     # exit()
-
-
-#     label_map = -1*np.ones(binary_image.shape, dtype=int)
-
-#     ellipse_index = 0
-
-#     bgr_img = cv.cvtColor(img,cv.COLOR_GRAY2BGR)
-
-#     for contour in contours:
-#         if len(contour) >= 5:  # Minimum 5 points are required to fit an ellipse
-#             print("\tEI",ellipse_index)
-#             # print("\t",contour)
-#             ellipse = cv.fitEllipse(contour)
-#             print(ellipse)
-#             center, axes, angle = ellipse
-            
-#             angle = -angle
-
-#             # Extract ellipse parameters
-#             center = (int(center[0]), int(center[1]))
-#             axes = (int(axes[0] / 2), int(axes[1] / 2))  # Half-length of the axes
-#             angle = angle  # Rotation angle of the ellipse
-
-#             # print(axes)
-#             axes=tuple(np.array(axes)+10)
-#             if axes[0]<2 or axes[1]<2:continue
-
-#             # cv.ellipse(bgr_img, ellipse, (0, 0, 255), 1)
-#             cv.ellipse(bgr_img, center,axes,-angle, 0,365,(0, 0, 255), 1)
-
-#             major_axis_end = (int(center[0] + (axes[0]) * np.cos(np.deg2rad(angle))),
-#                                 int(center[1] - (axes[0]) * np.sin(np.deg2rad(angle))))
-
-#             minor_axis_end = (int(center[0] - (axes[1]) * np.sin(np.deg2rad(angle))),
-#                                 int(center[1] - (axes[1]) * np.cos(np.deg2rad(angle))))
-
-
-#             cv.line(bgr_img, center, (major_axis_end), (0, 255, 0), 1)
-#             cv.line(bgr_img, center, (minor_axis_end), (255, 0, 0), 1)
-
-
-
-#             text = f"{ellipse_index}"
-#             font = cv.FONT_HERSHEY_SIMPLEX
-#             font_scale = 0.5
-#             color = (255, 0, 255)
-#             thickness = 1
-#             text_size = cv.getTextSize(text, font, font_scale, thickness)[0]
-            
-#             text_x = center[0] - text_size[0] // 2
-#             text_y = center[1] + text_size[1] // 2
-
-#             cv.putText(bgr_img, text, (text_x, text_y), font, font_scale, color, thickness)
-
-
-
-
-
-#             # Get the bounding box of the ellipse
-#             min_x = center[0] - axes[0]
-#             max_x = center[0] + axes[0]
-#             min_y = center[1] - axes[1]
-#             max_y = center[1] + axes[1]
-
-#             # Loop over the bounding box and check if the pixel is inside the ellipse
-#             for y in range(min_y, max_y):
-#                 for x in range(min_x, max_x):
-#                     # Ensure that the pixel is within image bounds
-#                     if 0 <= x < binary_image.shape[1] and 0 <= y < binary_image.shape[0]:
-#                         # Translate pixel coordinates relative to ellipse center
-#                         dx = x - center[0]
-#                         dy = y - center[1]
-                        
-#                         # Ellipse equation (standard form)
-#                         if (dx**2 / axes[0]**2 + dy**2 / axes[1]**2) <= 1:
-#                             # Assign this pixel to the current ellipse
-#                             label_map[y, x] = ellipse_index
-
-#             # Increment ellipse index for the next ellipse
-#             ellipse_index += 1
-#             print("\tPassed")
-
-
-
-#     bgr_img = cv.cvtColor(bgr_img,cv.COLOR_BGR2RGB)
-
-
-#     return label_map,bgr_img,binary_image,ellipse_index
-
-
-
-# delta = 0.165*(1+7)*0.6736
-
-# def CheckPIG(tgid):
-#     gmask = all_star_gid==tgid
-#     tpos = all_star_pos[gmask]
-#     tid = all_star_id[gmask]
-#     tmass=all_star_mass[gmask]
-#     x,y,z=tpos.T
-#     x,y,z=x-np.min(x),y-np.min(y),z-np.min(z)
-#     sx,sy,sz=np.max(x),np.max(y),np.max(z)
-#     Nx,Ny,Nz=np.int64(sx/delta),np.int64(sy/delta),np.int64(sz/delta)
-
-#     hist_xy, xedges_xy, yedges_xy = np.histogram2d(x, y, bins=(Nx,Ny))
-#     hist_yz, yedges_yz, zedges_yz = np.histogram2d(y, z, bins=(Ny,Nz))
-#     hist_xz, xedges_xz, zedges_xz = np.histogram2d(x, z, bins=(Nx,Nz))
-    
-
-#     img_xy = 255*PostProcess(hist_xy)
-#     img_yz = 255*PostProcess(hist_yz)
-#     img_xz = 255*PostProcess(hist_xz)
-
-#     img=img_xy
-
-#     label,ovrlay,binary,EC =OpenCV(img)
-
-#     ovrlay=np.transpose(ovrlay,(1,0,2))
-
-
-#     plt.imshow(ovrlay,origin="lower")
-#     # plt.imshow(binary.T,origin="lower",cmap="gist_gray")
-#     plt.title(f"N={EC}")
-#     plt.show()
-
-#     return
-
-#     unq_labels = np.unique(label)[1:]
-    
-#     # print(unq_labels)
-
-
-#     dx=xedges_xy[1]-xedges_xy[0]
-#     dy=yedges_xy[1]-yedges_xy[0]
-#     xind = np.int32(x/dx)
-#     yind = np.int32(y/dy)
-
-#     xind=xind.clip(None,Nx-1)
-#     yind=yind.clip(None,Ny-1)
-
-#     id_list=[[] for ul in unq_labels]
-#     mass_list=[[] for ul in unq_labels]
-#     for xi,yi,pid,pmass in zip(xind,yind,tid,tmass):
-#         l = label[xi,yi]
-#         print(l)
-#         if l==-1:continue
-#         id_list[l].append(pid)
-#         mass_list[l].append(pmass)
-
-#     with open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/cache/specindex.dict","rb") as fp:
-#         specindex = pickle.load(fp)
-
-#     with open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/cache/specs.list","rb") as fp:
-#         speclist = pickle.load(fp)
-
-#     plt.figure()
-
-#     i=0
-#     for blob_id_list,blob_mass_list in zip(id_list,mass_list):
-#         tspecs=[speclist[specindex[ind]] for ind in blob_id_list]
-#         tspecs=np.array(tspecs)
-#         blob_mass_list=np.array(blob_mass_list)
-#         tspecs *=blob_mass_list[:,None]/1e-4
-#         print("mass :",np.sum(blob_mass_list))
-
-#         total=np.sum(tspecs.T,axis=1)
-
-#         # np.savetxt("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/testspec.txt",np.column_stack((speclist[0],total)))
-
-#         plt.plot(speclist[0],total,label=f"{i}")
-#         plt.xscale("log")
-#         plt.yscale("log")
-#         i=i+1
-    
-
-#     plt.legend()
-#     plt.show()
-
-
-
-
-
-# for i in range(1,100):
-#     print(i)
-#     if i!=1:continue
-#     CheckPIG(i)
-#     # try:
-#     #     CheckPIG(i)
-#     # except:
-#     #     # CheckPIG(i)
-#     #     print("CHECK :",i)
-# %%
