@@ -72,7 +72,81 @@ class ClumpManager:
         return height
 
 
-    def OpenCVPostProcess(self,img):
+    def FindBlobs(self,img):
+        # Foreground should be white and background should be black.
+        TH_MIN_STAR_COUNT = 2
+        img_th = np.where(img>=TH_MIN_STAR_COUNT,img,0)
+        img_th  = img_th.astype(np.uint8)
+
+        # ----- BINARY
+        TH_BIN = 0
+        _,binary = cv.threshold(img.astype(np.uint8),TH_BIN,255,cv.THRESH_BINARY)
+        _,binary_th = cv.threshold(img_th,TH_BIN,255,cv.THRESH_BINARY)
+
+        # ----- MORPHOLOGICAL TRANSFORMATIONS
+        # CLOSING - (dilation followed by erosion) : Black dots gets erased
+        kernel = np.ones((2,2),np.uint8)
+        closed = cv.morphologyEx(binary_th, cv.MORPH_CLOSE, kernel)
+        # OPENING - (erosion followed by dilation) : White dots gets erased
+        kernel = np.ones((3,3),np.uint8)
+        opened = cv.morphologyEx(closed, cv.MORPH_OPEN, kernel)
+        # DILATION - Nearby mini-islands gets connected
+        kernel = np.ones((10,10),np.uint8)
+        dilated = cv.dilate(opened, kernel,iterations=1)
+
+        
+        # ----- BLOB DETECTION
+        target_img = dilated
+        params = cv.SimpleBlobDetector_Params()
+
+        params.filterByColor = True
+        params.blobColor = 255
+        params.filterByArea = True
+        params.minArea = 1
+        # params.maxArea = 5000
+        params.filterByCircularity = False
+        params.minCircularity = 0.1
+        params.filterByConvexity = False
+        params.minConvexity = 0.8
+        params.filterByInertia = False
+        params.minInertiaRatio = 0.5
+
+        detector = cv.SimpleBlobDetector_create(params)
+        keypoints = detector.detect(target_img)
+
+
+        # ----- OVERLAY
+        overlay_blob = cv.cvtColor(target_img,cv.COLOR_GRAY2BGR)
+        overlay_img = cv.cvtColor(binary_th,cv.COLOR_GRAY2BGR)
+        for key in keypoints:
+            key:cv.KeyPoint
+            center,diameter,angle = key.pt,key.size,key.angle
+            center = (int(center[0]), int(center[1]))
+            radius = int(diameter/2)+2
+            cv.circle(overlay_blob,center,radius,(255,0,0),1,cv.LINE_AA)
+            cv.circle(overlay_img,center,radius,(255,0,0),1,cv.LINE_AA)
+
+        
+        return {
+            "INPUT_IMG"     : img,
+            "BINARY_IMG"    : binary,
+            "BINARY_TH_IMG" : binary_th,
+            "MORPH_CLOSED"  : closed,
+            "MORPH_OPENED"  : opened,
+            "MORPH_DILATED" : dilated,
+            "OVERLAY_BLOB"   : overlay_blob,
+            "OVERLAY_IMG"   : overlay_img,
+            # "LABEL_IMG"     : label_img,
+            # ---
+            "BLOB_COUNT"    : len(keypoints),
+            "TH_MIN_STAR_COUNT" : TH_MIN_STAR_COUNT
+        }
+            
+
+
+
+
+    def OpenCVPostProcessOld(self,img):
         # Foreground should be white and background should be black.
         TH_MIN_STAR_COUNT = 2
         img_th = np.where(img>=TH_MIN_STAR_COUNT,img,0)
@@ -208,15 +282,16 @@ class ClumpManager:
             ax.imshow(cvout["MORPH_DILATED"].T,origin='lower',cmap="grey")
             ax.set_title(f"Morphological (Dilation)")
 
+        if mode in ["all"]:
+            ax=next_ax()    
+            ax.imshow(np.transpose(cvout["OVERLAY_BLOB"],(1,0,2)),origin='lower')
+            ax.set_title(f"Overlay : N={cvout['BLOB_COUNT']}")
+        
         if mode in ["all","major"]:
             ax=next_ax()    
             ax.imshow(np.transpose(cvout["OVERLAY_IMG"],(1,0,2)),origin='lower')
             ax.set_title(f"Overlay : N={cvout['BLOB_COUNT']}")
 
-        if mode in ["all"]:
-            ax=next_ax()    
-            ax.imshow(cvout["LABEL_IMG"].T,origin='lower')
-            ax.set_title(f"Label Map")
 
         for ax in axs:
             ax.set_axis_off()
@@ -243,8 +318,8 @@ for i in range(1,100):
 
     cm = ClumpManager(SNAPSPATH,SNAPNUM,i)
     img = cm.GetProjection()
-    cvout = cm.OpenCVPostProcess(img)
-    cm.ShowOpenCVPipeline(cvout)
+    cvout = cm.FindBlobs(img)
+    cm.ShowOpenCVPipeline(cvout,"major")
     # cm.ShowCube()
 
 
