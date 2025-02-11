@@ -44,6 +44,10 @@ class ClumpManager:
         res *=(1+z)*self.PIG.Header.HubbleParam()   #cKpc per pixel
         return res
     
+    def _GetDetectionLimit(self):
+        pass
+        return 0
+
     def ShowCube(self):
         cv=CubeVisualizer()
         cv.add_points(self.position)
@@ -139,14 +143,29 @@ class ClumpManager:
         # ----- CENTERS and RADIUS
         BLOB_CENTER = []
         BLOB_RADIUS = []
-        RADIUS_EXPAND = 2   #by this much pixel
         for key in keypoints:
             key:cv.KeyPoint
             center,diameter,angle = key.pt,key.size,key.angle
             center = (int(center[0]), int(center[1]))
-            radius = int(diameter/2)+RADIUS_EXPAND
+            radius = int(diameter/2)
             BLOB_CENTER.append(center)
             BLOB_RADIUS.append(radius)
+
+        # Grow radius by a factor if they don't collide
+        RADIUS_GROWTH_FACTOR=2
+        BLOB_RADIUS_EXPANDED = RADIUS_GROWTH_FACTOR*np.array(BLOB_RADIUS)
+        # Check for collision and shrink
+        for i,(ci,ri) in enumerate(zip(BLOB_CENTER,BLOB_RADIUS_EXPANDED)):
+            for j,(cj,rj) in enumerate(zip(BLOB_CENTER,BLOB_RADIUS_EXPANDED)):
+                if j<=i:continue
+                c2c_distance = np.linalg.norm(np.array(ci)-np.array(cj))
+                r2r_distance = ri+rj
+                if r2r_distance<c2c_distance:continue
+                over_by_factor = r2r_distance/c2c_distance
+                BLOB_RADIUS_EXPANDED[i]/=over_by_factor
+                BLOB_RADIUS_EXPANDED[j]/=over_by_factor
+
+        BLOB_RADIUS_EXPANDED = list(BLOB_RADIUS_EXPANDED)        
 
         # ----- LABLE MAP
         # Initialise to -1
@@ -157,7 +176,7 @@ class ClumpManager:
             for clm in range(0,lable.shape[1]):
                 if mask_th[row,clm]>0:lable[row,clm]=0
         
-        for i,(C,R) in enumerate(zip(BLOB_CENTER,BLOB_RADIUS)):
+        for i,(C,R) in enumerate(zip(BLOB_CENTER,BLOB_RADIUS_EXPANDED)):
             minx,maxx=C[0]-R,C[0]+R
             miny,maxy=C[1]-R,C[1]+R
             for y in range(miny,maxy):#row
@@ -173,12 +192,13 @@ class ClumpManager:
         # ----- OVERLAY
         overlay_blob = cv.cvtColor(target_img,cv.COLOR_GRAY2BGR)
         overlay_img = cv.cvtColor(mask_th,cv.COLOR_GRAY2BGR)
-        for center,radius in zip(BLOB_CENTER,BLOB_RADIUS):
+        for center,radius,radius_expanded in zip(BLOB_CENTER,BLOB_RADIUS,BLOB_RADIUS_EXPANDED):
             # Center +
             cv.line(overlay_blob, (center[0] - 2, center[1]), (center[0] + 2, center[1]), (255,0,0), 1)
             cv.line(overlay_blob, (center[0], center[1] - 2), (center[0], center[1] + 2), (255,0,0), 1)
             # Perimeter
             cv.circle(overlay_blob,center,radius,(255,0,0),1,cv.LINE_AA)
+            cv.circle(overlay_blob,center,radius_expanded,(255,255,0),1,cv.LINE_AA)
 
         
         return {
@@ -199,7 +219,7 @@ class ClumpManager:
             "BLOB_COUNT"            : len(keypoints),
             "BLOB_CENTER"           : BLOB_CENTER,
             "BLOB_RADIUS"           : BLOB_RADIUS,
-            "RADIUS_EXPAND"           : RADIUS_EXPAND,
+            "RADIUS_GROWTH_FACTOR"  : RADIUS_GROWTH_FACTOR,
             # --- Mass Fraction After Various Steps
             "MFRAC_MASK_THR" : np.sum(img*np.where(mask_th>0,1,0))/np.sum(img),
             "MFRAC_LABLE" : np.sum(img*np.where(lable>0,1,0))/np.sum(img)
@@ -374,7 +394,7 @@ class ClumpManager:
             ax.imshow(np.transpose(cvout["OVERLAY_BLOB"],(1,0,2)),origin='lower',interpolation='none')
             JUST=16
             info="Blobs Detected".ljust(JUST) + ":" + f"{cvout['BLOB_COUNT']}\n"
-            info+="Radius Expansion".ljust(JUST) + ":" + f"{cvout['RADIUS_EXPAND']}px"
+            info+="Radius Expansion".ljust(JUST) + ":" + f"$\\times${cvout['RADIUS_GROWTH_FACTOR']}"
             ax.set_title(info,fontsize=_FONTSIZE,loc='left',fontname='monospace')
         
         if mode in ["all","major"]:
@@ -399,7 +419,7 @@ class ClumpManager:
 
         # plt.show()
 
-    def ShowBlobwiseSpectra(self,label_map):
+    def GetLight(self,label_map):
         num_blobs = np.max(label_map)
         num_specs = num_blobs+1 #One extra for stray stars
 
@@ -413,32 +433,109 @@ class ClumpManager:
         with open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/cache/specs.list","rb") as fp:
             specs = pickle.load(fp)
         
-        uvspec = specs[:,1400]
-
         with open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/cache/specindex.dict","rb") as fp:
             specindex = pickle.load(fp)
-
         tspecindex = [specindex[tsid] for tsid in self.ids]
 
+        
+        # spectroscopy
+        wl=specs[0]
+        blobspecs = np.zeros((num_specs,len(specs[0])))
+
+        # Photometry
+        SLICE_WL=1400
+        uvspec = specs[:,SLICE_WL]
         light_img = np.zeros_like(label_map)
 
         for (uc,vc),ti in zip(pixel_coords,tspecindex):
             light_img[uc,vc] += uvspec[ti]
+            blobspecs[label_map[uc,vc]]+=specs[ti]
 
+        return wl,blobspecs,light_img,SLICE_WL
+
+    def ShowSpec(self,specs):
+        wl,blobspec=specs
+        
         plt.figure()
-        plt.imshow(np.log10(1+light_img).T,cmap="gray",origin="lower")
-        plt.show() 
+        plt.plot(wl,blobspecs[0],label=f"Blob {0}",color=(0.8,0.8,0.8))
+        for i,bs in enumerate(blobspec):
+            if i==0:continue
+            plt.plot(wl,bs,label=f"Blob {i}")
+        plt.yscale("log") 
+        plt.xscale("log") 
+        plt.xlabel("Wavelength $(\AA)$")
+        plt.ylabel("Flux $(L_\odot/\AA)$")
+        plt.xlim(1e2,2e4)
+        plt.ylim(bottom=1e0)
+        plt.legend()
+        # plt.show()
+
+    
+
+    def FindBlobsLight(self,light_img):
+        dlimit = self._GetDetectionLimit()
+        print(dlimit)
+        exit()
+        noise=0
+        
+        light = light_img
+        nlight = light+noise
+
+
+    def ShowOpenCVPipelineLight(self,cvout_light=None,mode:Literal["all","major"]="major"):
+        if cvout_light==None:
+            img = self.GetProjection()
+            cvout_light = self.FindBlobsLight(img)
+
+        if mode=="all":
+            fig,axs = plt.subplots(2,4,figsize=(9,6),sharex=True, sharey=True)
+            fig.canvas.manager.set_window_title(f'GroupID {self.gid} - LIGHT')
+            fig.subplots_adjust(bottom=0.05)
+            axs:np.ndarray
+            axs=axs.flatten()
+        elif mode=="major":
+            fig,axs = plt.subplots(1,3,figsize=(9,6),sharex=True, sharey=True)
+
+        iter_axs=iter(axs)
+        def next_ax():
+            return next(iter_axs)
+        
+        _FONTSIZE=12
+
+        ax=next_ax()
+        ax.imshow(np.log10(1+light_img).T,cmap="gray",origin="lower")
+        ax.set_title(f"${1400}\AA$")
+
+
+
+
+
+        for ax in axs:
+            ax.set_axis_off()
+
 
 
 SNAPSPATH = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS/"
 SNAPNUM = 43
 
 stellar_mass = galspy.NavigationRoot(SNAPSPATH).PIG(SNAPNUM).FOFGroups.MassByType().T[4]
+fof_gids    = galspy.NavigationRoot(SNAPSPATH).PIG(SNAPNUM).FOFGroups.GroupID()
+
+smask=stellar_mass>1e-2
+
+sgids = fof_gids[smask]
+print(len(sgids))
+
+# plt.plot(fof_gids[smask],stellar_mass[smask],'.',ms=1)
+# plt.yscale("log")
+# plt.xscale("log")
+# plt.show()
+
 
 
 ##%%
 for i in range(1,100):
-    if i not in [1,2]:continue
+    if i not in [1]:continue
     print(i)
     st_mass = stellar_mass[i-1]
     print("  ","Stellar Mass :",st_mass,"e10")
@@ -449,7 +546,20 @@ for i in range(1,100):
     cvout = cmgr.FindBlobs(img)
     cmgr.ShowOpenCVPipeline(cvout,"all")
     # cmgr.ShowCube()
-    cmgr.ShowBlobwiseSpectra(cvout["LABLE_IMG"])
+    
+    wl,blobspecs,light_img,slice_wl=cmgr.GetLight(cvout["LABLE_IMG"])
+    
+    cvout_light=cmgr.FindBlobsLight(light_img)
+    cmgr.ShowOpenCVPipelineLight(cvout_light,"all")
+
+    cmgr.ShowSpec((wl,blobspecs))
+
+
+        
+   
+    
+
+
     plt.show()
 
 

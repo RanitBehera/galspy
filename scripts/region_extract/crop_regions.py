@@ -245,11 +245,15 @@ for i,gid in enumerate(selected_gids):
     print(f"- GID : {gid} ({i+1}/{len(selected_gids)})",'-'*32)
     GIDDIR=SAVEDIR+os.sep+f"GID_{gid}"
     os.makedirs(GIDDIR,exist_ok=True)
-    PTYPE=0
-    print("  Gas")
-    DumpPtype(GIDDIR)
-    PTYPE=4
-    print("  Star")
-    DumpPtype(GIDDIR)
+    try:
+        PTYPE=0
+        print("  Gas")
+        DumpPtype(GIDDIR)
+        PTYPE=4
+        print("  Star")
+        DumpPtype(GIDDIR)
+    except:
+        print(f"  ERROR on {gid}")
+        continue
     
-    break
+    # break
