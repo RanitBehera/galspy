@@ -9,8 +9,13 @@ import cv2 as cv
 from typing import List
 import pickle
 from galspy.utility.visualization import CubeVisualizer
+from scipy.interpolate import interp1d
 
 class ClumpManager:
+    _specs=None
+    _specindex=None
+    _uvphot=None
+
     def __init__(self,snapspath:str,snapnum:int,gid:int):
         self.snapspath = snapspath
         self.snapnum = snapnum
@@ -18,7 +23,9 @@ class ClumpManager:
         if gid<1:
             raise ValueError("Group ID must be greter than or equal to 1.")
 
-        PIG=galspy.NavigationRoot(snapspath).PIG(int(snapnum))
+        root=galspy.NavigationRoot(snapspath)
+        self.cosmology = root.GetAstropyFlatLCDM()
+        PIG=root.PIG(int(snapnum))
         self.PIG = PIG
 
         star_gid        = PIG.Star.GroupID()
@@ -30,6 +37,20 @@ class ClumpManager:
         self.stellar_mass = np.sum(self.mass) 
 
         self.pixel_resolution = self._GetPixelResolution(PIG.Header.Redshift())
+
+
+        if ClumpManager._specs is None:
+            with open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/cache/specs.list","rb") as fp:
+                ClumpManager._specs = pickle.load(fp)
+
+        if ClumpManager._specindex is None:
+            with open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/cache/specindex.dict","rb") as fp:
+                ClumpManager._specindex= pickle.load(fp)
+
+        if ClumpManager._uvphot is None:
+            torest_throuput = self.GetNIRCamFilter(ClumpManager._specs[0],"F115W",True)
+            ClumpManager._uvphot=np.sum(ClumpManager._specs*torest_throuput,axis=1)
+
 
 
     def _GetPixelResolution(self,z):
@@ -45,8 +66,19 @@ class ClumpManager:
         return res
     
     def _GetDetectionLimit(self):
-        pass
-        return 0
+        D_A = self.cosmology.angular_diameter_distance(self.PIG.Header.Redshift()).value #in Mpc
+        c1=np.pi/4
+        c2=np.pi/(180*3600)
+        S=11.1 # in nJy
+        Theta_FWHM_lambda = 0.07    #in arcsecond
+        Sigma_L = ((S*1e-9)/(c1*c2**2))/(Theta_FWHM_lambda*D_A)**2 #In Jy/Mpc^2
+
+        RB=0.031 #arcsec per pixel
+        lp=RB*c2*D_A    #in Mpc
+
+        dlimit = Sigma_L * (lp**2)
+
+        return dlimit
 
     def ShowCube(self):
         cv=CubeVisualizer()
@@ -93,7 +125,7 @@ class ClumpManager:
             THRESOLD = 2
             img_th = np.where(img>=THRESOLD,img,0)
         elif self._projection_mode=="mass":
-            THRESOLD = 0.9
+            THRESOLD = 0
             MassUnit=self.PIG.Header.MassTable()[4]
             img_th = np.where(img>=THRESOLD*MassUnit,img,0)
             img_th = 255*(img_th/np.max(img_th))
@@ -191,7 +223,6 @@ class ClumpManager:
 
         # ----- OVERLAY
         overlay_blob = cv.cvtColor(target_img,cv.COLOR_GRAY2BGR)
-        overlay_img = cv.cvtColor(mask_th,cv.COLOR_GRAY2BGR)
         for center,radius,radius_expanded in zip(BLOB_CENTER,BLOB_RADIUS,BLOB_RADIUS_EXPANDED):
             # Center +
             cv.line(overlay_blob, (center[0] - 2, center[1]), (center[0] + 2, center[1]), (255,0,0), 1)
@@ -209,7 +240,6 @@ class ClumpManager:
             "MORPH_OPENED"  : opened,
             "MORPH_DILATED" : dilated,
             "OVERLAY_BLOB"  : overlay_blob,
-            "OVERLAY_IMG"   : overlay_img,
             "LABLE_IMG"     : lable,
             # --- Pipeline Configuration
             "THRESOLD"              : THRESOLD,
@@ -419,6 +449,23 @@ class ClumpManager:
 
         # plt.show()
 
+
+    def GetNIRCamFilter(self,wl,filter_name:str="F115W",torest=True):
+        FILTER_PATH = f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/module_scripts/bagpipes/filters/jwst/{filter_name}"
+        fl_wl,throuput = np.loadtxt(FILTER_PATH).T
+        if torest:
+            fl_wl = fl_wl/(1+self.PIG.Header.Redshift())
+        throuput_interpolate_fun = interp1d(fl_wl,throuput,"linear",fill_value="extrapolate")
+        throuput_interpolated    = throuput_interpolate_fun(wl) 
+
+        # plt.figure()
+        # plt.plot(fl_wl,throuput)
+        # plt.plot(wl,throuput_interpolated)
+        # plt.xscale("log")
+        # plt.show()
+
+        return throuput_interpolated
+
     def GetLight(self,label_map):
         num_blobs = np.max(label_map)
         num_specs = num_blobs+1 #One extra for stray stars
@@ -430,11 +477,10 @@ class ClumpManager:
         v_coords = np.clip(v_coords, 0, len(self._vedges) - 2)
         pixel_coords = np.column_stack((u_coords,v_coords))
 
-        with open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/cache/specs.list","rb") as fp:
-            specs = pickle.load(fp)
+        specs=ClumpManager._specs
+        specindex = ClumpManager._specindex
+        uvphot = ClumpManager._uvphot
         
-        with open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/cache/specindex.dict","rb") as fp:
-            specindex = pickle.load(fp)
         tspecindex = [specindex[tsid] for tsid in self.ids]
 
         
@@ -443,21 +489,22 @@ class ClumpManager:
         blobspecs = np.zeros((num_specs,len(specs[0])))
 
         # Photometry
-        SLICE_WL=1400
-        uvspec = specs[:,SLICE_WL]
         light_img = np.zeros_like(label_map)
+        blobphot = np.zeros(num_specs)
 
         for (uc,vc),ti in zip(pixel_coords,tspecindex):
-            light_img[uc,vc] += uvspec[ti]
+            light_img[uc,vc] += uvphot[ti]
             blobspecs[label_map[uc,vc]]+=specs[ti]
+            blobspecs[label_map[uc,vc]]+=specs[ti]
+            blobphot[label_map[uc,vc]]+=uvphot[ti]
 
-        return wl,blobspecs,light_img,SLICE_WL
+        return wl,blobspecs,light_img,blobphot
 
     def ShowSpec(self,specs):
         wl,blobspec=specs
         
         plt.figure()
-        plt.plot(wl,blobspecs[0],label=f"Blob {0}",color=(0.8,0.8,0.8))
+        plt.plot(wl,blobspec[0],label=f"Blob {0}",color=(0.8,0.8,0.8))
         for i,bs in enumerate(blobspec):
             if i==0:continue
             plt.plot(wl,bs,label=f"Blob {i}")
@@ -470,16 +517,174 @@ class ClumpManager:
         plt.legend()
         # plt.show()
 
-    
+    def ConvertBPASSUnittoJy(self,img_lam):
+        # BPASS in L_sol AA-1
+        # Jy = 1e-23 erg s-1 cm-2 Hz-1
+        
+        LSOL=3.846e33 #erg s-1
+
+        img_lam = img_lam*LSOL # erg s-1 AA-1
+
+        DL=self.cosmology.luminosity_distance(self.PIG.Header.Redshift()).value #in Mpc
+        MPC2CM = 3.086e24
+        DL = DL*MPC2CM  # In cm
+        
+        img_lam =img_lam/(DL**2)    # erg s-1 cm-2 AA-1 at rest
+
+        z=7
+        img_lam =img_lam/(1+z)      # erg s-1 cm-2 AA-1 at obs
+        
+        # lam . f_lam = nu . f_nu
+        c=3e8*1e10  #in AA s-1
+        lam = 2625 #in AA in rest
+        lam = lam*(1+z) #in AA in obs
+
+        img_nu = (lam**2)*img_lam/c #erg s-1 cm-2 Hz-1 at obs
+
+        Jy=1e-23 #erg s-1 cm-2 Hz-1
+
+        img_nu = img_nu/Jy  # in Jy
+
+        return img_nu
+
+
+        
 
     def FindBlobsLight(self,light_img):
-        dlimit = self._GetDetectionLimit()
-        print(dlimit)
-        exit()
-        noise=0
+        dlimit = self._GetDetectionLimit()  # in Jy        
+        light_jy = self.ConvertBPASSUnittoJy(light_img)
+
+        # ------ MASK
+        bin_mask = np.where(light_jy>0,1,0)
+        th_mask = np.where(light_jy>dlimit,1,0)
+
+        _,mask = cv.threshold(bin_mask.astype(np.uint8),0,255,cv.THRESH_BINARY)
+        _,mask_th = cv.threshold(th_mask.astype(np.uint8),0,255,cv.THRESH_BINARY)
+
+        # ----- MORPHOLOGICAL TRANSFORMATIONS
+        # CLOSING - (dilation followed by erosion) : Black dots gets erased
+        CLOSING_KERNEL_SIZE=2
+        kernel = np.ones((CLOSING_KERNEL_SIZE,CLOSING_KERNEL_SIZE),np.uint8)
+        closed = cv.morphologyEx(mask_th, cv.MORPH_CLOSE, kernel)
+        # OPENING - (erosion followed by dilation) : White dots gets erased
+        OPENING_KERNEL_SIZE=3
+        kernel = np.ones((OPENING_KERNEL_SIZE,OPENING_KERNEL_SIZE),np.uint8)
+        opened = cv.morphologyEx(closed, cv.MORPH_OPEN, kernel)
+        DILATION_KERNEL_SIZE=4
+        # DILATION - Nearby mini-islands gets connected
+        kernel = np.ones((DILATION_KERNEL_SIZE,DILATION_KERNEL_SIZE),np.uint8)
+        dilated = cv.dilate(opened, kernel,iterations=1)
+
+
+        # ----- BLOB DETECTION
+        target_img = dilated
+        params = cv.SimpleBlobDetector_Params()
+
+        params.filterByColor = True
+        params.blobColor = 255
+        params.filterByArea = True
+        params.minArea = 1
+        # params.maxArea = 5000
+        params.filterByCircularity = False
+        params.minCircularity = 0.1
+        params.filterByConvexity = False
+        params.minConvexity = 0.8
+        params.filterByInertia = False
+        params.minInertiaRatio = 0.5
+
+        detector = cv.SimpleBlobDetector_create(params)
+        keypoints = detector.detect(target_img)
+
+
+        # ----- CENTERS and RADIUS
+        BLOB_CENTER = []
+        BLOB_RADIUS = []
+        for key in keypoints:
+            key:cv.KeyPoint
+            center,diameter,angle = key.pt,key.size,key.angle
+            center = (int(center[0]), int(center[1]))
+            radius = int(diameter/2)
+            BLOB_CENTER.append(center)
+            BLOB_RADIUS.append(radius)
+
+        # Grow radius by a factor if they don't collide
+        RADIUS_GROWTH_FACTOR=2
+        BLOB_RADIUS_EXPANDED = RADIUS_GROWTH_FACTOR*np.array(BLOB_RADIUS)
+        # Check for collision and shrink
+        for i,(ci,ri) in enumerate(zip(BLOB_CENTER,BLOB_RADIUS_EXPANDED)):
+            for j,(cj,rj) in enumerate(zip(BLOB_CENTER,BLOB_RADIUS_EXPANDED)):
+                if j<=i:continue
+                c2c_distance = np.linalg.norm(np.array(ci)-np.array(cj))
+                r2r_distance = ri+rj
+                if r2r_distance<c2c_distance:continue
+                over_by_factor = r2r_distance/c2c_distance
+                BLOB_RADIUS_EXPANDED[i]/=over_by_factor
+                BLOB_RADIUS_EXPANDED[j]/=over_by_factor
+
+        BLOB_RADIUS_EXPANDED = list(BLOB_RADIUS_EXPANDED)   
+
+
+        # ----- LABLE MAP
+        # Initialise to -1
+        lable = -1*np.ones(mask.shape, dtype=int)
+        # If mask is positive, initialise to 0, so that outside pixels get lable 0
+
+        for row in range(0,lable.shape[0]):
+            for clm in range(0,lable.shape[1]):
+                if mask_th[row,clm]>0:lable[row,clm]=0
         
-        light = light_img
-        nlight = light+noise
+        for i,(C,R) in enumerate(zip(BLOB_CENTER,BLOB_RADIUS_EXPANDED)):
+            minx,maxx=C[0]-R,C[0]+R
+            miny,maxy=C[1]-R,C[1]+R
+            for y in range(miny,maxy):#row
+                for x in range(minx,maxx):#clm
+                    dx=x-C[0]
+                    dy=y-C[1]
+                    r=(dx**2+dy**2)**0.5
+                    if r>R:continue
+                    if mask_th[y,x]==0:continue
+                    lable[y,x]=i+1
+
+
+
+        # ----- OVERLAY
+        overlay_blob = cv.cvtColor(target_img,cv.COLOR_GRAY2BGR)
+        for center,radius,radius_expanded in zip(BLOB_CENTER,BLOB_RADIUS,BLOB_RADIUS_EXPANDED):
+            # Center +
+            cv.line(overlay_blob, (center[0] - 2, center[1]), (center[0] + 2, center[1]), (255,0,0), 1)
+            cv.line(overlay_blob, (center[0], center[1] - 2), (center[0], center[1] + 2), (255,0,0), 1)
+            # Perimeter
+            cv.circle(overlay_blob,center,radius,(255,0,0),1,cv.LINE_AA)
+            cv.circle(overlay_blob,center,radius_expanded,(255,255,0),1,cv.LINE_AA)
+
+
+
+        cvout_light={
+            "LIGHT" : light_img,
+            "LIGHT_JY" : light_jy,
+            "MASK_BIN"      : mask,
+            "MASK_THRESOLD" : mask_th,
+            "MORPH_CLOSED"  : closed,
+            "MORPH_OPENED"  : opened,
+            "MORPH_DILATED" : dilated,
+            "OVERLAY_BLOB"  : overlay_blob,
+            "LABLE_IMG"     : lable,
+            # ---
+            "THRESOLD" : dlimit,
+            "CLOSING_KERNEL_SIZE"   : CLOSING_KERNEL_SIZE,
+            "OPENING_KERNEL_SIZE"   : OPENING_KERNEL_SIZE,
+            "DILATION_KERNEL_SIZE"  : DILATION_KERNEL_SIZE,
+            "BLOB_COUNT"            : len(keypoints),
+            "BLOB_CENTER"           : BLOB_CENTER,
+            "BLOB_RADIUS"           : BLOB_RADIUS,
+            "RADIUS_GROWTH_FACTOR"  : RADIUS_GROWTH_FACTOR,
+            # ---
+            "LFRAC_MASK_THR" : np.sum(light_img*np.where(mask_th>0,1,0))/np.sum(light_img),
+            "MFRAC_LABLE" : np.sum(img*np.where(lable>0,1,0))/np.sum(img)
+
+        }
+
+        return cvout_light
 
 
     def ShowOpenCVPipelineLight(self,cvout_light=None,mode:Literal["all","major"]="major"):
@@ -502,9 +707,91 @@ class ClumpManager:
         
         _FONTSIZE=12
 
-        ax=next_ax()
-        ax.imshow(np.log10(1+light_img).T,cmap="gray",origin="lower")
-        ax.set_title(f"${1400}\AA$")
+        if mode in ["all"]:
+            ax=next_ax()
+            img=cvout_light["LIGHT_JY"]
+            img = np.log10(1+img)**0.2
+            ax.imshow(img.T,cmap="gray",origin="lower")
+            JUST = 16
+            info = "Filter".ljust(JUST)+":"+f"F115W\n"
+            info += "Frame".ljust(JUST)+":"+f"Observed"
+            ax.set_title(info,fontsize=_FONTSIZE,loc='left',fontname='monospace')
+
+        if mode in ["all","major"]:
+            ax=next_ax()    
+            ax.imshow(cvout_light["MASK_BIN"].T,origin='lower',cmap="grey",interpolation='none')
+            ax.set_title(f"Binary Mask",fontsize=_FONTSIZE,loc='left',fontname='monospace')
+
+        if mode in ["all","major"]:
+            ax=next_ax()    
+            ax.imshow(cvout_light["MASK_THRESOLD"].T,origin='lower',cmap="grey",interpolation='none')
+            JUST=16
+            info="Thresold Mask\n"
+            info+="Detection Limit".ljust(JUST) + ":" + f"{cvout_light['THRESOLD']/1e-9:.02f}nJy\n"
+            info+="Light Fraction".ljust(JUST) + ":" + f"{cvout_light['LFRAC_MASK_THR']*100:.01f}%"
+            ax.set_title(info,fontsize=_FONTSIZE,loc='left',fontname='monospace')
+
+
+        if mode in ["all"]:
+            ax=next_ax()    
+            ax.imshow(cvout_light["MORPH_CLOSED"].T,origin='lower',cmap="grey",interpolation='none')
+            JUST=16
+            info="Morphological".ljust(JUST) + ":" + "Closed\n"
+            info+="Kernel Size".ljust(JUST)+":"+f"{cvout_light['CLOSING_KERNEL_SIZE']}"
+            ax.set_title(info,fontsize=_FONTSIZE,loc='left',fontname='monospace')
+        
+        if mode in ["all"]:
+            ax=next_ax()    
+            ax.imshow(cvout_light["MORPH_OPENED"].T,origin='lower',cmap="grey",interpolation='none')
+            JUST=16
+            info="Morphological".ljust(JUST) + ":" + "Opened\n"
+            info+="Kernel Size".ljust(JUST)+":"+f"{cvout_light['OPENING_KERNEL_SIZE']}"
+            ax.set_title(info,fontsize=_FONTSIZE,loc='left',fontname='monospace')
+
+        if mode in ["all"]:
+            ax=next_ax()    
+            ax.imshow(cvout_light["MORPH_DILATED"].T,origin='lower',cmap="grey",interpolation='none')
+            JUST=16
+            info="Morphological".ljust(JUST) + ":" + "Dilation\n"
+            info+="Kernel Size".ljust(JUST)+":"+f"{cvout_light['DILATION_KERNEL_SIZE']}"
+            ax.set_title(info,fontsize=_FONTSIZE,loc='left',fontname='monospace')
+
+
+        if mode in ["all"]:
+            ax=next_ax()    
+            ax.imshow(np.transpose(cvout_light["OVERLAY_BLOB"],(1,0,2)),origin='lower',interpolation='none')
+            JUST=16
+            info="Blobs Detected".ljust(JUST) + ":" + f"{cvout_light['BLOB_COUNT']}\n"
+            info+="Radius Expansion".ljust(JUST) + ":" + f"$\\times${cvout_light['RADIUS_GROWTH_FACTOR']}"
+            ax.set_title(info,fontsize=_FONTSIZE,loc='left',fontname='monospace')
+
+        if mode in ["all","major"]:
+            ax=next_ax()    
+            lable_img= cvout_light["LABLE_IMG"]
+            unq_lables = np.unique(lable_img)
+            bounds = 0.5*(unq_lables[:-1]+unq_lables[1:])
+            bounds = np.insert(bounds,0,2*unq_lables[0]-bounds[0])
+            bounds = np.append(bounds,2*unq_lables[-1]-bounds[-1])
+            max_val = np.max(unq_lables)
+            colormap = plt.colormaps["tab10"]
+            colors = ['black','white'] + [colormap(i) for i in range(max_val)]
+            cmap = mcolors.ListedColormap(colors)
+            norm = mcolors.BoundaryNorm(bounds, cmap.N)
+            ax.imshow(lable_img.T,origin='lower',cmap=cmap, norm=norm,interpolation='none')
+            info="Lable Map\n"
+            info+="Light Fraction".ljust(JUST) + ":" + f"{cvout_light['MFRAC_LABLE']*100:.01f}%"
+            ax.set_title(info,fontsize=_FONTSIZE,loc='left',fontname='monospace')
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -524,44 +811,74 @@ fof_gids    = galspy.NavigationRoot(SNAPSPATH).PIG(SNAPNUM).FOFGroups.GroupID()
 smask=stellar_mass>1e-2
 
 sgids = fof_gids[smask]
-print(len(sgids))
+print("Number of selected GIDs :",len(sgids))
 
-# plt.plot(fof_gids[smask],stellar_mass[smask],'.',ms=1)
+# plt.plot(fof_gids,stellar_mass,'.',ms=1)
+# # plt.plot(fof_gids[smask],stellar_mass[smask],'.',ms=1)
 # plt.yscale("log")
 # plt.xscale("log")
 # plt.show()
 
-
+# exit()
 
 ##%%
-for i in range(1,100):
-    if i not in [1]:continue
-    print(i)
+
+DUMP=True
+SHOW=False
+
+if DUMP:
+    mfr_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/mfrac_recovery.txt",'w')
+    mfr_fp.write("#GID STMASS NBLOBS MFRAC_MASK MFRC_LABLE\n")
+
+    bluv_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/blob_UV.txt",'w')
+    bluv_fp.write("#GID BLOBNUM UV_F115W\n")
+
+# for i in range(1,100):
+for n,i in enumerate(sgids):
+    # if i not in range(100):continue
+    # if i not in sgids:continue
+
+    print(f"{i} : ({n+1}/{len(sgids)})")
     st_mass = stellar_mass[i-1]
-    print("  ","Stellar Mass :",st_mass,"e10")
+    # print("  ","Stellar Mass :",st_mass,"e10")
 
+    try:
+    # if True:
+        cmgr = ClumpManager(SNAPSPATH,SNAPNUM,i)
+        img,ue,ve = cmgr.GetProjection("XY","mass")
 
-    cmgr = ClumpManager(SNAPSPATH,SNAPNUM,i)
-    img,ue,ve = cmgr.GetProjection("XY","mass")
-    cvout = cmgr.FindBlobs(img)
-    cmgr.ShowOpenCVPipeline(cvout,"all")
-    # cmgr.ShowCube()
-    
-    wl,blobspecs,light_img,slice_wl=cmgr.GetLight(cvout["LABLE_IMG"])
-    
-    cvout_light=cmgr.FindBlobsLight(light_img)
-    cmgr.ShowOpenCVPipelineLight(cvout_light,"all")
-
-    cmgr.ShowSpec((wl,blobspecs))
-
-
+        cvout = cmgr.FindBlobs(img)
+        if SHOW:
+            cmgr.ShowOpenCVPipeline(cvout,"all")
         
-   
-    
+                
+        # cmgr.ShowCube()
+        wl,blobspecs,light_img,blobphot=cmgr.GetLight(cvout["LABLE_IMG"])
+
+        # cvout_light=cmgr.FindBlobsLight(light_img)
+        # cmgr.ShowOpenCVPipelineLight(cvout_light,"all")
+
+        # cmgr.ShowSpec((wl,blobspecs))
+
+        if DUMP:
+            np.savetxt(mfr_fp,np.column_stack([i,st_mass,cvout["BLOB_COUNT"],cvout["MFRAC_MASK_THR"],cvout["MFRAC_LABLE"]]),fmt="%d %.4f %d %.4f %.4f")
+            mfr_fp.flush()
+
+            np.savetxt(bluv_fp,np.column_stack([i*np.ones(len(blobphot)),np.array(range(len(blobphot))),blobphot]),fmt="%d %d %.4e")
+            bluv_fp.flush()
+        
+        
+        if SHOW:
+            plt.show()
+
+    except:
+        if DUMP:
+            mfr_fp.write(f"#ERROR : {i}\n")
+            bluv_fp.write(f"#ERROR : {i}\n")
 
 
-    plt.show()
-
-
+if DUMP:
+    mfr_fp.close()
+    bluv_fp.close()
     
 
