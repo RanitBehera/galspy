@@ -823,18 +823,19 @@ print("Number of selected GIDs :",len(sgids))
 
 ##%%
 
-DUMP=True
-SHOW=False
+DUMP=False
+SHOW=True
 
 if DUMP:
-    mfr_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/mfrac_recovery.txt",'w')
+    mfr_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/mfrac_recovery_2.txt",'w')
     mfr_fp.write("#GID STMASS NBLOBS MFRAC_MASK MFRC_LABLE\n")
 
-    bluv_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/blob_UV.txt",'w')
+    bluv_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/blob_UV_2.txt",'w')
     bluv_fp.write("#GID BLOBNUM UV_F115W\n")
 
 # for i in range(1,100):
 for n,i in enumerate(sgids):
+    if i not in [1]:continue
     # if i not in range(100):continue
     # if i not in sgids:continue
 
@@ -855,10 +856,10 @@ for n,i in enumerate(sgids):
         # cmgr.ShowCube()
         wl,blobspecs,light_img,blobphot=cmgr.GetLight(cvout["LABLE_IMG"])
 
-        # cvout_light=cmgr.FindBlobsLight(light_img)
-        # cmgr.ShowOpenCVPipelineLight(cvout_light,"all")
+        cvout_light=cmgr.FindBlobsLight(light_img)
+        cmgr.ShowOpenCVPipelineLight(cvout_light,"all")
 
-        # cmgr.ShowSpec((wl,blobspecs))
+        cmgr.ShowSpec((wl,blobspecs))
 
         if DUMP:
             np.savetxt(mfr_fp,np.column_stack([i,st_mass,cvout["BLOB_COUNT"],cvout["MFRAC_MASK_THR"],cvout["MFRAC_LABLE"]]),fmt="%d %.4f %d %.4f %.4f")
