@@ -1,0 +1,20 @@
+table SED "$__SEDFN__"
+L(nu) = $__LNORM__ at 456.0 Ryd
+#
+radius linear parsec 1
+sphere
+hden 2
+#abundances "solar_GASS10.abn"
+abundances "primordial.abn"
+#
+iterate
+stop temprature 100
+stop pfrac 0.01
+#
+set save prefix "$__FN__"
+save overview ".ovr" last
+save continuum ".con" last units Angstrom
+save line list column ".lines" "LinesList.dat" last
+#
+print last
+print line sort wavelength range 900 to 10000

@@ -1,25 +1,21 @@
-import os
+import os, shutil
+import time
 import hoki.load
 import numpy
 import pickle
 from typing import Literal
+import subprocess
+from concurrent.futures import ThreadPoolExecutor
+
 
 
 class BPASS:
     BPASS_DATADIR = "/mnt/home/student/cranit/Data/BPASS/BPASSv2.2.1_release-07-18-Tuatara/"
     BPASS_VERSION = "2.2.1"
 
-    AVAIL_MODEL = Literal[
-        "SALPETER_UPTO_100M",
-        "KROUPA_UPTO_100M",
-        "KROUPA_UPTO_300M",
-        "KROUPA_UPTO_100M_TOP_HEAVY",
-        "KROUPA_UPTO_300M_TOP_HEAVY",
-        "KROUPA_UPTO_100M_BOTTOM_HEAVY",
-        "KROUPA_UPTO_300M_BOTTOM_HEAVY",
-        "CHABRIER_UPTO_100M",
-        "CHABRIER_UPTO_300M"
-        ]
+    AVAIL_MODEL_HINT = Literal["SALPETER_UPTO_100M","KROUPA_UPTO_100M","KROUPA_UPTO_300M","KROUPA_UPTO_100M_TOP_HEAVY","KROUPA_UPTO_300M_TOP_HEAVY","KROUPA_UPTO_100M_BOTTOM_HEAVY","KROUPA_UPTO_300M_BOTTOM_HEAVY","CHABRIER_UPTO_100M","CHABRIER_UPTO_300M"]
+    # Because you can't itterate over a Literal hint, duplicate list is needed
+    AVAIL_MODEL = ["SALPETER_UPTO_100M","KROUPA_UPTO_100M","KROUPA_UPTO_300M","KROUPA_UPTO_100M_TOP_HEAVY","KROUPA_UPTO_300M_TOP_HEAVY","KROUPA_UPTO_100M_BOTTOM_HEAVY","KROUPA_UPTO_300M_BOTTOM_HEAVY","CHABRIER_UPTO_100M","CHABRIER_UPTO_300M"]
     
     AVAIL_METALLICITY = [0.00001,0.0001,
                         0.001,0.002,0.003,0.004,0.006,0.008,
@@ -48,11 +44,11 @@ class BPASS:
     
     def _validate_options(self):
         if self.imf not in BPASS.AVAIL_MODEL:
-            raise ValueError("BPASS ERROR : Unknown 'IMF' Option.") 
+            raise ValueError(f"BPASS ERROR : Unknown 'IMF' Option : {self.imf}") 
         if self.system not in ["Single","Binary"]:
-            raise ValueError("BPASS ERROR : Unknown 'System' Option.") 
+            raise ValueError(f"BPASS ERROR : Unknown 'System' Option : {self.system}") 
         if self.metallicity not in BPASS.AVAIL_METALLICITY:
-            raise ValueError("BPASS ERROR : Unknown 'Metallicity' Option.") 
+            raise ValueError(f"BPASS ERROR : Unknown 'Metallicity' Option : {self.metallicity}") 
 
     def _get_filepath(self,quantity:Literal["colours","hrs","ionizing","lick","mlratio","numbers","spectra","starmass","supernova","yields"]):
         imf_str = f"imf{BPASS._model_name_imf_string[self.imf]}"
@@ -96,48 +92,178 @@ class Templates:
     def __init__(self):
         pass
 
-    def _get_filename(self,imf:BPASS.AVAIL_MODEL,system:Literal["Single","Binary"],prefix:str=""):
+    def _get_filename(self,imf:BPASS.AVAIL_MODEL_HINT,system:Literal["Single","Binary"],prefix:str=""):
         filename=f"{prefix}_{Templates._model_name_to_filename[imf]}_{system.lower()[0:3]}.specs"
         return filename
 
-    def _CreateStellarCache(self,imf,system):
-        pass
+    def _CreateStellarCache(self,filepath,imf,system):
+        Z_foots=[1e-5,1e-4,1e-3,2e-3,3e-3,4e-3,6e-3,8e-3,1e-2,1.4e-2,2e-2,3e-2,4e-2]
+        T_foots = numpy.arange(6,11.1,0.1)
     
-    def _CreateNebularCache(self,imf,system):
-        pass
+        spec_list=numpy.zeros((1+len(Z_foots)*len(T_foots),100000))
+        for Z_index,Z in enumerate(Z_foots):
+            _BPASS = BPASS(imf,system,Z)
+            table=_BPASS.GetFlux().to_numpy()
+            lam,aged_flux = table[:,0],table[:,1:].T
+            for T_index,T in enumerate(T_foots):
+                spec_index=1+(Z_index*len(T_foots)+T_index)
+            
+                if spec_index==1:spec_list[0]=lam
+                spec_list[spec_index]=aged_flux[T_index]
+
+                print(f"\r{spec_index}","/",len(Z_foots)*len(T_foots),end="")
+
+        with open(filepath,"wb") as fp: pickle.dump(spec_list,fp)
 
 
-
-    def GetStellarTemplates(self,imf:BPASS.AVAIL_MODEL,system:Literal["Single","Binary"]):
+    def GetStellarTemplates(self,imf:BPASS.AVAIL_MODEL_HINT,system:Literal["Single","Binary"]):
         filename = self._get_filename(imf,system,"stellar")
         filepath = Templates.CACHE_DIR + os.sep + filename
 
         if not os.path.exists(filepath):
-            print(f"Cache not found.\nCreating Cache : {filename}")
-            self._CreateStellarCache(imf,system)
+            print("Cache not found.")
+            print(f"Creating Cache : {filename}")
+            self._CreateStellarCache(filepath,imf,system)
         
         print(f"Using Cache : {filename}")
         with open(filepath,"rb") as fp:
             return pickle.load(fp)
         
 
-
-
-
-    def GetNebularTemplates(self,imf:BPASS.AVAIL_MODEL,system:Literal["Single","Binary"]):
-        filename = self._get_filename(imf,system,"nebular")
+    def GetNebularTemplates(self,imf:BPASS.AVAIL_MODEL_HINT,system:Literal["Single","Binary"],prefix_str:str="out"):
+        filename = self._get_filename(imf,system,f"nebular_{prefix_str}")
         filepath = Templates.CACHE_DIR + os.sep + filename
         
         if not os.path.exists(filepath):
-            print(f"Cache not found.\nCreating Cache : {filename}")
-            self._CreateNebularCache(imf,system)
-        
-        print(f"Using Cache : {filename}")
-        with open(filepath,"rb") as fp:
-            return pickle.load(fp)
+            print("Cache not found.")
+            # print(f"Creating Cache : {filename}")
+            # self._CreateNebularCache(filepath,imf,system)
+            print("Go to source files and generate the cache.")
+        else:
+            print(f"Using Cache : {filename}")
+            with open(filepath,"rb") as fp:
+                return pickle.load(fp)
 
+
+
+
+# ===================== CLOUDY BATCH RUN
+TEMPDIR="/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/cloudy_cache_temp"
+def RunCloudyInstance(specindex:int):
+    if specindex==0:return
+
+    while not os.path.exists(TEMPDIR+os.sep+f"spec{specindex}.in"):
+        print("[ WAITING ]",f"for spec{specindex}.in",flush=True)
+        time.sleep(1)
+    
+    while not os.path.exists(TEMPDIR+os.sep+"LinesList.dat"):
+        print("[ WAITING ]","for LinesList.dat",flush=True)
+        time.sleep(1)
+
+    print("[ STRATING ]",f"spec{specindex}",flush=True)
+
+    os.chdir(TEMPDIR)
+    s=time.time()
+    result = subprocess.run(["cloudy","-r",f"spec{specindex}"],
+            stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    e=time.time()
+
+    print(f"[ FINISHED in {round(e-s)}s]",f"spec{specindex}",flush=True)
+
+    if result.stdout:print(f"[ spec{specindex} ] >",result.stdout.decode())
+    if result.stderr:print(f"[ spec{specindex} ] >",result.stderr.decode())
+
+
+
+def _CreateNebularCache(stellar_filepath:str):
+    # takes a stellar array cache file
+    filepath=stellar_filepath
+
+    print("Reading Input Spectrums ... ",end="")
+    with open(filepath,"rb") as fp:
+        stellar_specs = pickle.load(fp)
+    wl=stellar_specs[0]
+    print("Done")
+
+    print("Evaluating Normalisation ... ",end="")
+    LAM_NORM=2  #in Angstrom
+    NORM = stellar_specs[:,LAM_NORM-1]
+    NORM[0]=0   #Skip wavelength slice
+    NORM = NORM * ((LAM_NORM**2)*(3.846e33)/(3e18))
+    NORM[1:] = numpy.round(numpy.log10(NORM[1:]),3)
+    print("Done")
+
+    print("Reading Cloudy Input Script ... ",end="")
+    INP_SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__)) +os.sep + "cloudy.in"
+    with open(INP_SCRIPT_PATH,'r') as fp:
+        CLOUDY_TEMPLATE_SCRIPT = fp.read()
+    print("Done")
+    
+    
+    print("Creating spectrums and input scripts ... ")
+    for i,spec in enumerate(stellar_specs):
+        if i==0:continue
+        print(f"\r{i}/{len(stellar_specs)-1}",end='',flush=True)
+
+        filepath = TEMPDIR+os.sep+f"spec{i}.sed"
+
+        if not os.path.exists(filepath):
+            numpy.savetxt(filepath,numpy.column_stack((wl[0],spec[0])),fmt="%d %.7E",
+                        newline=" Flambda units Angstrom extrapolate\n")
+            with open(filepath,'a') as fp:
+                numpy.savetxt(fp,numpy.column_stack((wl[1:],spec[1:])),fmt="%d %.7E")
+
+        INP = CLOUDY_TEMPLATE_SCRIPT
+        INP=INP.replace("$__SEDFN__",f"spec{i}.sed")
+        INP=INP.replace("$__LNORM__",str(NORM[i]))
+        INP=INP.replace("$__FN__",f"spec{i}")
+
+        with open(TEMPDIR+os.sep+f"spec{i}.in","w") as fp:
+            fp.write(INP)
+    print("")
+
+    print("Copying LinesList.dat file ... ",end="")
+    linelist_file = os.path.dirname(os.path.abspath(__file__)) +os.sep + "LinesList.dat"
+    shutil.copy(linelist_file,TEMPDIR)
+    print("Done")
+
+    print("Running Batch Cloudy ... ")
+    # with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+    #     executor.map(RunCloudyInstance, range(len(stellar_specs)))
+
+    print("Gathering output spectras ... ")
+    inspec_list = []
+    outspec_list = []
+    for i in range(len(stellar_specs)):
+        if i==0:continue
+        print(f"\r{i} / {len(stellar_specs)-1}",end='')
+        con_data=numpy.loadtxt(TEMPDIR+os.sep+f"spec{i}.con",delimiter='\t',usecols=[0,1,3])
+        freq,incident,diffout = con_data.T
+        incident=incident/freq
+        diffout=diffout/freq
+
+        if i==1:
+            inspec_list.append(freq)
+            outspec_list.append(freq)
+
+        inspec_list.append(incident)
+        outspec_list.append(diffout)
+
+    inspec_list=numpy.array(inspec_list)
+    outspec_list=numpy.array(outspec_list)
+    print("")
+
+
+    print("Saving Cache ... ",end="")
+    with open(stellar_filepath.replace("stellar","nebular_in"),'wb') as fp:
+        pickle.dump(inspec_list,fp)
+
+    with open(stellar_filepath.replace("stellar","nebular_out"),'wb') as fp:
+        pickle.dump(outspec_list,fp)
+    print("Done")
+    
 
 
 if __name__=="__main__":
-    tmp=Templates()
-    tmp.GetStellarTemplates("CHABRIER_UPTO_300M","Binary")
+    pass
+    # _CreateNebularCache("/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/stellar_chabrier300_bin.specs")

@@ -22,4 +22,6 @@ script.Map("$__LNORM__",LNORM)
 # script.Map("$__HDEN__",HDEN)
 
 script.Map("$__FN__",SED_FN)
-script.RunCloudyAsync(OUTDIR,SED_FN)
+# script.RunCloudyAsync(OUTDIR,SED_FN)
+
+print(SED_FN)
