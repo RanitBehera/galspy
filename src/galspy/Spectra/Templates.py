@@ -145,7 +145,14 @@ class Templates:
                 return pickle.load(fp)
 
 
+    def GetTemplates(self,filepath):
+        if not os.path.exists(filepath):
+            print("Cache not found.")
+        else:
+            with open(filepath,"rb") as fp:
+                return pickle.load(fp)
 
+        
 
 # ===================== CLOUDY BATCH RUN
 TEMPDIR="/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/cloudy_cache_temp"
@@ -253,6 +260,12 @@ def _CreateNebularCache(stellar_filepath:str):
     outspec_list=numpy.array(outspec_list)
     print("")
 
+    print("Converting to Solar Luminsoity Units ... ",end="")
+    LSOL=3.83e33
+    inspec_list[1:,:]=inspec_list[1:,:]/LSOL
+    outspec_list[1:,:]=outspec_list[1:,:]/LSOL
+    print("Done")
+
 
     print("Saving Cache ... ",end="")
     with open(stellar_filepath.replace("stellar","nebular_in"),'wb') as fp:
@@ -264,6 +277,9 @@ def _CreateNebularCache(stellar_filepath:str):
     
 
 
+SpectralTemplates = Templates()
+
 if __name__=="__main__":
     pass
-    # _CreateNebularCache("/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/stellar_chabrier300_bin.specs")
+    _CreateNebularCache("/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/stellar_chabrier300_bin.specs")
+

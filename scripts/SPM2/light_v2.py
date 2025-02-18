@@ -12,9 +12,11 @@ from galspy.utility.visualization import CubeVisualizer
 from scipy.interpolate import interp1d
 
 class ClumpManager:
-    _specs=None
+    _specs_st=None
+    _specs_stnb=None
     _specindex=None
-    _uvphot=None
+    _uvphot_st=None
+    _uvphot_stnb=None
 
     def __init__(self,snapspath:str,snapnum:int,gid:int):
         self.snapspath = snapspath
@@ -39,17 +41,26 @@ class ClumpManager:
         self.pixel_resolution = self._GetPixelResolution(PIG.Header.Redshift())
 
 
-        if ClumpManager._specs is None:
-            with open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/cache/specs.list","rb") as fp:
-                ClumpManager._specs = pickle.load(fp)
+        if ClumpManager._specs_st is None:
+            ClumpManager._specs_st=galspy.SpectralTemplates.GetTemplates("/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/nebular_in_chabrier300_bin.specs")
 
+        if ClumpManager._specs_stnb is None:
+            _specs_nb=galspy.SpectralTemplates.GetTemplates("/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/nebular_out_chabrier300_bin.specs")
+            ClumpManager._specs_stnb = ClumpManager._specs_st + _specs_nb
+            ClumpManager._specs_stnb[0] = _specs_nb[0]
+
+        
         if ClumpManager._specindex is None:
             with open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/cache/specindex.dict","rb") as fp:
                 ClumpManager._specindex= pickle.load(fp)
 
-        if ClumpManager._uvphot is None:
-            torest_throuput = self.GetNIRCamFilter(ClumpManager._specs[0],"F115W",True)
-            ClumpManager._uvphot=np.sum(ClumpManager._specs*torest_throuput,axis=1)
+        if ClumpManager._uvphot_st is None:
+            torest_throuput = self.GetNIRCamFilter(ClumpManager._specs_st[0],"F115W",True)
+            ClumpManager._uvphot_st=np.sum(ClumpManager._specs_st*torest_throuput,axis=1)
+
+        if ClumpManager._uvphot_stnb is None:
+            torest_throuput = self.GetNIRCamFilter(ClumpManager._specs_stnb[0],"F115W",True)
+            ClumpManager._uvphot_stnb=np.sum(ClumpManager._specs_stnb*torest_throuput,axis=1)
 
 
 
@@ -477,37 +488,57 @@ class ClumpManager:
         v_coords = np.clip(v_coords, 0, len(self._vedges) - 2)
         pixel_coords = np.column_stack((u_coords,v_coords))
 
-        specs=ClumpManager._specs
+        specs_st=ClumpManager._specs_st
+        specs_stnb=ClumpManager._specs_stnb
         specindex = ClumpManager._specindex
-        uvphot = ClumpManager._uvphot
+        uvphot_st = ClumpManager._uvphot_st
+        uvphot_stnb = ClumpManager._uvphot_stnb
         
         tspecindex = [specindex[tsid] for tsid in self.ids]
 
         
         # spectroscopy
-        wl=specs[0]
-        blobspecs = np.zeros((num_specs,len(specs[0])))
+        wl_st=specs_st[0]
+        blobspecs_st = np.zeros((num_specs,len(specs_st[0])))
+        
+        wl_stnb=specs_stnb[0]
+        blobspecs_stnb = np.zeros((num_specs,len(specs_stnb[0])))
+
 
         # Photometry
-        light_img = np.zeros_like(label_map)
-        blobphot = np.zeros(num_specs)
+        light_img_st = np.zeros_like(label_map)
+        light_img_stnb = np.zeros_like(label_map)
+        blobphot_st = np.zeros(num_specs)
+        blobphot_stnb = np.zeros(num_specs)
 
         for (uc,vc),ti in zip(pixel_coords,tspecindex):
-            light_img[uc,vc] += uvphot[ti]
-            blobspecs[label_map[uc,vc]]+=specs[ti]
-            blobspecs[label_map[uc,vc]]+=specs[ti]
-            blobphot[label_map[uc,vc]]+=uvphot[ti]
+            light_img_st[uc,vc] += uvphot_st[ti]
+            light_img_stnb[uc,vc] += uvphot_stnb[ti]
 
-        return wl,blobspecs,light_img,blobphot
+            blobspecs_st[label_map[uc,vc]]+=specs_st[ti]
+            blobspecs_stnb[label_map[uc,vc]]+=specs_stnb[ti]
+
+            blobphot_st[label_map[uc,vc]]+=uvphot_st[ti]
+            blobphot_stnb[label_map[uc,vc]]+=uvphot_stnb[ti]
+
+        return wl_st,wl_stnb,blobspecs_st,blobspecs_stnb,light_img_st,light_img_stnb,blobphot_st,blobphot_stnb
 
     def ShowSpec(self,specs):
-        wl,blobspec=specs
+        wl_st,wl_stnb,blobspecs_st,blobspecs_stnb=specs
         
         plt.figure()
-        plt.plot(wl,blobspec[0],label=f"Blob {0}",color=(0.8,0.8,0.8))
-        for i,bs in enumerate(blobspec):
+        plt.plot(wl_st,blobspecs_st[0],label=f"Blob {0} ST",color=(0.8,0.8,0.8))
+        plt.plot(wl_stnb,blobspecs_stnb[0],label=f"Blob {0} ST+NB",color=(0.8,0.8,0.8))
+        
+        for i in range(len(blobphot_st)):
+        # for i,(bs_st,bs_stnb) in enumerate((blobspecs_st,blobphot_stnb)):
             if i==0:continue
-            plt.plot(wl,bs,label=f"Blob {i}")
+            bs_st = blobspecs_st[i]
+            plt.plot(wl_st,bs_st,label=f"Blob {i} ST")
+
+            bs_stnb = blobspecs_stnb[i]
+            plt.plot(wl_stnb,bs_stnb,label=f"Blob {i} ST+NB")
+        
         plt.yscale("log") 
         plt.xscale("log") 
         plt.xlabel("Wavelength $(\AA)$")
@@ -823,25 +854,27 @@ print("Number of selected GIDs :",len(sgids))
 
 ##%%
 
-DUMP=False
-SHOW=True
+DUMP=True
+SHOW=False
 
 if DUMP:
-    mfr_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/mfrac_recovery_2.txt",'w')
+    mfr_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/mfrac_recovery.txt",'w')
     mfr_fp.write("#GID STMASS NBLOBS MFRAC_MASK MFRC_LABLE\n")
 
-    bluv_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/blob_UV_2.txt",'w')
-    bluv_fp.write("#GID BLOBNUM UV_F115W\n")
+    bluv_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/blob_UV.txt",'w')
+    bluv_fp.write("#GID BLOBNUM UV_F115W_ST UV_F115W_STNB SUM_ST_W0 SUM_ST_WO0 SUM_STNB_W0 SUM_STNB_WO0\n")
+
+
 
 # for i in range(1,100):
 for n,i in enumerate(sgids):
-    if i not in [1]:continue
+    # if i not in [1]:continue
     # if i not in range(100):continue
-    # if i not in sgids:continue
+    if i not in sgids:continue
 
     print(f"{i} : ({n+1}/{len(sgids)})")
     st_mass = stellar_mass[i-1]
-    # print("  ","Stellar Mass :",st_mass,"e10")
+    print("  ","Stellar Mass :",st_mass,"e10")
 
     try:
     # if True:
@@ -854,18 +887,28 @@ for n,i in enumerate(sgids):
         
                 
         # cmgr.ShowCube()
-        wl,blobspecs,light_img,blobphot=cmgr.GetLight(cvout["LABLE_IMG"])
+        wl_st,wl_stnb,blobspecs_st,blobspecs_stnb,light_img_st,light_img_stnb,blobphot_st,blobphot_stnb=cmgr.GetLight(cvout["LABLE_IMG"])
 
-        cvout_light=cmgr.FindBlobsLight(light_img)
-        cmgr.ShowOpenCVPipelineLight(cvout_light,"all")
+        # cvout_light=cmgr.FindBlobsLight(light_img)
+        # cmgr.ShowOpenCVPipelineLight(cvout_light,"all")
 
-        cmgr.ShowSpec((wl,blobspecs))
+        if SHOW:
+            cmgr.ShowSpec((wl_st,wl_stnb,blobspecs_st,blobspecs_stnb))
 
         if DUMP:
             np.savetxt(mfr_fp,np.column_stack([i,st_mass,cvout["BLOB_COUNT"],cvout["MFRAC_MASK_THR"],cvout["MFRAC_LABLE"]]),fmt="%d %.4f %d %.4f %.4f")
             mfr_fp.flush()
 
-            np.savetxt(bluv_fp,np.column_stack([i*np.ones(len(blobphot)),np.array(range(len(blobphot))),blobphot]),fmt="%d %d %.4e")
+            np.savetxt(bluv_fp,np.column_stack([
+                i*np.ones(len(blobphot_st)),
+                np.array(range(len(blobphot_st))),
+                blobphot_st,
+                blobphot_stnb,
+                np.sum(blobphot_st)*np.ones(len(blobphot_st)),
+                np.sum(blobphot_st[1:])*np.ones(len(blobphot_st)),
+                np.sum(blobphot_stnb)*np.ones(len(blobphot_st)),
+                np.sum(blobphot_stnb[1:])*np.ones(len(blobphot_st))
+                ]),fmt="%d %d %.4e %.4e %.4e %.4e %.4e %.4e")
             bluv_fp.flush()
         
         
