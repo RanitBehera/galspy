@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 from galspec.Utility import LuminosityFunction
 import galspy
 
+
+
+
 GID,BLOBNUM,UV_F115W_ST,UV_F115W_STNB,SUM_ST_W0,SUM_ST_WO0,SUM_STNB_W0,SUM_STNB_WO0 = np.loadtxt("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/blob_UV.txt").T
 
 
@@ -16,7 +19,9 @@ BOXSIZE=150/0.6736
 
 LSOL=3.846e33 #erg s-1
 def Lum2MAB(L):
-    uvlum=L/25 #roughly 1400A to 1600A    or 1257 to 1611          # <------
+    uvlum = L
+    # uvlum=L/200 #roughly 1400A to 1600A    or 1257 to 1611          # <------
+    
     uvlum =uvlum*LSOL # erg s-1 AA-1
 
     PC2CM = 3.086e18
@@ -30,9 +35,8 @@ def Lum2MAB(L):
 
     fnu = (lam**2)*flam/c #erg s-1 cm-2 Hz-1 at obs
     Jy=1e-23 #erg s-1 cm-2 Hz-1
-    fnu = fnu/Jy  # in Jy
 
-    mAB = -2.5*np.log10(fnu/3631)
+    mAB = -2.5*np.log10(fnu/(3631*Jy))
     M_AB = mAB #as distance was 10pc
 
     return M_AB
@@ -83,8 +87,7 @@ def plot_lf_sfr():
 
     fUV = LUV/(4*np.pi*D**2)
     Jy=1e-23 #erg s-1 cm-2 Hz-1
-    fnu = fUV/Jy  # in Jy
-    mAB = -2.5*np.log10(fnu/3631)
+    mAB = -2.5*np.log10(fUV/(3631*Jy))
     M_AB = mAB #as distance was 10pc
     
 

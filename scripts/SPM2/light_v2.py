@@ -40,9 +40,12 @@ class ClumpManager:
 
         self.pixel_resolution = self._GetPixelResolution(PIG.Header.Redshift())
 
+        USE_THROUGHPUT=True
+
 
         if ClumpManager._specs_st is None:
-            ClumpManager._specs_st=galspy.SpectralTemplates.GetTemplates("/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/nebular_in_chabrier300_bin.specs")
+            _specs_st=galspy.SpectralTemplates.GetTemplates("/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/nebular_in_chabrier300_bin.specs")
+            ClumpManager._specs_st = _specs_st
 
         if ClumpManager._specs_stnb is None:
             _specs_nb=galspy.SpectralTemplates.GetTemplates("/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/nebular_out_chabrier300_bin.specs")
@@ -55,12 +58,21 @@ class ClumpManager:
                 ClumpManager._specindex= pickle.load(fp)
 
         if ClumpManager._uvphot_st is None:
-            torest_throuput = self.GetNIRCamFilter(ClumpManager._specs_st[0],"F115W",True)
-            ClumpManager._uvphot_st=np.sum(ClumpManager._specs_st*torest_throuput,axis=1)
+            if USE_THROUGHPUT:
+                torest_throuput = self.GetNIRCamFilter(ClumpManager._specs_st[0],"F115W",True)
+                ClumpManager._uvphot_st=np.sum(ClumpManager._specs_st*torest_throuput,axis=1)
+            else:
+                lam_ind = np.argmin(np.abs(_specs_st[0]-1434))
+                ClumpManager._uvphot_st=np.mean(ClumpManager._specs_st[:,lam_ind-10:lam_ind+10],axis=1)
+  
 
         if ClumpManager._uvphot_stnb is None:
-            torest_throuput = self.GetNIRCamFilter(ClumpManager._specs_stnb[0],"F115W",True)
-            ClumpManager._uvphot_stnb=np.sum(ClumpManager._specs_stnb*torest_throuput,axis=1)
+            if USE_THROUGHPUT:
+                torest_throuput = self.GetNIRCamFilter(ClumpManager._specs_stnb[0],"F115W",True)
+                ClumpManager._uvphot_stnb=np.sum(ClumpManager._specs_stnb*torest_throuput,axis=1)
+            else:
+                lam_ind = np.argmin(np.abs(_specs_st[0]-1434))
+                ClumpManager._uvphot_stnb=np.mean(ClumpManager._specs_stnb[:,lam_ind-10:lam_ind+10],axis=1)
 
 
 
@@ -475,7 +487,7 @@ class ClumpManager:
         # plt.xscale("log")
         # plt.show()
 
-        return throuput_interpolated
+        return throuput_interpolated/np.sum(throuput_interpolated)
 
     def GetLight(self,label_map):
         num_blobs = np.max(label_map)
@@ -854,7 +866,7 @@ print("Number of selected GIDs :",len(sgids))
 
 ##%%
 
-DUMP=True
+DUMP=False
 SHOW=False
 
 if DUMP:
@@ -868,9 +880,9 @@ if DUMP:
 
 # for i in range(1,100):
 for n,i in enumerate(sgids):
-    # if i not in [1]:continue
+    if i not in [1]:continue
     # if i not in range(100):continue
-    if i not in sgids:continue
+    # if i not in sgids:continue
 
     print(f"{i} : ({n+1}/{len(sgids)})")
     st_mass = stellar_mass[i-1]
@@ -888,6 +900,8 @@ for n,i in enumerate(sgids):
                 
         # cmgr.ShowCube()
         wl_st,wl_stnb,blobspecs_st,blobspecs_stnb,light_img_st,light_img_stnb,blobphot_st,blobphot_stnb=cmgr.GetLight(cvout["LABLE_IMG"])
+
+        print(f"{blobphot_st[1]:.02e}")
 
         # cvout_light=cmgr.FindBlobsLight(light_img)
         # cmgr.ShowOpenCVPipelineLight(cvout_light,"all")

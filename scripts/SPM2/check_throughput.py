@@ -14,8 +14,11 @@ if torest:
     fl_wl = fl_wl/(1+z)
 throuput_interpolate_fun = interp1d(fl_wl,throuput,"linear",fill_value="extrapolate")
 
-wl=np.array(range(1,3001))
+wl=np.linspace(100,3000,10000)
 throuput_interpolated    = throuput_interpolate_fun(wl) 
+
+
+print(np.sum(throuput_interpolated[:-1]*np.diff(wl)))
 
 
 plt.plot(wl,throuput_interpolated)
