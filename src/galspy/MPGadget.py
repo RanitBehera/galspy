@@ -241,91 +241,6 @@ class _PIG(_Folder):
 
         self.Query    = pq._PIGQuery(self.path)
 
-class _RSGParticle(_NodeGroup):
-    def __init__(self,path):
-        super().__init__(path)
-
-        self.HaloID                     = self.AddNode("HaloID")
-        self.InternalHaloID             = self.AddNode("InternalHaloID")
-        self.ID                         = self.AddNode("ID")
-        self.Mass                       = self.AddNode("Mass")
-        self.Position                   = self.AddNode("Position")
-        self.Velocity                   = self.AddNode("Velocity")
-        self.Type                       = self.AddNode("Type")
-
-class _RKSGroups(_NodeGroup):
-    def __init__(self,path):
-        super().__init__(path)
-
-        self.A                          = self.AddNode("A")
-        self.A2                         = self.AddNode("A2")
-        self.AlternateMasses            = self.AddNode("AlternateMasses")
-        self.AngularMomentum            = self.AddNode("AngularMomentum")
-        self.AverageDensity             = self.AddNode("AverageDensity")
-        self.BlackholeMass              = self.AddNode("BlackholeMass")
-        self.b_to_a                     = self.AddNode("b_to_a")
-        self.b_to_a2                    = self.AddNode("b_to_a2")
-        self.BulkVelocity               = self.AddNode("BulkVelocity")
-        self.BulkVelocityUncertainty    = self.AddNode("BulkVelocityUncertainty")
-        self.BullockSpin                = self.AddNode("BullockSpin")
-        self.Child                      = self.AddNode("Child")
-        self.ChildParticleLength        = self.AddNode("ChildParticleLength")
-        self.child_r                    = self.AddNode("child_r")
-        self.CoreLength                 = self.AddNode("CoreLength")
-        self.CoreVelocity               = self.AddNode("CoreVelocity")
-        self.c_to_a                     = self.AddNode("c_to_a")
-        self.c_to_a2                    = self.AddNode("c_to_a2")
-        self.Descendant                 = self.AddNode("Descendant")
-        self.Energy                     = self.AddNode("Energy")
-        self.GasMass                    = self.AddNode("GasMass")
-        self.HaloID                     = self.AddNode("HaloID")
-        self.InternalHaloID             = self.AddNode("InternalHaloID")
-        self.KineticToPotentialRatio    = self.AddNode("KineticToPotentialRatio")
-        self.klypin_rs                  = self.AddNode("klypin_rs")
-        self.mgrav                      = self.AddNode("mgrav")
-        self.m_pe_b                     = self.AddNode("m_pe_b")
-        self.m_pe_d                     = self.AddNode("m_pe_d")
-        self.NextCochild                = self.AddNode("NextCochild")
-        self.ParticleLength             = self.AddNode("ParticleLength")
-        self.ParticleStartIndex         = self.AddNode("ParticleStartIndex")
-        self.PeakDensity                = self.AddNode("PeakDensity")
-        self.ph                         = self.AddNode("ph")
-        self.Position                   = self.AddNode("Position")
-        self.PositionOffset             = self.AddNode("PositionOffset")
-        self.PositionUncertainty        = self.AddNode("PositionUncertainty")
-        self.PrevCochild                = self.AddNode("PrevCochild")
-        self.rs                         = self.AddNode("rs")
-        self.rvmax                      = self.AddNode("rvmax")
-        self.Spin                       = self.AddNode("Spin")
-        self.StellarMass                = self.AddNode("StellarMass")
-        self.Sub_of                     = self.AddNode("Sub_of")
-        self.Type                       = self.AddNode("Type")
-        self.Velocity                   = self.AddNode("Velocity")
-        self.VelocityOffset             = self.AddNode("VelocityOffset")
-        self.VelocityUncertainty        = self.AddNode("VelocityUncertainty")
-        self.VirialMass                 = self.AddNode("VirialMass")
-        self.VirialRadius               = self.AddNode("VirialRadius")
-        self.Vmax                       = self.AddNode("Vmax")
-        self.vmax_r                     = self.AddNode("vmax_r")
-        self.Vrms                       = self.AddNode("Vrms")
-
-        # Post-Processed
-        self.PP_ParticleBlock           = self.AddNode("PP_ParticleBlock")
-        self.PP_LengthByType            = self.AddNode("PP_LengthByType")
-        self.PP_MassByType              = self.AddNode("PP_MassByType")
-        self.PP_LengthByTypeWithSub     = self.AddNode("PP_LengthByTypeWithSub")
-        self.PP_MassByTypeWithSub       = self.AddNode("PP_MassByTypeWithSub")
-   
-
-class _RSG(_Folder):
-    def __init__(self,path):
-        super().__init__(path)
-
-        self.RKSParticles   = _RSGParticle(os.path.join(self.path,"RKSParticles"))
-        # self.Header         = _SnapHeader(os.path.join(self.path,"Header"))
-        self.RKSHalos      = _RKSGroups(os.path.join(self.path,"RKSHalos"))
-
-
 class _Param_GenIC:
     def __init__(self,path) -> None:
         genic = cf.ReadAsDictionary(path)
@@ -550,10 +465,6 @@ class _Sim:
         if not isinstance(snap_num,int):raise TypeError
         return _PIG(os.path.join(self.mpgadget_outdir,"PIG_" + self._FixedFormatSnapNumber(snap_num)))
     
-    def RSG(self,snap_num:int):
-        if not isinstance(snap_num,int):raise TypeError
-        return _RSG(os.path.join(self.rockstar_outbase,"RSG_" + self._FixedFormatSnapNumber(snap_num)))
-    
     def _FixedFormatSnapNumber(self, snap_num):
         return '{:03}'.format(snap_num)
     
@@ -598,9 +509,3 @@ def NavigationRoot(path:str,rsg_path:str=None):
         rsg_path = folder.parent_path + os.sep + "OUT_" + folder.name
 
     return _Sim(path,rsg_path)
-
-
-
-
-def RSGRoot(rsg_path):
-    return _RSG(rsg_path)
