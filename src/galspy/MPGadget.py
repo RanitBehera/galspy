@@ -1,12 +1,13 @@
 import os
+import galspy
 from typing import Any, Literal
 import galspy.FileTypes.BigFile as bf
 import galspy.FileTypes.ConfigFile as cf
-import galspy.utility.PIGQuery as pq
+import galspy.Spectra.Templates as tp
 import numpy
 import bigfile as bigf
 from astropy.cosmology import FlatLambdaCDM
-
+import pickle
 
 class _Folder:
     def __init__(self,path:str) -> None:
@@ -222,6 +223,7 @@ class _FOFGroups(_NodeGroup):
 
 
 class _PIG(_Folder):
+    CACHE_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/cache/simulations"
     def __init__(self,path):
         super().__init__(path)
 
@@ -239,7 +241,22 @@ class _PIG(_Folder):
         self.Header     = _PIGHeader(self.path)
         self.FOFGroups  = _FOFGroups(os.path.join(self.path,"FOFGroups"))
 
-        self.Query    = pq._PIGQuery(self.path)
+    def GetStarsSpecIndex(self):
+        SEARCH_DIR = _PIG.CACHE_DIR
+        SEARCH_DIR += os.sep + os.path.basename(os.path.abspath(self.path+"/../..")) + os.sep + os.path.basename(self.path)
+        FILENAME = "StarSpecTemplateIndex.dict"
+        FILEPATH = SEARCH_DIR + os.sep + FILENAME
+
+        return tp.CacheStarsSpecTemplateIndex(
+            FILEPATH,
+            self.Star.ID(),
+            self.Star.StarFormationTime(),
+            self.Star.Metallicity(),
+            FlatLambdaCDM(H0=self.Header.HubbleParam()*100, Om0=self.Header.Omega0()),
+            self.Header.Redshift()
+        )
+
+
 
 class _Param_GenIC:
     def __init__(self,path) -> None:
@@ -275,9 +292,9 @@ class _Param_GenIC:
         self.MaxMemSizePerNode          = genic["MaxMemSizePerNode"]
 
 
-class _Param_Gadget:
-    def __init__(self,path) -> None:
-        gadget = cf.ReadAsDictionary(path)
+# class _Param_Gadget:
+#     def __init__(self,path) -> None:
+#         gadget = cf.ReadAsDictionary(path)
 
         # ===== COSMOLOGY =====
         # HubbleParam

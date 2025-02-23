@@ -1,5 +1,5 @@
 import argparse
-from galspy.utility.termutil import get_available_sim
+from deprecated.termutil import get_available_sim
 
 
 def completion(env:dict):

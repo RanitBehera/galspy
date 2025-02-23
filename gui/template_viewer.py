@@ -1,4 +1,4 @@
-import galspy as gs
+from galspy.Spectra.Templates import SpectralTemplates
 import tkinter as tk
 from tkinter import messagebox
 import os
@@ -36,7 +36,7 @@ def update_matplotlib():
 
     plt.clf()
     for file in chk_files:
-        specs = gs.SpectralTemplates.GetTemplates(TEMPLATES_DIR + os.sep + file)
+        specs = SpectralTemplates.GetTemplates(TEMPLATES_DIR + os.sep + file)
         for Z in chk_metals:
             Z_index = METALLICITY.index(Z)
             for T in chk_ages:
@@ -45,7 +45,9 @@ def update_matplotlib():
                 spec = specs[specindex]
                 plt.plot(specs[0],spec,label=f"Z={Z},T={T}")
 
-    plt.legend()
+    handles, labels = plt.gca().get_legend_handles_labels()
+    if handles:
+        plt.legend(ncol=len(chk_files))
 
     if not _FIRST_DRAW:
         plt.xlim(xlim)
@@ -144,10 +146,6 @@ for T in default_ages:
         T_checks[T].set(True)
 
 update_matplotlib()
-
-
-
-
 
 
 

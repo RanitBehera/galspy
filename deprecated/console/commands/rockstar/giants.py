@@ -1,7 +1,7 @@
 import argparse, os
 import galterm.ansi as ANSI
 import galterm.utfsym as UTF8
-from galspy.utility.termutil import get_available_sim, get_available_snaps
+from deprecated.termutil import get_available_sim, get_available_snaps
 from galspy.FileTypes.ConfigFile import ReadAsDictionary
 
 import galspy.FileTypes.BigFile as bf

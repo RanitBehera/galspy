@@ -35,7 +35,7 @@ class Arrow3D(FancyArrowPatch):
 
 _BOX_MODE = Literal["AxisWise","MaxAxis","FixedAxis"]
 
-class CubeVisualizer:
+class Cube3D:
     def __init__(self,ax:plt.Axes=None,spanmode:_BOX_MODE="MaxAxis") -> None:
         if ax==None:
             ax=plt.axes(projection="3d")

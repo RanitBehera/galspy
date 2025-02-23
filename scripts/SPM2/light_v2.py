@@ -8,7 +8,7 @@ import matplotlib.colors as mcolors
 import cv2 as cv
 from typing import List
 import pickle
-from galspy.utility.visualization import CubeVisualizer
+from galspy.Utility.Visualization import CubeVisualizer
 from scipy.interpolate import interp1d
 
 class ClumpManager:

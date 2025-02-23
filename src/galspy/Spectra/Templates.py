@@ -113,6 +113,7 @@ class Templates:
 
                 print(f"\r{spec_index}","/",len(Z_foots)*len(T_foots),end="")
 
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath,"wb") as fp: pickle.dump(spec_list,fp)
 
 
@@ -151,6 +152,67 @@ class Templates:
         else:
             with open(filepath,"rb") as fp:
                 return pickle.load(fp)
+
+
+# CACHE STAR index from the templates
+from astropy.cosmology import FlatLambdaCDM
+def map_to_closest(array1, array2):
+    # Find the closest value in array1 for each value in array2
+    indices = numpy.abs(array2[:, None] - array1).argmin(axis=1)
+    return array1[indices]
+
+def CacheStarsSpecTemplateIndex(filepath,ids,birthtimes,metallicities,cosmology,snap_redshift):
+    if not os.path.exists(filepath):
+        print("Template index cache not found ...")
+        print("Creating Cache ...")
+        age_uni_snap = cosmology.age(snap_redshift).value*1000 #in Myr
+
+        z_sft = (1/birthtimes)-1
+        age_uni_sft = cosmology.age(z_sft).value*1000 #in Myr 
+        age_star = age_uni_snap-age_uni_sft
+
+        age_star = numpy.clip(age_star,1,None)
+        age_star = numpy.round(numpy.log10(age_star)+6,1)
+
+
+        Z_foots=numpy.array(BPASS.AVAIL_METALLICITY)
+        met_stars = map_to_closest(Z_foots,metallicities)
+        Z_foots = list(Z_foots)
+
+        T_foots = numpy.arange(6,11.1,0.1)
+
+        Z_ind_map=dict(zip(Z_foots,range(len(Z_foots))))
+        T_ind_map=dict(zip(numpy.round(T_foots,1),range(len(T_foots))))
+
+        Z_keys = met_stars
+        T_keys = age_star
+
+        Z_index = numpy.array([Z_ind_map.get(key, None) for key in Z_keys])
+        T_index = numpy.array([T_ind_map.get(float(f"{key:.1f}"), None) for key in T_keys])
+
+        spec_index = 1+(Z_index*len(T_foots)+T_index)
+        id_index_map = dict(zip(ids,spec_index))
+
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        with open(filepath,"wb") as fp:
+            pickle.dump(id_index_map,fp)
+
+    print(f"Using Template Index Cache : {filepath}")
+    with open(filepath,"rb") as fp:
+        return pickle.load(fp)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         
 
@@ -281,5 +343,8 @@ SpectralTemplates = Templates()
 
 if __name__=="__main__":
     pass
-    _CreateNebularCache("/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/stellar_chabrier300_bin.specs")
+    # _CreateNebularCache("/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/stellar_chabrier300_bin.specs")
+
+
+
 

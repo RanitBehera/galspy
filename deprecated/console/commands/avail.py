@@ -1,5 +1,5 @@
 import argparse, os
-from galspy.utility.termutil import get_available_sim
+from deprecated.termutil import get_available_sim
 from galspy.FileTypes.ConfigFile import ReadAsDictionary
 
 def completion(env:dict):

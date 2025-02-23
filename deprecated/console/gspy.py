@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os
 import galterm.terminal as pyterm
-from galspy.utility.termutil import get_available_sim
+from deprecated.termutil import get_available_sim
 
 term = pyterm.Terminal()
 HOME=os.environ["HOME"]
