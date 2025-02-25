@@ -118,7 +118,8 @@ class Templates:
 
 
     def GetStellarTemplates(self,imf:BPASS.AVAIL_MODEL_HINT,system:Literal["Single","Binary"]):
-        filename = self._get_filename(imf,system,"stellar")
+        filename = self._get_filename(imf,system,"stellar")     #< This will use BPASS
+        filename = self._get_filename(imf,system,"nebular_in")     #< This will use Cloudy out   - Automate them
         filepath = Templates.CACHE_DIR + os.sep + filename
 
         if not os.path.exists(filepath):
@@ -339,10 +340,8 @@ def _CreateNebularCache(stellar_filepath:str):
     
 
 
-SpectralTemplates = Templates()
-
 if __name__=="__main__":
-    pass
+    pass 
     # _CreateNebularCache("/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/stellar_chabrier300_bin.specs")
 
 

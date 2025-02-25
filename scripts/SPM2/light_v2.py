@@ -8,8 +8,10 @@ import matplotlib.colors as mcolors
 import cv2 as cv
 from typing import List
 import pickle
-from galspy.Utility.Visualization import CubeVisualizer
+from galspy.Utility.Visualization import Cube3D
 from scipy.interpolate import interp1d
+
+import galspy.Spectra
 
 class ClumpManager:
     _specs_st=None
@@ -44,11 +46,11 @@ class ClumpManager:
 
 
         if ClumpManager._specs_st is None:
-            _specs_st=galspy.SpectralTemplates.GetTemplates("/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/nebular_in_chabrier300_bin.specs")
+            _specs_st=galspy.Spectra.SpectralTemplates.GetTemplates("/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/nebular_in_chabrier300_bin.specs")
             ClumpManager._specs_st = _specs_st
 
         if ClumpManager._specs_stnb is None:
-            _specs_nb=galspy.SpectralTemplates.GetTemplates("/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/nebular_out_chabrier300_bin.specs")
+            _specs_nb=galspy.Spectra.SpectralTemplates.GetTemplates("/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/nebular_out_chabrier300_bin.specs")
             ClumpManager._specs_stnb = ClumpManager._specs_st + _specs_nb
             ClumpManager._specs_stnb[0] = _specs_nb[0]
 
@@ -104,7 +106,8 @@ class ClumpManager:
         return dlimit
 
     def ShowCube(self):
-        cv=CubeVisualizer()
+        plt.figure()
+        cv=Cube3D()
         cv.add_points(self.position)
         cv.show(False)
 
@@ -234,6 +237,12 @@ class ClumpManager:
         for i,(C,R) in enumerate(zip(BLOB_CENTER,BLOB_RADIUS_EXPANDED)):
             minx,maxx=C[0]-R,C[0]+R
             miny,maxy=C[1]-R,C[1]+R
+
+            if minx<0:minx=0
+            if miny<0:miny=0
+            if maxx>lable.shape[1]: maxx=lable.shape[1]
+            if maxy>lable.shape[0]: maxy=lable.shape[0]
+
             for y in range(miny,maxy):#row
                 for x in range(minx,maxx):#clm
                     dx=x-C[0]
@@ -867,7 +876,7 @@ print("Number of selected GIDs :",len(sgids))
 ##%%
 
 DUMP=False
-SHOW=False
+SHOW=True
 
 if DUMP:
     mfr_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/mfrac_recovery.txt",'w')
@@ -880,7 +889,9 @@ if DUMP:
 
 # for i in range(1,100):
 for n,i in enumerate(sgids):
-    if i not in [1]:continue
+    # if i not in [1]:continue
+    if i not in [306]:continue
+    # if i not in [sgids[-1]]:continue
     # if i not in range(100):continue
     # if i not in sgids:continue
 
@@ -888,8 +899,8 @@ for n,i in enumerate(sgids):
     st_mass = stellar_mass[i-1]
     print("  ","Stellar Mass :",st_mass,"e10")
 
-    try:
-    # if True:
+    # try:
+    if True:
         cmgr = ClumpManager(SNAPSPATH,SNAPNUM,i)
         img,ue,ve = cmgr.GetProjection("XY","mass")
 
@@ -898,7 +909,7 @@ for n,i in enumerate(sgids):
             cmgr.ShowOpenCVPipeline(cvout,"all")
         
                 
-        # cmgr.ShowCube()
+        cmgr.ShowCube()
         wl_st,wl_stnb,blobspecs_st,blobspecs_stnb,light_img_st,light_img_stnb,blobphot_st,blobphot_stnb=cmgr.GetLight(cvout["LABLE_IMG"])
 
         print(f"{blobphot_st[1]:.02e}")
@@ -929,10 +940,10 @@ for n,i in enumerate(sgids):
         if SHOW:
             plt.show()
 
-    except:
-        if DUMP:
-            mfr_fp.write(f"#ERROR : {i}\n")
-            bluv_fp.write(f"#ERROR : {i}\n")
+    # except:
+    #     if DUMP:
+    #         mfr_fp.write(f"#ERROR : {i}\n")
+    #         bluv_fp.write(f"#ERROR : {i}\n")
 
 
 if DUMP:

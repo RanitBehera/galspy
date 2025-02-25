@@ -33,7 +33,10 @@ def ReadAsDictionary(filepath,sep_char='\n',comment_char='#'):
 
         # Cast to appropiate types
         # if value.startswith('"') and value.endswith('"'):value = str(value[1:-1])
-        value = ast.literal_eval(value)
+        try:
+            value = ast.literal_eval(value)
+        except:
+            value = value   # In case of error is parsing, it will return the value as string
 
         # Fill the dictionary
         config_dict[key]=value

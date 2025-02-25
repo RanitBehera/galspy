@@ -1,4 +1,5 @@
 from galspy.MPGadget import NavigationRoot
+from galspy.Spectra.SpectroPhotometry import PIGSpectrophotometry
 # from galspy.Spectra.Templates import SpectralTemplates
 
 

@@ -1,1 +1,1 @@
-from galspy.Utility.Visualization import _Cube3D as Cube3D
+from galspy.Utility.Visualization import Cube3D
