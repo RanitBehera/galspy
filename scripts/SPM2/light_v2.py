@@ -146,6 +146,7 @@ class ClumpManager:
 
 
     def FindBlobs(self,img):
+        print("max=",np.max(img))
         # Foreground should be white and background should be black.
         if self._projection_mode=="count":
             THRESOLD = 2
@@ -688,6 +689,12 @@ class ClumpManager:
         for i,(C,R) in enumerate(zip(BLOB_CENTER,BLOB_RADIUS_EXPANDED)):
             minx,maxx=C[0]-R,C[0]+R
             miny,maxy=C[1]-R,C[1]+R
+
+            if minx<0:minx=0
+            if miny<0:miny=0
+            if maxx>lable.shape[1]: maxx=lable.shape[1]
+            if maxy>lable.shape[0]: maxy=lable.shape[0]
+
             for y in range(miny,maxy):#row
                 for x in range(minx,maxx):#clm
                     dx=x-C[0]
@@ -876,7 +883,7 @@ print("Number of selected GIDs :",len(sgids))
 ##%%
 
 DUMP=False
-SHOW=True
+SHOW=False
 
 if DUMP:
     mfr_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/mfrac_recovery.txt",'w')
@@ -889,8 +896,8 @@ if DUMP:
 
 # for i in range(1,100):
 for n,i in enumerate(sgids):
-    # if i not in [1]:continue
-    if i not in [306]:continue
+    if i not in [1]:continue
+    # if i not in [306]:continue
     # if i not in [sgids[-1]]:continue
     # if i not in range(100):continue
     # if i not in sgids:continue
@@ -905,6 +912,9 @@ for n,i in enumerate(sgids):
         img,ue,ve = cmgr.GetProjection("XY","mass")
 
         cvout = cmgr.FindBlobs(img)
+
+        print(cvout["MFRAC_LABLE"])
+
         if SHOW:
             cmgr.ShowOpenCVPipeline(cvout,"all")
         

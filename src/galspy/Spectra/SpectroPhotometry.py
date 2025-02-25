@@ -23,7 +23,147 @@ class BlobFinder:
         plt.gca().set_aspect("equal")
         plt.show()
 
-    def opencv_blobfinder(self):
+    def opencv_blobfinder(self,thresold=0):
+        img=self.target_img
+
+        print("max=",np.max(img))
+
+        # Foreground should be white and background should be black.
+        THRESOLD = thresold
+        img_th = np.where(img>=THRESOLD,img,0)
+        img_th = 255*(img_th/np.max(img_th))
+
+        # ----- MASKS
+        bin_mask = np.int32(np.where(img>0,255,0))
+        th_mask = np.int32(np.where(img_th>0,255,0))
+
+        _,mask = cv.threshold(bin_mask.astype(np.uint8),0,255,cv.THRESH_BINARY)
+        _,mask_th = cv.threshold(th_mask.astype(np.uint8),0,255,cv.THRESH_BINARY)
+
+        # ----- MORPHOLOGICAL TRANSFORMATIONS
+        # CLOSING - (dilation followed by erosion) : Black dots gets erased
+        CLOSING_KERNEL_SIZE=2
+        kernel = np.ones((CLOSING_KERNEL_SIZE,CLOSING_KERNEL_SIZE),np.uint8)
+        closed = cv.morphologyEx(mask_th, cv.MORPH_CLOSE, kernel)
+        # OPENING - (erosion followed by dilation) : White dots gets erased
+        OPENING_KERNEL_SIZE=3
+        kernel = np.ones((OPENING_KERNEL_SIZE,OPENING_KERNEL_SIZE),np.uint8)
+        opened = cv.morphologyEx(closed, cv.MORPH_OPEN, kernel)
+        DILATION_KERNEL_SIZE=4
+        # DILATION - Nearby mini-islands gets connected
+        kernel = np.ones((DILATION_KERNEL_SIZE,DILATION_KERNEL_SIZE),np.uint8)
+        dilated = cv.dilate(opened, kernel,iterations=1)
+
+        
+        # ----- BLOB DETECTION
+        target_img = dilated
+        params = cv.SimpleBlobDetector_Params()
+
+        params.filterByColor = True
+        params.blobColor = 255
+        params.filterByArea = True
+        params.minArea = 1
+        # params.maxArea = 5000
+        params.filterByCircularity = False
+        params.minCircularity = 0.1
+        params.filterByConvexity = False
+        params.minConvexity = 0.8
+        params.filterByInertia = False
+        params.minInertiaRatio = 0.5
+
+        detector = cv.SimpleBlobDetector_create(params)
+        keypoints = detector.detect(target_img)
+
+
+        # ----- CENTERS and RADIUS
+        BLOB_CENTER = []
+        BLOB_RADIUS = []
+        for key in keypoints:
+            key:cv.KeyPoint
+            center,diameter,angle = key.pt,key.size,key.angle
+            center = (int(center[0]), int(center[1]))
+            radius = int(diameter/2)
+            BLOB_CENTER.append(center)
+            BLOB_RADIUS.append(radius)
+
+        # Grow radius by a factor if they don't collide
+        RADIUS_GROWTH_FACTOR=2
+        BLOB_RADIUS_EXPANDED = RADIUS_GROWTH_FACTOR*np.array(BLOB_RADIUS)
+        # Check for collision and shrink
+        for i,(ci,ri) in enumerate(zip(BLOB_CENTER,BLOB_RADIUS_EXPANDED)):
+            for j,(cj,rj) in enumerate(zip(BLOB_CENTER,BLOB_RADIUS_EXPANDED)):
+                if j<=i:continue
+                c2c_distance = np.linalg.norm(np.array(ci)-np.array(cj))
+                r2r_distance = ri+rj
+                if r2r_distance<c2c_distance:continue
+                over_by_factor = r2r_distance/c2c_distance
+                BLOB_RADIUS_EXPANDED[i]/=over_by_factor
+                BLOB_RADIUS_EXPANDED[j]/=over_by_factor
+
+        BLOB_RADIUS_EXPANDED = list(BLOB_RADIUS_EXPANDED)        
+
+        # ----- LABLE MAP
+        # Initialise to -1
+        lable = -1*np.ones(mask.shape, dtype=int)
+        # If mask is positive, initialise to 0, so that outside pixels get lable 0
+
+        for row in range(0,lable.shape[0]):
+            for clm in range(0,lable.shape[1]):
+                if mask_th[row,clm]>0:lable[row,clm]=0
+        
+        for i,(C,R) in enumerate(zip(BLOB_CENTER,BLOB_RADIUS_EXPANDED)):
+            minx,maxx=C[0]-R,C[0]+R
+            miny,maxy=C[1]-R,C[1]+R
+
+            if minx<0:minx=0
+            if miny<0:miny=0
+            if maxx>lable.shape[1]: maxx=lable.shape[1]
+            if maxy>lable.shape[0]: maxy=lable.shape[0]
+
+            for y in range(miny,maxy):#row
+                for x in range(minx,maxx):#clm
+                    dx=x-C[0]
+                    dy=y-C[1]
+                    r=(dx**2+dy**2)**0.5
+                    if r>R:continue
+                    if mask_th[y,x]==0:continue
+                    lable[y,x]=i+1
+
+
+        # ----- OVERLAY
+        overlay_blob = cv.cvtColor(target_img,cv.COLOR_GRAY2BGR)
+        for center,radius,radius_expanded in zip(BLOB_CENTER,BLOB_RADIUS,BLOB_RADIUS_EXPANDED):
+            # Center +
+            cv.line(overlay_blob, (center[0] - 2, center[1]), (center[0] + 2, center[1]), (255,0,0), 1)
+            cv.line(overlay_blob, (center[0], center[1] - 2), (center[0], center[1] + 2), (255,0,0), 1)
+            # Perimeter
+            cv.circle(overlay_blob,center,radius,(255,0,0),1,cv.LINE_AA)
+            cv.circle(overlay_blob,center,radius_expanded,(255,255,0),1,cv.LINE_AA)
+
+        
+        return {
+            "INPUT_IMG"     : img,
+            "MASK_BIN"      : mask,
+            "MASK_THRESOLD" : mask_th,
+            "MORPH_CLOSED"  : closed,
+            "MORPH_OPENED"  : opened,
+            "MORPH_DILATED" : dilated,
+            "OVERLAY_BLOB"  : overlay_blob,
+            "LABLE_IMG"     : lable,
+            # --- Pipeline Configuration
+            "THRESOLD"              : THRESOLD,
+            "CLOSING_KERNEL_SIZE"   : CLOSING_KERNEL_SIZE,
+            "OPENING_KERNEL_SIZE"   : OPENING_KERNEL_SIZE,
+            "DILATION_KERNEL_SIZE"  : DILATION_KERNEL_SIZE,
+            "BLOB_COUNT"            : len(keypoints),
+            "BLOB_CENTER"           : BLOB_CENTER,
+            "BLOB_RADIUS"           : BLOB_RADIUS,
+            "RADIUS_GROWTH_FACTOR"  : RADIUS_GROWTH_FACTOR,
+            # --- Mass Fraction After Various Steps
+            "MFRAC_MASK_THR" : np.sum(img*np.where(mask_th>0,1,0))/np.sum(img),
+            "MFRAC_LABLE" : np.sum(img*np.where(lable>0,1,0))/np.sum(img)
+        }
+        
 
 
 
@@ -38,7 +178,7 @@ class PIGSpectrophotometry:
         self.PIG = PIG
         self.all_stars_gid = PIG.Star.GroupID()
         self.all_star_position = PIG.Star.Position()
-        self.all_star_mass = PIG.Star.Position()
+        self.all_star_mass = PIG.Star.Mass()
         self.all_star_ids = PIG.Star.ID()
 
         self._specs_template_index = PIG.GetStarsSpecIndex()
@@ -95,7 +235,7 @@ class PIGSpectrophotometry:
         if mode=="count":
             binheight,uedges,vedges=np.histogram2d(u,v,bins=(bin_edges_u,bin_edges_v))
         elif mode=="mass":
-            binheight,uedges,vedges=np.histogram2d(u,v,bins=(bin_edges_u,bin_edges_v),weights=mass,density=False)
+            binheight,uedges,vedges=np.histogram2d(u,v,bins=(bin_edges_u,bin_edges_v),weights=mass)
         
         self._uedges = uedges
         self._vedges = vedges
@@ -118,9 +258,11 @@ class PIGSpectrophotometry:
             target_star_mass = self.all_star_mass[target_mask]
             target_star_ids = self.all_star_ids[target_mask]
 
-
-            image,_,_ = self._get_projection_img(target_star_position,target_star_mass)
+            image,_,_ = self._get_projection_img(target_star_position,target_star_mass,"XY","mass")
             finder = BlobFinder(image)
+            cvout = finder.opencv_blobfinder()
+
+            print(cvout["MFRAC_LABLE"])
 
 
 
