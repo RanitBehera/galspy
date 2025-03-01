@@ -3,8 +3,8 @@ import numpy as np
 from astropy.cosmology import FlatLambdaCDM
 import pickle
 
-SNAPSPATH = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS/"
-SNAPNUM=43
+SNAPSPATH = "/mnt/home/student/cranit/NINJA/simulations/L250N2040/SNAPS/"
+SNAPNUM=42
 PIG = galspy.NavigationRoot(SNAPSPATH).PIG(SNAPNUM)
 print("Reading ...")
 all_star_id  = PIG.Star.ID()
@@ -58,7 +58,7 @@ spec_index = 1+(Z_index*len(T_foots)+T_index)
 id_index_map = dict(zip(all_star_id,spec_index))
 
 
-filepath="/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/cache/specindex.dict"
+filepath="/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/cache/specindex250.dict"
 with open(filepath,"wb") as fp:
     pickle.dump(id_index_map,fp)
 print(f"Saved as \"{filepath}\"") 

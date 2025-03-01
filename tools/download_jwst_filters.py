@@ -3,7 +3,7 @@ import os, requests, tarfile, numpy
 NSTEPS = 5
 
 # 1. Create Folder -----------------------
-SAVE_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/bagpipes/filters"
+SAVE_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/cache/filters"
 SUBDIR = "jwst"
 SAVE_DIR = os.path.join(SAVE_DIR,SUBDIR)
 print(f"1/{NSTEPS}\tCreating sub-folder:\n\t{SAVE_DIR}")

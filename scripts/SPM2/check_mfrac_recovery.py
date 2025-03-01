@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-data = np.loadtxt("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/mfrac_recovery.txt")
+data = np.loadtxt("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/mfrac_recovery250.txt")
 gid,stmass,nblob,rec_mask,rec_label=data.T
 
 frac80 =len(rec_label[rec_label>0.8])/len(rec_label) 

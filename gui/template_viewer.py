@@ -1,4 +1,4 @@
-from galspy.Spectra.Templates import SpectralTemplates
+from galspy.Spectra import SpectralTemplates
 import tkinter as tk
 from tkinter import messagebox
 import os

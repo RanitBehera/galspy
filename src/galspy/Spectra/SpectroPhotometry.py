@@ -23,15 +23,13 @@ class BlobFinder:
         plt.gca().set_aspect("equal")
         plt.show()
 
-    def opencv_blobfinder(self,thresold=0):
+    def opencv_findblobs(self,thresold=0):
         img=self.target_img
-
-        print("max=",np.max(img))
 
         # Foreground should be white and background should be black.
         THRESOLD = thresold
         img_th = np.where(img>=THRESOLD,img,0)
-        img_th = 255*(img_th/np.max(img_th))
+        img_th = 255*(img_th/np.max(img_th))    #Normalise to unity and then scale to 255
 
         # ----- MASKS
         bin_mask = np.int32(np.where(img>0,255,0))
@@ -139,9 +137,8 @@ class BlobFinder:
             # Perimeter
             cv.circle(overlay_blob,center,radius,(255,0,0),1,cv.LINE_AA)
             cv.circle(overlay_blob,center,radius_expanded,(255,255,0),1,cv.LINE_AA)
-
         
-        return {
+        cvout = {
             "INPUT_IMG"     : img,
             "MASK_BIN"      : mask,
             "MASK_THRESOLD" : mask_th,
@@ -163,9 +160,96 @@ class BlobFinder:
             "MFRAC_MASK_THR" : np.sum(img*np.where(mask_th>0,1,0))/np.sum(img),
             "MFRAC_LABLE" : np.sum(img*np.where(lable>0,1,0))/np.sum(img)
         }
+
+        return cvout
         
 
+    def show_opencv_pipeline(self, cvout, show=True):
+        fig,axs = plt.subplots(2,4,figsize=(9,6),sharex=True, sharey=True)
+        fig.canvas.manager.set_window_title(f"Group ID {cvout['TARGET_GID']}")
+        fig.subplots_adjust(bottom=0.05)
+        axs:np.ndarray
+        axs=axs.flatten()
 
+        iter_axs=iter(axs)
+        def next_ax(): return next(iter_axs)
+
+        _FONTSIZE=12
+
+        ax:plt.Axes=next_ax()    
+        ax.imshow((np.log10(1+cvout["INPUT_IMG"].T)/np.max(np.log10(1+cvout["INPUT_IMG"].T)))**0.2,origin='lower',cmap="grey")
+        JUST=16
+        info="Star Count".ljust(JUST) + ":" + f"{cvout['TARGET_STAR_COUNT']}\n"
+        info+="Stellar Mass".ljust(JUST) + ":" + f"{cvout['TARGET_STAR_MASS']:.02f}"+"$\\times 10^{10}\ M_\odot$/h\n"
+        info+="Projection Mode".ljust(JUST) + ":" + f"{cvout['PROJECTION_MODE']}" + "(DRE)"
+        ax.set_title(info,fontsize=_FONTSIZE,loc='left',fontname='monospace')
+
+
+        ax=next_ax()    
+        ax.imshow(cvout["MASK_BIN"].T,origin='lower',cmap="grey",interpolation='none')
+        ax.set_title(f"Binary Mask",fontsize=_FONTSIZE,loc='left',fontname='monospace')
+
+
+        ax=next_ax()    
+        ax.imshow(cvout["MASK_THRESOLD"].T,origin='lower',cmap="grey",interpolation='none')
+        JUST=16
+        info="Thresold Mask\n"
+        info+=("Thresold "+cvout["PROJECTION_MODE"].capitalize()).ljust(JUST) + ":" + f"{cvout['THRESOLD']}\n"
+        info+="Mass Fraction".ljust(JUST) + ":" + f"{cvout['MFRAC_MASK_THR']*100:.01f}%"
+        ax.set_title(info,fontsize=_FONTSIZE,loc='left',fontname='monospace')
+
+
+        ax=next_ax()    
+        ax.imshow(cvout["MORPH_CLOSED"].T,origin='lower',cmap="grey",interpolation='none')
+        JUST=16
+        info="Morphological".ljust(JUST) + ":" + "Closed\n"
+        info+="Kernel Size".ljust(JUST)+":"+f"{cvout['CLOSING_KERNEL_SIZE']}"
+        ax.set_title(info,fontsize=_FONTSIZE,loc='left',fontname='monospace')
+
+
+        ax=next_ax()    
+        ax.imshow(cvout["MORPH_OPENED"].T,origin='lower',cmap="grey",interpolation='none')
+        JUST=16
+        info="Morphological".ljust(JUST) + ":" + "Opened\n"
+        info+="Kernel Size".ljust(JUST)+":"+f"{cvout['OPENING_KERNEL_SIZE']}"
+        ax.set_title(info,fontsize=_FONTSIZE,loc='left',fontname='monospace')
+
+        ax=next_ax()    
+        ax.imshow(cvout["MORPH_DILATED"].T,origin='lower',cmap="grey",interpolation='none')
+        JUST=16
+        info="Morphological".ljust(JUST) + ":" + "Dilation\n"
+        info+="Kernel Size".ljust(JUST)+":"+f"{cvout['DILATION_KERNEL_SIZE']}"
+        ax.set_title(info,fontsize=_FONTSIZE,loc='left',fontname='monospace')
+
+
+        ax=next_ax()    
+        ax.imshow(np.transpose(cvout["OVERLAY_BLOB"],(1,0,2)),origin='lower',interpolation='none')
+        JUST=16
+        info="Blobs Detected".ljust(JUST) + ":" + f"{cvout['BLOB_COUNT']}\n"
+        info+="Radius Expansion".ljust(JUST) + ":" + f"$\\times${cvout['RADIUS_GROWTH_FACTOR']}"
+        ax.set_title(info,fontsize=_FONTSIZE,loc='left',fontname='monospace')
+
+        ax=next_ax()    
+        lable_img= cvout["LABLE_IMG"]
+        unq_lables = np.unique(lable_img)
+        bounds = 0.5*(unq_lables[:-1]+unq_lables[1:])
+        bounds = np.insert(bounds,0,2*unq_lables[0]-bounds[0])
+        bounds = np.append(bounds,2*unq_lables[-1]-bounds[-1])
+        max_val = np.max(unq_lables)
+        colormap = plt.colormaps["tab10"]
+        colors = ['black','white'] + [colormap(i) for i in range(max_val)]
+        cmap = mcolors.ListedColormap(colors)
+        norm = mcolors.BoundaryNorm(bounds, cmap.N)
+        ax.imshow(lable_img.T,origin='lower',cmap=cmap, norm=norm,interpolation='none')
+        info="Lable Map\n"
+        info+="Mass Fraction".ljust(JUST) + ":" + f"{cvout['MFRAC_LABLE']*100:.01f}%"
+        ax.set_title(info,fontsize=_FONTSIZE,loc='left',fontname='monospace')
+
+        for ax in axs:
+            ax.set_axis_off()
+
+        if show:
+            plt.show()
 
 
 class PIGSpectrophotometry:
@@ -240,7 +324,25 @@ class PIGSpectrophotometry:
         self._uedges = uedges
         self._vedges = vedges
 
-        return binheight,uedges,vedges
+        return binheight,uedges,vedges, mode
+
+
+    def GetNIRCamFilter(self,wl,filter_name:str="F115W",torest=True):
+        FILTER_PATH = f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/module_scripts/bagpipes/filters/jwst/{filter_name}"
+        fl_wl,throuput = np.loadtxt(FILTER_PATH).T
+        if torest:
+            fl_wl = fl_wl/(1+self.PIG.Header.Redshift())
+        throuput_interpolate_fun = interp1d(fl_wl,throuput,"linear",fill_value="extrapolate")
+        throuput_interpolated    = throuput_interpolate_fun(wl) 
+
+        # plt.figure()
+        # plt.plot(fl_wl,throuput)
+        # plt.plot(wl,throuput_interpolated)
+        # plt.xscale("log")
+        # plt.show()
+
+        return throuput_interpolated/np.sum(throuput_interpolated)
+
 
 
 
@@ -248,6 +350,7 @@ class PIGSpectrophotometry:
         if isinstance(target_gids, int) and target_gids > 0:
             target_gids=[target_gids]
         elif isinstance(target_gids, list) and all(isinstance(i, int) and i > 0 for i in target_gids): pass
+        elif isinstance(target_gids, np.ndarray) and all(isinstance(i, np.int64) and i > 0 for i in target_gids): pass
         else: raise ValueError("Either int or List[int] are valid as target group id with id>0.")
 
         for tgid in target_gids:
@@ -258,9 +361,18 @@ class PIGSpectrophotometry:
             target_star_mass = self.all_star_mass[target_mask]
             target_star_ids = self.all_star_ids[target_mask]
 
-            image,_,_ = self._get_projection_img(target_star_position,target_star_mass,"XY","mass")
+
+            image,_,_, pr_mode = self._get_projection_img(target_star_position,target_star_mass,"XY","mass")
             finder = BlobFinder(image)
-            cvout = finder.opencv_blobfinder()
+            cvout = finder.opencv_findblobs()
+            cvout["TARGET_GID"] = tgid
+            cvout["TARGET_STAR_COUNT"] = len(target_stars_gid)
+            cvout["TARGET_STAR_MASS"] = np.sum(target_star_mass)
+            cvout["PROJECTION_MODE"] = pr_mode
+            finder.show_opencv_pipeline(cvout)
+
+
+            lable_image = cvout["LABLE_IMG"]
 
             print(cvout["MFRAC_LABLE"])
 

@@ -146,7 +146,6 @@ class ClumpManager:
 
 
     def FindBlobs(self,img):
-        print("max=",np.max(img))
         # Foreground should be white and background should be black.
         if self._projection_mode=="count":
             THRESOLD = 2
@@ -517,7 +516,7 @@ class ClumpManager:
         uvphot_stnb = ClumpManager._uvphot_stnb
         
         tspecindex = [specindex[tsid] for tsid in self.ids]
-
+        mass_factor = self.PIG.Star.Mass()/1e-4
         
         # spectroscopy
         wl_st=specs_st[0]
@@ -533,15 +532,15 @@ class ClumpManager:
         blobphot_st = np.zeros(num_specs)
         blobphot_stnb = np.zeros(num_specs)
 
-        for (uc,vc),ti in zip(pixel_coords,tspecindex):
-            light_img_st[uc,vc] += uvphot_st[ti]
-            light_img_stnb[uc,vc] += uvphot_stnb[ti]
+        for (uc,vc),ti,mf in zip(pixel_coords,tspecindex,mass_factor):
+            light_img_st[uc,vc] += mf*uvphot_st[ti]
+            light_img_stnb[uc,vc] += mf*uvphot_stnb[ti]
 
-            blobspecs_st[label_map[uc,vc]]+=specs_st[ti]
-            blobspecs_stnb[label_map[uc,vc]]+=specs_stnb[ti]
+            blobspecs_st[label_map[uc,vc]]+=mf*specs_st[ti]
+            blobspecs_stnb[label_map[uc,vc]]+=mf*specs_stnb[ti]
 
-            blobphot_st[label_map[uc,vc]]+=uvphot_st[ti]
-            blobphot_stnb[label_map[uc,vc]]+=uvphot_stnb[ti]
+            blobphot_st[label_map[uc,vc]]+=mf*uvphot_st[ti]
+            blobphot_stnb[label_map[uc,vc]]+=mf*uvphot_stnb[ti]
 
         return wl_st,wl_stnb,blobspecs_st,blobspecs_stnb,light_img_st,light_img_stnb,blobphot_st,blobphot_stnb
 
@@ -883,13 +882,13 @@ print("Number of selected GIDs :",len(sgids))
 ##%%
 
 DUMP=False
-SHOW=False
+SHOW=True
 
 if DUMP:
-    mfr_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/mfrac_recovery.txt",'w')
+    mfr_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/mfrac_recovery150.txt",'w')
     mfr_fp.write("#GID STMASS NBLOBS MFRAC_MASK MFRC_LABLE\n")
 
-    bluv_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/blob_UV.txt",'w')
+    bluv_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM2/data/blob_UV150.txt",'w')
     bluv_fp.write("#GID BLOBNUM UV_F115W_ST UV_F115W_STNB SUM_ST_W0 SUM_ST_WO0 SUM_STNB_W0 SUM_STNB_WO0\n")
 
 
@@ -900,14 +899,14 @@ for n,i in enumerate(sgids):
     # if i not in [306]:continue
     # if i not in [sgids[-1]]:continue
     # if i not in range(100):continue
-    # if i not in sgids:continue
+    if i not in sgids:continue
 
     print(f"{i} : ({n+1}/{len(sgids)})")
     st_mass = stellar_mass[i-1]
     print("  ","Stellar Mass :",st_mass,"e10")
 
-    # try:
-    if True:
+    try:
+    # if True:
         cmgr = ClumpManager(SNAPSPATH,SNAPNUM,i)
         img,ue,ve = cmgr.GetProjection("XY","mass")
 
@@ -919,7 +918,7 @@ for n,i in enumerate(sgids):
             cmgr.ShowOpenCVPipeline(cvout,"all")
         
                 
-        cmgr.ShowCube()
+        # cmgr.ShowCube()
         wl_st,wl_stnb,blobspecs_st,blobspecs_stnb,light_img_st,light_img_stnb,blobphot_st,blobphot_stnb=cmgr.GetLight(cvout["LABLE_IMG"])
 
         print(f"{blobphot_st[1]:.02e}")
@@ -950,10 +949,10 @@ for n,i in enumerate(sgids):
         if SHOW:
             plt.show()
 
-    # except:
-    #     if DUMP:
-    #         mfr_fp.write(f"#ERROR : {i}\n")
-    #         bluv_fp.write(f"#ERROR : {i}\n")
+    except:
+        if DUMP:
+            mfr_fp.write(f"#ERROR : {i}\n")
+            bluv_fp.write(f"#ERROR : {i}\n")
 
 
 if DUMP:
