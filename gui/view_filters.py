@@ -4,16 +4,16 @@ import os
 from matplotlib import colors
 from matplotlib.collections import PolyCollection
 
-from galspy.utility.Figure.Beautification import gradient_fill
+# from galspy.utility.Figure.Beautification import gradient_fill
 
 
-FILTER_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts_2/bagpipes/filters/jwst"
+FILTER_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/cache/filters/jwst"
 
 filters = [f for f in os.listdir(FILTER_DIR)
          if os.path.isfile(os.path.join(FILTER_DIR,f)) and
          not f.startswith('.') and
          f[0] in ['F','W'] and
-         f.endswith(('M'))]
+         f.endswith(('W'))]
 
 
 hues = np.linspace(0, 1, len(filters))
