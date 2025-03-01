@@ -8,10 +8,15 @@ import cv2 as cv
 from typing import List
 import pickle
 from galspy.Utility import Cube3D
-from scipy.interpolate import interp1d
 from galspy.MPGadget import _PIG
 from galspy.Spectra import SpectralTemplates
 from astropy.cosmology import FlatLambdaCDM
+from galspy.Spectra.jwst import get_NIRCam_filter
+
+
+
+
+
 
 class BlobFinder:
     def __init__(self,img):
@@ -324,29 +329,45 @@ class PIGSpectrophotometry:
         self._uedges = uedges
         self._vedges = vedges
 
-        return binheight,uedges,vedges, mode
+        return binheight,uedges,vedges, mode, u, v
 
 
-    def GetNIRCamFilter(self,wl,filter_name:str="F115W",torest=True):
-        FILTER_PATH = f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/module_scripts/bagpipes/filters/jwst/{filter_name}"
-        fl_wl,throuput = np.loadtxt(FILTER_PATH).T
-        if torest:
-            fl_wl = fl_wl/(1+self.PIG.Header.Redshift())
-        throuput_interpolate_fun = interp1d(fl_wl,throuput,"linear",fill_value="extrapolate")
-        throuput_interpolated    = throuput_interpolate_fun(wl) 
+    def gather_spectrum(self,lable_map,u,v,uedges,vedges,target_star_ids):
+        #u,v are either x,y or x,z or y,z depending on projection direction 
 
-        # plt.figure()
-        # plt.plot(fl_wl,throuput)
-        # plt.plot(wl,throuput_interpolated)
-        # plt.xscale("log")
-        # plt.show()
+        num_blobs = np.max(lable_map)
+        num_specs = num_blobs+1 #One extra for stray stars
 
-        return throuput_interpolated/np.sum(throuput_interpolated)
+        # Get bin/pixel coordinate of each source
+        u_coords = np.digitize(u, uedges) - 1
+        v_coords = np.digitize(v, vedges) - 1
+        u_coords = np.clip(u_coords, 0, len(uedges) - 2)
+        v_coords = np.clip(v_coords, 0, len(vedges) - 2)
+        pixel_coords = np.column_stack((u_coords,v_coords))
+
+        # Reference templates with short variable names
+        tspecs_stellar=PIGSpectrophotometry._specs_stellar
+        tspecs_total=PIGSpectrophotometry._specs_total
+        specindex = self._specs_template_index
+
+        # spectrum template index for target  
+        tindex = [specindex[tsid] for tsid in target_star_ids]
+
+        # Mass scaling for spectrums as BPASS is for 10^6 M_solar
+        mass_factor = (self.PIG.Star.Mass()/self.PIG.Header.HubbleParam())/1e-4
+        mscale = 1*mass_factor  # Right now twice the mass means twice the light
+
+        # Initialse to gather spectrums
+        wl_stellar = tspecs_stellar[0]
+        blobspecs_stellar = np.zeros((num_specs,len(wl_stellar)))
+
+        wl_total = tspecs_total[0]
+        blobspecs_total = np.zeros((num_specs,len(wl_total)))
 
 
 
 
-    def get_spectrum_dict(self,target_gids):
+    def get_light_dict(self,target_gids):
         if isinstance(target_gids, int) and target_gids > 0:
             target_gids=[target_gids]
         elif isinstance(target_gids, list) and all(isinstance(i, int) and i > 0 for i in target_gids): pass
@@ -362,7 +383,7 @@ class PIGSpectrophotometry:
             target_star_ids = self.all_star_ids[target_mask]
 
 
-            image,_,_, pr_mode = self._get_projection_img(target_star_position,target_star_mass,"XY","mass")
+            image,uedges,vedges,pr_mode,u,v = self._get_projection_img(target_star_position,target_star_mass,"XY","mass")
             finder = BlobFinder(image)
             cvout = finder.opencv_findblobs()
             cvout["TARGET_GID"] = tgid
@@ -372,10 +393,10 @@ class PIGSpectrophotometry:
             finder.show_opencv_pipeline(cvout)
 
 
-            lable_image = cvout["LABLE_IMG"]
+            lable_map = cvout["LABLE_IMG"]
 
-            print(cvout["MFRAC_LABLE"])
+            # print(cvout["MFRAC_LABLE"])
 
-
+            out = self.gather_spectrum(lable_map,u,v,uedges,vedges,target_star_ids)
 
 
