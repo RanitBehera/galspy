@@ -7,7 +7,8 @@ PIG=root.PIG(43)
 
 spm=gs.PIGSpectrophotometry(PIG)
 
-spm.get_light_dict(np.arange(1,100))
+# spm.get_light_dict(np.arange(1,100))
+spm.get_light_dict(1)
 
 
 

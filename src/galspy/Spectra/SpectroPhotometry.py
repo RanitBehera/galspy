@@ -258,8 +258,8 @@ class BlobFinder:
 
 
 class PIGSpectrophotometry:
-    _specs_stellar = None
-    _specs_total = None
+    _template_specs_stellar = None
+    _template_specs_total = None
     _phot_F115W_stellar = None
     _phot_F115W_nebular = None
 
@@ -272,13 +272,13 @@ class PIGSpectrophotometry:
 
         self._specs_template_index = PIG.GetStarsSpecIndex()
 
-        if PIGSpectrophotometry._specs_stellar is None:
-            PIGSpectrophotometry._specs_stellar = SpectralTemplates.GetStellarTemplates("CHABRIER_UPTO_300M","Binary")
+        if PIGSpectrophotometry._template_specs_stellar is None:
+            PIGSpectrophotometry._template_specs_stellar = SpectralTemplates.GetStellarTemplates("CHABRIER_UPTO_300M","Binary")
 
-        if PIGSpectrophotometry._specs_total is None:
-            _specs_nebular = SpectralTemplates.GetNebularTemplates("CHABRIER_UPTO_300M","Binary")
-            PIGSpectrophotometry._specs_total = PIGSpectrophotometry._specs_stellar + _specs_nebular
-            PIGSpectrophotometry._specs_total[0] = _specs_nebular[0]
+        if PIGSpectrophotometry._template_specs_total is None:
+            _template_specs_nebular = SpectralTemplates.GetNebularTemplates("CHABRIER_UPTO_300M","Binary")
+            PIGSpectrophotometry._template_specs_total = PIGSpectrophotometry._template_specs_stellar + _template_specs_nebular
+            PIGSpectrophotometry._template_specs_total[0] = _template_specs_nebular[0]
 
         self.pixel_resolution = self._get_pixel_resolution()
 
@@ -346,26 +346,35 @@ class PIGSpectrophotometry:
         pixel_coords = np.column_stack((u_coords,v_coords))
 
         # Reference templates with short variable names
-        tspecs_stellar=PIGSpectrophotometry._specs_stellar
-        tspecs_total=PIGSpectrophotometry._specs_total
+        tmp_specs_stellar=PIGSpectrophotometry._template_specs_stellar
+        tmp_specs_total=PIGSpectrophotometry._template_specs_total
         specindex = self._specs_template_index
 
         # spectrum template index for target  
-        tindex = [specindex[tsid] for tsid in target_star_ids]
+        tspecindex = [specindex[tsid] for tsid in target_star_ids]
 
         # Mass scaling for spectrums as BPASS is for 10^6 M_solar
         mass_factor = (self.PIG.Star.Mass()/self.PIG.Header.HubbleParam())/1e-4
-        mscale = 1*mass_factor  # Right now twice the mass means twice the light
+        mass_scale = 1*mass_factor  # Right now twice the mass means twice the light
 
         # Initialse to gather spectrums
-        wl_stellar = tspecs_stellar[0]
+        wl_stellar = tmp_specs_stellar[0]
         blobspecs_stellar = np.zeros((num_specs,len(wl_stellar)))
 
-        wl_total = tspecs_total[0]
+        wl_total = tmp_specs_total[0]
         blobspecs_total = np.zeros((num_specs,len(wl_total)))
 
 
+        for (uc,vc),ti,ms in zip(pixel_coords,tspecindex,mass_scale):
+            blobspecs_stellar[lable_map[uc,vc]]+=ms*tmp_specs_stellar[ti]
+            blobspecs_total[lable_map[uc,vc]]+=ms*tmp_specs_total[ti]
 
+        return {
+            "WAVELENGTH_STELLAR" : wl_stellar, 
+            "WAVELENGTH_TOTAL" : wl_total,
+            "BLOBWISE_SPECTRA_STELLAR" : blobspecs_stellar,  
+            "BLOBWISE_SPECTRA_TOTAL" : blobspecs_total,  
+        }
 
     def get_light_dict(self,target_gids):
         if isinstance(target_gids, int) and target_gids > 0:
@@ -398,5 +407,14 @@ class PIGSpectrophotometry:
             # print(cvout["MFRAC_LABLE"])
 
             out = self.gather_spectrum(lable_map,u,v,uedges,vedges,target_star_ids)
+            
+            wl=out["WAVELENGTH_TOTAL"]
+            bs=out["BLOBWISE_SPECTRA_TOTAL"]
 
+            for i,spec in enumerate(bs):
+                plt.plot(wl,spec,label=f"{i}")
+            plt.xscale('log')
+            plt.yscale('log')
+            plt.legend()
+            plt.show()
 

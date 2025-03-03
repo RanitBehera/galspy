@@ -4,7 +4,7 @@ from typing import Any, Literal
 import galspy.FileTypes.BigFile as bf
 import galspy.FileTypes.ConfigFile as cf
 # import galspy.Spectra.Templates as tp
-from galspy.Spectra.Templates import CacheStarsSpecTemplateIndex
+from galspy.Spectra.Templates import GetCachedStarsSpecTemplateIndex
 import numpy
 import bigfile as bigf
 from astropy.cosmology import FlatLambdaCDM
@@ -248,7 +248,7 @@ class _PIG(_Folder):
         FILENAME = "StarSpecTemplateIndex.dict"
         FILEPATH = SEARCH_DIR + os.sep + FILENAME
 
-        return CacheStarsSpecTemplateIndex(
+        return GetCachedStarsSpecTemplateIndex(
             FILEPATH,
             self.Star.ID(),
             self.Star.StarFormationTime(),
