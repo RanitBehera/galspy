@@ -138,8 +138,6 @@ class Templates:
         
         if not os.path.exists(filepath):
             print("Cache not found.")
-            # print(f"Creating Cache : {filename}")
-            # self._CreateNebularCache(filepath,imf,system)
             print("Go to tools and generate the cache.")
         else:
             print(f"Using Cache : {filename}")

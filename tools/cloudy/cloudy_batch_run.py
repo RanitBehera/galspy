@@ -8,6 +8,8 @@ import shutil
 # Temporary directory where cloudy will dump data
 # before this scripts gathers spectrum to dictionary
 TEMPDIR="/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/cloudy_cache_temp"
+
+
 STELLAR_FILE = "/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/stellar_chabrier300_bin.specs"
 
 
