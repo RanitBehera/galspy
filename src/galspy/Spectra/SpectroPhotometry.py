@@ -12,7 +12,7 @@ from galspy.MPGadget import _PIG
 from galspy.Spectra import SpectralTemplates
 from astropy.cosmology import FlatLambdaCDM
 from galspy.Spectra.jwst import get_NIRCam_filter
-
+from galspy.Spectra.jwst import _AVAIL_JWST_FILTERS_HINT
 
 
 
@@ -169,7 +169,7 @@ class BlobFinder:
         return cvout
         
 
-    def show_opencv_pipeline(self, cvout, show=True):
+    def show_opencv_pipeline(self, cvout, show=False):
         fig,axs = plt.subplots(2,4,figsize=(9,6),sharex=True, sharey=True)
         fig.canvas.manager.set_window_title(f"Group ID {cvout['TARGET_GID']}")
         fig.subplots_adjust(bottom=0.05)
@@ -260,8 +260,6 @@ class BlobFinder:
 class PIGSpectrophotometry:
     _template_specs_stellar = None
     _template_specs_total = None
-    _phot_F115W_stellar = None
-    _phot_F115W_nebular = None
 
     def __init__(self,PIG:_PIG):
         self.PIG = PIG
@@ -281,6 +279,8 @@ class PIGSpectrophotometry:
             PIGSpectrophotometry._template_specs_total[0] = _template_specs_nebular[0]
 
         self.pixel_resolution = self._get_pixel_resolution()
+        self.observer_dilution = self._get_observer_frame_dilution_factor()
+        self.absolute_dilution = self._get_absolute_frame_dilution_factor()
 
     def _get_pixel_resolution(self):
         h=self.PIG.Header.HubbleParam()
@@ -332,7 +332,15 @@ class PIGSpectrophotometry:
         return binheight,uedges,vedges, mode, u, v
 
 
-    def gather_spectrum(self,lable_map,u,v,uedges,vedges,target_star_ids):
+    def _get_mass_factor_scaling(self,target_star_mass):
+        # Mass scaling for spectrums as BPASS is for 10^6 M_solar
+        # Common function so that changes are reflected in both gather_spectrum() and get_image()
+        mass_factor = (target_star_mass/self.PIG.Header.HubbleParam())/1e-4
+        mass_scale = 1*mass_factor  # Right now twice the mass means twice the light
+        return mass_scale
+    
+
+    def gather_spectrum(self,lable_map,u,v,uedges,vedges,target_star_ids,target_star_mass):
         #u,v are either x,y or x,z or y,z depending on projection direction 
 
         num_blobs = np.max(lable_map)
@@ -353,28 +361,219 @@ class PIGSpectrophotometry:
         # spectrum template index for target  
         tspecindex = [specindex[tsid] for tsid in target_star_ids]
 
-        # Mass scaling for spectrums as BPASS is for 10^6 M_solar
-        mass_factor = (self.PIG.Star.Mass()/self.PIG.Header.HubbleParam())/1e-4
-        mass_scale = 1*mass_factor  # Right now twice the mass means twice the light
+        mass_scale = self._get_mass_factor_scaling(target_star_mass)
 
-        # Initialse to gather spectrums
+        # Initialse to gather
         wl_stellar = tmp_specs_stellar[0]
         blobspecs_stellar = np.zeros((num_specs,len(wl_stellar)))
 
         wl_total = tmp_specs_total[0]
         blobspecs_total = np.zeros((num_specs,len(wl_total)))
 
+        blobwise_stellar_mass = np.zeros(num_specs)
 
-        for (uc,vc),ti,ms in zip(pixel_coords,tspecindex,mass_scale):
-            blobspecs_stellar[lable_map[uc,vc]]+=ms*tmp_specs_stellar[ti]
-            blobspecs_total[lable_map[uc,vc]]+=ms*tmp_specs_total[ti]
+        for (uc,vc),ti,ms,mstar in zip(pixel_coords,tspecindex,mass_scale,target_star_mass):
+            l = lable_map[uc,vc]
+            blobspecs_stellar[l]+=ms*tmp_specs_stellar[ti]
+            blobspecs_total[l]+=ms*tmp_specs_total[ti]
+            blobwise_stellar_mass[l] += mstar
 
         return {
             "WAVELENGTH_STELLAR" : wl_stellar, 
             "WAVELENGTH_TOTAL" : wl_total,
             "BLOBWISE_SPECTRA_STELLAR" : blobspecs_stellar,  
             "BLOBWISE_SPECTRA_TOTAL" : blobspecs_total,  
+            "BLOBWISE_STELLAR_MASS" : blobwise_stellar_mass
         }
+
+
+
+    def _get_observer_frame_dilution_factor(self):
+        h=self.PIG.Header.HubbleParam()
+        Om0=self.PIG.Header.Omega0()
+        z=self.PIG.Header.Redshift()  
+
+        cosmo = FlatLambdaCDM(H0=h*100,Om0=Om0)
+        DL = cosmo.luminosity_distance(z).value #in Mpc
+        DL *= 3.086e+24 # MPC to cm
+
+        Area = 4*np.pi*(DL**2)
+        dilution = 1/(Area*(1+z)) # Extra (1+z) due to wavelength
+
+        return dilution
+    
+    def _get_absolute_frame_dilution_factor(self):
+        z=self.PIG.Header.Redshift()  
+
+        D = 10 #pc
+        D *= 3.086e+18 # pc to cm
+
+        Area = 4*np.pi*(D**2)
+        dilution = 1/(Area*(1+z)) # Extra (1+z) due to wavelength
+
+        return dilution
+
+
+
+    def _load_filter(self,wl):
+       if getattr(self,"NC_F070W",None) is None: 
+            self.NC_F070W = get_NIRCam_filter(wl,"F070W")
+
+       if getattr(self,"NC_F090W",None) is None: 
+            self.NC_F090W = get_NIRCam_filter(wl,"F090W")
+
+       if getattr(self,"NC_F115W",None) is None: 
+            self.NC_F115W = get_NIRCam_filter(wl,"F115W")
+
+       if getattr(self,"NC_F150W",None) is None: 
+            self.NC_F150W = get_NIRCam_filter(wl,"F150W")
+       
+       if getattr(self,"NC_F200W",None) is None: 
+            self.NC_F200W = get_NIRCam_filter(wl,"F200W")
+
+       if getattr(self,"NC_F270W",None) is None: 
+            self.NC_F277W = get_NIRCam_filter(wl,"F277W")
+
+       if getattr(self,"NC_F356W",None) is None: 
+            self.NC_F356W = get_NIRCam_filter(wl,"F356W")
+
+       if getattr(self,"NC_F444W",None) is None: 
+            self.NC_F444W = get_NIRCam_filter(wl,"F444W")
+
+
+
+    def _get_spec_properties(self,wl,spec):
+        spec_obs = spec*self.observer_dilution
+        spec_abs = spec*self.absolute_dilution
+
+        wl_obs = wl*(1+self.PIG.Header.Redshift())
+
+        # Get photometric proporties at observer frame: spectral flux
+        LSOL=3.846e33 #erg s-1
+        spec_obs *=LSOL
+        self._load_filter(wl_obs)
+        sflux_F070W = np.sum(spec_obs*self.NC_F070W)
+        sflux_F090W = np.sum(spec_obs*self.NC_F090W)
+        sflux_F115W = np.sum(spec_obs*self.NC_F115W)
+        sflux_F150W = np.sum(spec_obs*self.NC_F150W)
+        sflux_F200W = np.sum(spec_obs*self.NC_F200W)
+        sflux_F277W = np.sum(spec_obs*self.NC_F277W)
+        sflux_F356W = np.sum(spec_obs*self.NC_F356W)
+        sflux_F444W = np.sum(spec_obs*self.NC_F444W)
+
+
+
+
+        OUT = {
+            "PHOTO":{
+                "F070W" : sflux_F070W,
+                "F090W" : sflux_F090W,
+                "F115W" : sflux_F115W,
+                "F150W" : sflux_F150W,
+                "F200W" : sflux_F200W,
+                "F277W" : sflux_F277W,
+                "F356W" : sflux_F356W,
+                "F444W" : sflux_F444W
+                },
+
+            "SPEC":{
+
+                }
+        }
+
+        return OUT
+
+        
+
+
+    def show_spectrum(self,specout,propout,show=False,to_observer=True):
+            wl_st=specout["WAVELENGTH_STELLAR"]
+            bws_st=specout["BLOBWISE_SPECTRA_STELLAR"]
+
+            wl_tot=specout["WAVELENGTH_TOTAL"]
+            bws_tot=specout["BLOBWISE_SPECTRA_TOTAL"]
+
+            if to_observer:
+                z=self.PIG.Header.Redshift()  
+                LSOL=3.846e33 #erg s-1
+                wl_st *= (1+z)
+                wl_tot *=(1+z)
+                bws_st *= self.observer_dilution * LSOL
+                bws_tot *= self.observer_dilution * LSOL
+
+
+
+            plt.figure()
+            # plt.plot(wl_st,bws_st[0],label=f"Blob {0} ST",color=(0.8,0.8,0.8))
+            plt.plot(wl_tot,bws_tot[0],label=f"Blob {0} ST+NB",color=(0.8,0.8,0.8))
+
+            for i in range(len(bws_st)):
+                if i==0:continue
+                # plt.plot(wl_st,bws_st[i],label=f"Blob {i} ST")
+                plt.plot(wl_tot,bws_tot[i],label=f"Blob {i} ST+NB")
+
+
+                plt.errorbar(0.70*1e4,propout[i]["PHOTO"]["F070W"],0.5*propout[i]["PHOTO"]["F070W"],capsize=4,fmt='.',ms=10,color='r')
+                plt.errorbar(0.90*1e4,propout[i]["PHOTO"]["F090W"],0.5*propout[i]["PHOTO"]["F090W"],capsize=4,fmt='.',ms=10,color='r')
+                plt.errorbar(1.15*1e4,propout[i]["PHOTO"]["F115W"],0.5*propout[i]["PHOTO"]["F115W"],capsize=4,fmt='.',ms=10,color='r')
+                plt.errorbar(1.50*1e4,propout[i]["PHOTO"]["F150W"],0.5*propout[i]["PHOTO"]["F150W"],capsize=4,fmt='.',ms=10,color='r')
+                plt.errorbar(2.00*1e4,propout[i]["PHOTO"]["F200W"],0.5*propout[i]["PHOTO"]["F200W"],capsize=4,fmt='.',ms=10,color='r')
+                plt.errorbar(2.77*1e4,propout[i]["PHOTO"]["F277W"],0.5*propout[i]["PHOTO"]["F277W"],capsize=4,fmt='.',ms=10,color='r')
+                plt.errorbar(3.56*1e4,propout[i]["PHOTO"]["F356W"],0.5*propout[i]["PHOTO"]["F356W"],capsize=4,fmt='.',ms=10,color='r')
+                plt.errorbar(4.44*1e4,propout[i]["PHOTO"]["F444W"],0.5*propout[i]["PHOTO"]["F444W"],capsize=4,fmt='.',ms=10,color='r')
+
+
+
+
+            plt.yscale("log") 
+            plt.xscale("log") 
+            plt.xlabel("Wavelength $(\AA)$")
+            plt.ylabel("Flux $(L_\odot/\AA)$")
+            if to_observer:
+                plt.ylabel("Flux $(erg \ s^{-1}\ \AA^{-1} cm^{-2})$")
+
+            # plt.xlim(1e2,2e4)
+            # plt.ylim(bottom=1e0)
+            plt.legend()
+
+            if show:
+                plt.show()
+
+
+
+    def get_image(self,target_gid):
+        if isinstance(target_gid, int) and target_gid > 0:
+            raise ValueError("Integerer greather than zero needed")
+
+        tgid = target_gid
+
+        print(f"TGID = {tgid}")
+        target_mask = (self.all_stars_gid==tgid)
+
+        target_stars_gid = self.all_stars_gid[target_mask]
+        target_star_position = self.all_star_position[target_mask]
+        target_star_mass = self.all_star_mass[target_mask]
+        target_star_ids = self.all_star_ids[target_mask]
+
+        # Get bin/pixel coordinate of each source
+        image,uedges,vedges,pr_mode,u,v = self._get_projection_img(target_star_position,target_star_mass,"XY","mass")
+        u_coords = np.digitize(u, uedges) - 1
+        v_coords = np.digitize(v, vedges) - 1
+        u_coords = np.clip(u_coords, 0, len(uedges) - 2)
+        v_coords = np.clip(v_coords, 0, len(vedges) - 2)
+        pixel_coords = np.column_stack((u_coords,v_coords))
+
+        # Reference templates with short variable names
+        tmp_specs_stellar=PIGSpectrophotometry._template_specs_stellar
+        tmp_specs_total=PIGSpectrophotometry._template_specs_total
+        specindex = self._specs_template_index
+
+        # spectrum template index for target  
+        tspecindex = [specindex[tsid] for tsid in target_star_ids]
+
+        mass_scale = self._get_mass_factor_scaling(target_star_mass)  # Right now twice the mass means twice the light
+
+
 
     def get_light_dict(self,target_gids):
         if isinstance(target_gids, int) and target_gids > 0:
@@ -383,7 +582,15 @@ class PIGSpectrophotometry:
         elif isinstance(target_gids, np.ndarray) and all(isinstance(i, np.int64) and i > 0 for i in target_gids): pass
         else: raise ValueError("Either int or List[int] are valid as target group id with id>0.")
 
+
+        DUMP=True
+        if DUMP:
+            outfile_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data",'w')
+            outfile_fp.write("#GID STMASS NBLOBS MFRAC_MASK MFRC_LABLE\n")
+
+
         for tgid in target_gids:
+            print(f"TGID = {tgid}")
             target_mask = (self.all_stars_gid==tgid)
 
             target_stars_gid = self.all_stars_gid[target_mask]
@@ -391,7 +598,7 @@ class PIGSpectrophotometry:
             target_star_mass = self.all_star_mass[target_mask]
             target_star_ids = self.all_star_ids[target_mask]
 
-
+            # LABLE MAP
             image,uedges,vedges,pr_mode,u,v = self._get_projection_img(target_star_position,target_star_mass,"XY","mass")
             finder = BlobFinder(image)
             cvout = finder.opencv_findblobs()
@@ -399,22 +606,33 @@ class PIGSpectrophotometry:
             cvout["TARGET_STAR_COUNT"] = len(target_stars_gid)
             cvout["TARGET_STAR_MASS"] = np.sum(target_star_mass)
             cvout["PROJECTION_MODE"] = pr_mode
-            finder.show_opencv_pipeline(cvout)
-
-
-            lable_map = cvout["LABLE_IMG"]
+            # finder.show_opencv_pipeline(cvout)
 
             # print(cvout["MFRAC_LABLE"])
 
-            out = self.gather_spectrum(lable_map,u,v,uedges,vedges,target_star_ids)
+
+            # GATHER SPECTRUM
+            lable_map = cvout["LABLE_IMG"]
+            specout = self.gather_spectrum(lable_map,u,v,uedges,vedges,target_star_ids,target_star_mass)
             
-            wl=out["WAVELENGTH_TOTAL"]
-            bs=out["BLOBWISE_SPECTRA_TOTAL"]
+            propout =[]
+            for spec in specout["BLOBWISE_SPECTRA_TOTAL"]:
+                propout.append(self._get_spec_properties(specout["WAVELENGTH_TOTAL"],spec))
+            
 
-            for i,spec in enumerate(bs):
-                plt.plot(wl,spec,label=f"{i}")
-            plt.xscale('log')
-            plt.yscale('log')
-            plt.legend()
-            plt.show()
 
+            
+            # self.show_spectrum(specout,propout)
+
+            # if DUMP:
+            #     for so,po in zip(specout,propout):
+            #         np.savetxt()
+            #         pass
+                    
+            #         outfile_fp.flush()
+
+
+
+
+        if DUMP:
+            outfile_fp.close()

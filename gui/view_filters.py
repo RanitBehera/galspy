@@ -13,7 +13,7 @@ filters = [f for f in os.listdir(FILTER_DIR)
          if os.path.isfile(os.path.join(FILTER_DIR,f)) and
          not f.startswith('.') and
          f[0] in ['F','W'] and
-         f.endswith(('N'))]
+         f.endswith(('W'))]
 
 
 hues = np.linspace(0, 1, len(filters))
