@@ -16,6 +16,10 @@ from galspy.Spectra.jwst import _AVAIL_JWST_FILTERS_HINT
 
 
 
+def show_image(img,label=""):
+    plt.imshow(img.T**0.02,origin="lower")
+    plt.gca().set_aspect("equal")
+    plt.show()
 
 
 class BlobFinder:
@@ -23,10 +27,6 @@ class BlobFinder:
         self.target_img = img
 
 
-    def show_image(self,img,label=""):
-        plt.imshow(img.T**0.02,origin="lower")
-        plt.gca().set_aspect("equal")
-        plt.show()
 
     def opencv_findblobs(self,thresold=0):
         img=self.target_img
@@ -356,9 +356,9 @@ class PIGSpectrophotometry:
         # Reference templates with short variable names
         tmp_specs_stellar=PIGSpectrophotometry._template_specs_stellar
         tmp_specs_total=PIGSpectrophotometry._template_specs_total
-        specindex = self._specs_template_index
 
         # spectrum template index for target  
+        specindex = self._specs_template_index
         tspecindex = [specindex[tsid] for tsid in target_star_ids]
 
         mass_scale = self._get_mass_factor_scaling(target_star_mass)
@@ -541,8 +541,8 @@ class PIGSpectrophotometry:
 
 
 
-    def get_image(self,target_gid):
-        if isinstance(target_gid, int) and target_gid > 0:
+    def get_photometry_images(self,target_gid):
+        if not (isinstance(target_gid, int) and target_gid > 0):
             raise ValueError("Integerer greather than zero needed")
 
         tgid = target_gid
@@ -566,12 +566,61 @@ class PIGSpectrophotometry:
         # Reference templates with short variable names
         tmp_specs_stellar=PIGSpectrophotometry._template_specs_stellar
         tmp_specs_total=PIGSpectrophotometry._template_specs_total
-        specindex = self._specs_template_index
 
         # spectrum template index for target  
+        specindex = self._specs_template_index
         tspecindex = [specindex[tsid] for tsid in target_star_ids]
 
         mass_scale = self._get_mass_factor_scaling(target_star_mass)  # Right now twice the mass means twice the light
+
+        # To observer frame
+        spec_obs = tmp_specs_total*self.observer_dilution
+        wl_obs = tmp_specs_total[0]*(1+self.PIG.Header.Redshift())
+
+        LSOL=3.846e33 #erg s-1
+        spec_obs *=LSOL
+        self._load_filter(wl_obs)
+
+        # Template Photometry
+        tp_F070W = np.sum(spec_obs*self.NC_F070W,axis=1)
+        tp_F090W = np.sum(spec_obs*self.NC_F090W,axis=1)
+        tp_F115W = np.sum(spec_obs*self.NC_F115W,axis=1)
+        tp_F150W = np.sum(spec_obs*self.NC_F150W,axis=1)
+        tp_F200W = np.sum(spec_obs*self.NC_F200W,axis=1)
+        tp_F277W = np.sum(spec_obs*self.NC_F277W,axis=1)
+        tp_F356W = np.sum(spec_obs*self.NC_F356W,axis=1)
+        tp_F444W = np.sum(spec_obs*self.NC_F444W,axis=1)
+
+        # Initialise the images
+        img_F070W = np.zeros_like(image)
+        img_F090W = np.zeros_like(image)
+        img_F115W = np.zeros_like(image)
+        img_F150W = np.zeros_like(image)
+        img_F200W = np.zeros_like(image)
+        img_F277W = np.zeros_like(image)
+        img_F356W = np.zeros_like(image)
+        img_F444W = np.zeros_like(image)
+
+        for (uc,vc),ti,ms in zip(pixel_coords,tspecindex,mass_scale):
+            img_F070W[uc,vc] += ms*tp_F070W[ti]
+            img_F090W[uc,vc] += ms*tp_F090W[ti]
+            img_F115W[uc,vc] += ms*tp_F115W[ti]
+            img_F150W[uc,vc] += ms*tp_F150W[ti]
+            img_F200W[uc,vc] += ms*tp_F200W[ti]
+            img_F277W[uc,vc] += ms*tp_F277W[ti]
+            img_F356W[uc,vc] += ms*tp_F356W[ti]
+            img_F444W[uc,vc] += ms*tp_F444W[ti]
+
+        return {
+            "F070W":img_F070W,
+            "F090W":img_F090W,
+            "F115W":img_F115W,
+            "F150W":img_F150W,
+            "F200W":img_F200W,
+            "F277W":img_F277W,
+            "F356W":img_F356W,
+            "F444W":img_F444W
+        }
 
 
 
