@@ -259,7 +259,7 @@ class BlobFinder:
 
 class PIGSpectrophotometry:
     _template_specs_stellar = None
-    _template_specs_total = None
+    _template_specs_with_nebular = None
 
     def __init__(self,PIG:_PIG):
         self.PIG = PIG
@@ -273,14 +273,14 @@ class PIGSpectrophotometry:
         if PIGSpectrophotometry._template_specs_stellar is None:
             PIGSpectrophotometry._template_specs_stellar = SpectralTemplates.GetStellarTemplates("CHABRIER_UPTO_300M","Binary")
 
-        if PIGSpectrophotometry._template_specs_total is None:
+        if PIGSpectrophotometry._template_specs_with_nebular is None:
             _template_specs_nebular = SpectralTemplates.GetNebularTemplates("CHABRIER_UPTO_300M","Binary")
-            PIGSpectrophotometry._template_specs_total = PIGSpectrophotometry._template_specs_stellar + _template_specs_nebular
-            PIGSpectrophotometry._template_specs_total[0] = _template_specs_nebular[0]
+            PIGSpectrophotometry._template_specs_with_nebular = PIGSpectrophotometry._template_specs_stellar + _template_specs_nebular
+            PIGSpectrophotometry._template_specs_with_nebular[0] = _template_specs_nebular[0]
 
         self.pixel_resolution = self._get_pixel_resolution()
         self.observer_dilution = self._get_observer_frame_dilution_factor()
-        self.absolute_dilution = self._get_absolute_frame_dilution_factor()
+        self.luminosity_distance_Mpc = None     # Will get assigned in _get_observer_frame_dilution_factor
 
     def _get_pixel_resolution(self):
         h=self.PIG.Header.HubbleParam()
@@ -297,6 +297,34 @@ class PIGSpectrophotometry:
         res = DA * RB   #pKpc per pixel
         res *=(1+z)*h   #cKpc per pixel
         return res
+
+    def _get_observer_frame_dilution_factor(self):
+        h=self.PIG.Header.HubbleParam()
+        Om0=self.PIG.Header.Omega0()
+        z=self.PIG.Header.Redshift()  
+
+        cosmo = FlatLambdaCDM(H0=h*100,Om0=Om0)
+        DL = cosmo.luminosity_distance(z).value #in Mpc
+        self.luminosity_distance = DL
+        DL *= 3.086e+24 # MPC to cm
+
+        Area = 4*np.pi*(DL**2)
+        dilution = 1/(Area*(1+z)) # Extra (1+z) due to wavelength
+
+        return dilution
+    
+    # def _get_absolute_frame_dilution_factor(self):
+    #     z=self.PIG.Header.Redshift()  
+
+    #     D = 10 #pc
+    #     D *= 3.086e+18 # pc to cm
+
+    #     Area = 4*np.pi*(D**2)
+    #     dilution = 1/(Area*(1+z)) # Extra (1+z) due to wavelength
+
+    #     return dilution
+
+
 
 
     def _get_projection_img(self,position,mass,direction:Literal["XY","YZ","ZX"]="XY",mode:Literal["count","mass"]="count"):
@@ -355,7 +383,7 @@ class PIGSpectrophotometry:
 
         # Reference templates with short variable names
         tmp_specs_stellar=PIGSpectrophotometry._template_specs_stellar
-        tmp_specs_total=PIGSpectrophotometry._template_specs_total
+        tmp_specs_with_nebular=PIGSpectrophotometry._template_specs_with_nebular
 
         # spectrum template index for target  
         specindex = self._specs_template_index
@@ -367,51 +395,26 @@ class PIGSpectrophotometry:
         wl_stellar = tmp_specs_stellar[0]
         blobspecs_stellar = np.zeros((num_specs,len(wl_stellar)))
 
-        wl_total = tmp_specs_total[0]
-        blobspecs_total = np.zeros((num_specs,len(wl_total)))
+        wl_with_nebular = tmp_specs_with_nebular[0]
+        blobspecs_with_nebular = np.zeros((num_specs,len(wl_with_nebular)))
 
         blobwise_stellar_mass = np.zeros(num_specs)
 
         for (uc,vc),ti,ms,mstar in zip(pixel_coords,tspecindex,mass_scale,target_star_mass):
             l = lable_map[uc,vc]
             blobspecs_stellar[l]+=ms*tmp_specs_stellar[ti]
-            blobspecs_total[l]+=ms*tmp_specs_total[ti]
+            blobspecs_with_nebular[l]+=ms*tmp_specs_with_nebular[ti]
             blobwise_stellar_mass[l] += mstar
 
-        return {
+        specout = {
             "WAVELENGTH_STELLAR" : wl_stellar, 
-            "WAVELENGTH_TOTAL" : wl_total,
+            "WAVELENGTH_WITH_NEBULAR" : wl_with_nebular,
             "BLOBWISE_SPECTRA_STELLAR" : blobspecs_stellar,  
-            "BLOBWISE_SPECTRA_TOTAL" : blobspecs_total,  
+            "BLOBWISE_SPECTRA_WITH_NEBULAR" : blobspecs_with_nebular,  
             "BLOBWISE_STELLAR_MASS" : blobwise_stellar_mass
         }
 
-
-
-    def _get_observer_frame_dilution_factor(self):
-        h=self.PIG.Header.HubbleParam()
-        Om0=self.PIG.Header.Omega0()
-        z=self.PIG.Header.Redshift()  
-
-        cosmo = FlatLambdaCDM(H0=h*100,Om0=Om0)
-        DL = cosmo.luminosity_distance(z).value #in Mpc
-        DL *= 3.086e+24 # MPC to cm
-
-        Area = 4*np.pi*(DL**2)
-        dilution = 1/(Area*(1+z)) # Extra (1+z) due to wavelength
-
-        return dilution
-    
-    def _get_absolute_frame_dilution_factor(self):
-        z=self.PIG.Header.Redshift()  
-
-        D = 10 #pc
-        D *= 3.086e+18 # pc to cm
-
-        Area = 4*np.pi*(D**2)
-        dilution = 1/(Area*(1+z)) # Extra (1+z) due to wavelength
-
-        return dilution
+        return specout
 
 
 
@@ -441,39 +444,57 @@ class PIGSpectrophotometry:
             self.NC_F444W = get_NIRCam_filter(wl,"F444W")
 
 
+    def _transfer_to_observer_frame(self,wl_rest,spec_rest):
+        LSOL=3.846e33 #erg s-1
+        spec_rest*=LSOL
+        z=self.PIG.Header.Redshift()
+        wl_obs = wl_rest*(1+z)
+        spec_obs=spec_rest*self.observer_dilution
+        return wl_obs,spec_obs
 
-    def _get_spec_properties(self,wl,spec):
-        spec_obs = spec*self.observer_dilution
-        spec_abs = spec*self.absolute_dilution
+    def _get_spec_properties_observed(self,wl_obs,spec):
 
-        wl_obs = wl*(1+self.PIG.Header.Redshift())
+        dlam=np.diff(wl_obs)
+
+        wl_obs=wl_obs[:-1]
+        spec_obs = spec[:-1]
+
 
         # Get photometric proporties at observer frame: spectral flux
-        LSOL=3.846e33 #erg s-1
-        spec_obs *=LSOL
-        self._load_filter(wl_obs)
-        sflux_F070W = np.sum(spec_obs*self.NC_F070W)
-        sflux_F090W = np.sum(spec_obs*self.NC_F090W)
-        sflux_F115W = np.sum(spec_obs*self.NC_F115W)
-        sflux_F150W = np.sum(spec_obs*self.NC_F150W)
-        sflux_F200W = np.sum(spec_obs*self.NC_F200W)
-        sflux_F277W = np.sum(spec_obs*self.NC_F277W)
-        sflux_F356W = np.sum(spec_obs*self.NC_F356W)
-        sflux_F444W = np.sum(spec_obs*self.NC_F444W)
 
+        self._load_filter(wl_obs)
+
+        sflux_F070W = np.sum(spec_obs*self.NC_F070W*dlam)
+        sflux_F090W = np.sum(spec_obs*self.NC_F090W*dlam)
+        sflux_F115W = np.sum(spec_obs*self.NC_F115W*dlam)
+        sflux_F150W = np.sum(spec_obs*self.NC_F150W*dlam)
+        sflux_F200W = np.sum(spec_obs*self.NC_F200W*dlam)
+        sflux_F277W = np.sum(spec_obs*self.NC_F277W*dlam)
+        sflux_F356W = np.sum(spec_obs*self.NC_F356W*dlam)
+        sflux_F444W = np.sum(spec_obs*self.NC_F444W*dlam)
+
+
+        # Convert f_lam to f_nu for m_AB
+        Jy = 1e-23 #erg s-1 Hz-1 cm-2
+        lam = wl_obs
+        f_lam = spec_obs
+        f_nu = 3.34e4*(lam**2)*f_lam
+
+        m_AB = -2.5*np.log10(sflux_F070W/3631)
+        print(m_AB)
 
 
 
         OUT = {
             "PHOTO":{
-                "F070W" : sflux_F070W,
-                "F090W" : sflux_F090W,
-                "F115W" : sflux_F115W,
-                "F150W" : sflux_F150W,
-                "F200W" : sflux_F200W,
-                "F277W" : sflux_F277W,
-                "F356W" : sflux_F356W,
-                "F444W" : sflux_F444W
+                "F070W" : (0.70e4,sflux_F070W),
+                "F090W" : (0.90e4,sflux_F090W),
+                "F115W" : (1.15e4,sflux_F115W),
+                "F150W" : (1.50e4,sflux_F150W),
+                "F200W" : (2.00e4,sflux_F200W),
+                "F277W" : (2.77e4,sflux_F277W),
+                "F356W" : (3.56e4,sflux_F356W),
+                "F444W" : (4.44e4,sflux_F444W)
                 },
 
             "SPEC":{
@@ -486,58 +507,21 @@ class PIGSpectrophotometry:
         
 
 
-    def show_spectrum(self,specout,propout,show=False,to_observer=True):
-            wl_st=specout["WAVELENGTH_STELLAR"]
-            bws_st=specout["BLOBWISE_SPECTRA_STELLAR"]
+    def show_spectrum(self,wl,spec,photo=None,show=False):
+        plt.plot(wl,spec)
 
-            wl_tot=specout["WAVELENGTH_TOTAL"]
-            bws_tot=specout["BLOBWISE_SPECTRA_TOTAL"]
+        if photo is not None:
+            for p in photo:
+                plt.errorbar(p[0],p[1],capsize=4,fmt='.',ms=10,color='r')
+        
+        plt.xscale("log")
+        plt.yscale("log")
+        plt.xlim(1e3,1e5)
+        plt.ylim(1e-20,1e-15)
+        # plt.legend()
 
-            if to_observer:
-                z=self.PIG.Header.Redshift()  
-                LSOL=3.846e33 #erg s-1
-                wl_st *= (1+z)
-                wl_tot *=(1+z)
-                bws_st *= self.observer_dilution * LSOL
-                bws_tot *= self.observer_dilution * LSOL
-
-
-
-            plt.figure()
-            # plt.plot(wl_st,bws_st[0],label=f"Blob {0} ST",color=(0.8,0.8,0.8))
-            plt.plot(wl_tot,bws_tot[0],label=f"Blob {0} ST+NB",color=(0.8,0.8,0.8))
-
-            for i in range(len(bws_st)):
-                if i==0:continue
-                # plt.plot(wl_st,bws_st[i],label=f"Blob {i} ST")
-                plt.plot(wl_tot,bws_tot[i],label=f"Blob {i} ST+NB")
-
-
-                plt.errorbar(0.70*1e4,propout[i]["PHOTO"]["F070W"],0.5*propout[i]["PHOTO"]["F070W"],capsize=4,fmt='.',ms=10,color='r')
-                plt.errorbar(0.90*1e4,propout[i]["PHOTO"]["F090W"],0.5*propout[i]["PHOTO"]["F090W"],capsize=4,fmt='.',ms=10,color='r')
-                plt.errorbar(1.15*1e4,propout[i]["PHOTO"]["F115W"],0.5*propout[i]["PHOTO"]["F115W"],capsize=4,fmt='.',ms=10,color='r')
-                plt.errorbar(1.50*1e4,propout[i]["PHOTO"]["F150W"],0.5*propout[i]["PHOTO"]["F150W"],capsize=4,fmt='.',ms=10,color='r')
-                plt.errorbar(2.00*1e4,propout[i]["PHOTO"]["F200W"],0.5*propout[i]["PHOTO"]["F200W"],capsize=4,fmt='.',ms=10,color='r')
-                plt.errorbar(2.77*1e4,propout[i]["PHOTO"]["F277W"],0.5*propout[i]["PHOTO"]["F277W"],capsize=4,fmt='.',ms=10,color='r')
-                plt.errorbar(3.56*1e4,propout[i]["PHOTO"]["F356W"],0.5*propout[i]["PHOTO"]["F356W"],capsize=4,fmt='.',ms=10,color='r')
-                plt.errorbar(4.44*1e4,propout[i]["PHOTO"]["F444W"],0.5*propout[i]["PHOTO"]["F444W"],capsize=4,fmt='.',ms=10,color='r')
-
-
-
-
-            plt.yscale("log") 
-            plt.xscale("log") 
-            plt.xlabel("Wavelength $(\AA)$")
-            plt.ylabel("Flux $(L_\odot/\AA)$")
-            if to_observer:
-                plt.ylabel("Flux $(erg \ s^{-1}\ \AA^{-1} cm^{-2})$")
-
-            # plt.xlim(1e2,2e4)
-            # plt.ylim(bottom=1e0)
-            plt.legend()
-
-            if show:
-                plt.show()
+        if show:
+            plt.show()
 
 
 
@@ -565,7 +549,7 @@ class PIGSpectrophotometry:
 
         # Reference templates with short variable names
         tmp_specs_stellar=PIGSpectrophotometry._template_specs_stellar
-        tmp_specs_total=PIGSpectrophotometry._template_specs_total
+        tmp_specs_with_nebular=PIGSpectrophotometry._template_specs_with_nebular
 
         # spectrum template index for target  
         specindex = self._specs_template_index
@@ -574,8 +558,8 @@ class PIGSpectrophotometry:
         mass_scale = self._get_mass_factor_scaling(target_star_mass)  # Right now twice the mass means twice the light
 
         # To observer frame
-        spec_obs = tmp_specs_total*self.observer_dilution
-        wl_obs = tmp_specs_total[0]*(1+self.PIG.Header.Redshift())
+        spec_obs = tmp_specs_with_nebular*self.observer_dilution
+        wl_obs = tmp_specs_with_nebular[0]*(1+self.PIG.Header.Redshift())
 
         LSOL=3.846e33 #erg s-1
         spec_obs *=LSOL
@@ -634,7 +618,7 @@ class PIGSpectrophotometry:
 
         DUMP=True
         if DUMP:
-            outfile_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data",'w')
+            outfile_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out.csv",'w')
             outfile_fp.write("#GID STMASS NBLOBS MFRAC_MASK MFRC_LABLE\n")
 
 
@@ -664,14 +648,27 @@ class PIGSpectrophotometry:
             lable_map = cvout["LABLE_IMG"]
             specout = self.gather_spectrum(lable_map,u,v,uedges,vedges,target_star_ids,target_star_mass)
             
-            propout =[]
-            for spec in specout["BLOBWISE_SPECTRA_TOTAL"]:
-                propout.append(self._get_spec_properties(specout["WAVELENGTH_TOTAL"],spec))
-            
 
-
+            # BLOBWISE
+            # for i,spec in enumerate(specout["BLOBWISE_SPECTRA_WITH_NEBULAR"]):
+            #     propout.append(self._get_spec_properties_obs(specout["WAVELENGTH_WITH_NEBULAR"]))
             
             # self.show_spectrum(specout,propout)
+
+
+            # SUMMED
+            wl_rest = specout["WAVELENGTH_WITH_NEBULAR"]
+            summed_spec = np.zeros_like(wl_rest)
+            for i,spec in enumerate(specout["BLOBWISE_SPECTRA_WITH_NEBULAR"]):
+                # propout.append(self._get_spec_properties_obs(specout["WAVELENGTH_WITH_NEBULAR"]))
+                if i==0:continue
+                summed_spec += spec
+            
+            wl_obs,spec_obs = self._transfer_to_observer_frame(wl_rest,summed_spec)
+            propout=self._get_spec_properties_observed(wl_obs,spec_obs)
+            
+            self.show_spectrum(wl_obs,spec_obs,[v for v in propout["PHOTO"].values()])
+
 
             # if DUMP:
             #     for so,po in zip(specout,propout):

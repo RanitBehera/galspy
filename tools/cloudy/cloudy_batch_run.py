@@ -125,6 +125,11 @@ def _CreateNebularCache(stellar_filepath:str):
     outspec_list[1:,:]=outspec_list[1:,:]/LSOL
     print("Done")
 
+    print("Rversing Wavelength Order ... ",end="")
+    inspec_list=inspec_list[:,::-1]
+    outspec_list=outspec_list[:,::-1]
+    print("Done")
+
 
     print("Saving Cache ... ",end="")
     with open(stellar_filepath.replace("stellar","nebular_in"),'wb') as fp:
