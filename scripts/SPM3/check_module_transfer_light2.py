@@ -3,13 +3,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 root=gs.NavigationRoot(gs.NINJA.L150N2040)
-
 PIG=root.PIG(43)
+
+
+sm = PIG.FOFGroups.MassByType().T[4]
+mask = sm>50*PIG.Header.MassTable()[4]
+gids = PIG.FOFGroups.GroupID()[mask]
 
 spm=gs.PIGSpectrophotometry(PIG)
 
 # spm.get_light_dict(np.arange(1,100))
-spm.get_light_dict([2])
+# spm.get_light_dict([2])
+spm.get_light_dict(gids[0])
 
 
 
@@ -25,7 +30,7 @@ spm.get_light_dict([2])
 
 # plt.imshow(rgb,origin="lower")
 # plt.gca().set_aspect("equal")
-plt.show()
+# plt.show()
 
 
 

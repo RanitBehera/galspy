@@ -278,9 +278,11 @@ class PIGSpectrophotometry:
             PIGSpectrophotometry._template_specs_with_nebular = PIGSpectrophotometry._template_specs_stellar + _template_specs_nebular
             PIGSpectrophotometry._template_specs_with_nebular[0] = _template_specs_nebular[0]
 
+        self.luminosity_distance_Mpc = None     # Will get assigned in _get_observer_frame_dilution_factor
         self.pixel_resolution = self._get_pixel_resolution()
         self.observer_dilution = self._get_observer_frame_dilution_factor()
-        self.luminosity_distance_Mpc = None     # Will get assigned in _get_observer_frame_dilution_factor
+
+
 
     def _get_pixel_resolution(self):
         h=self.PIG.Header.HubbleParam()
@@ -305,7 +307,7 @@ class PIGSpectrophotometry:
 
         cosmo = FlatLambdaCDM(H0=h*100,Om0=Om0)
         DL = cosmo.luminosity_distance(z).value #in Mpc
-        self.luminosity_distance = DL
+        self.luminosity_distance_Mpc = DL
         DL *= 3.086e+24 # MPC to cm
 
         Area = 4*np.pi*(DL**2)
@@ -446,18 +448,22 @@ class PIGSpectrophotometry:
 
     def _transfer_to_observer_frame(self,wl_rest,spec_rest):
         LSOL=3.846e33 #erg s-1
-        spec_rest*=LSOL
+        spec_obs=spec_rest*LSOL
         z=self.PIG.Header.Redshift()
         wl_obs = wl_rest*(1+z)
-        spec_obs=spec_rest*self.observer_dilution
+        spec_obs*=self.observer_dilution
         return wl_obs,spec_obs
 
-    def _get_spec_properties_observed(self,wl_obs,spec):
-
+    def _get_spec_properties_observed(self,wl_rest,spec_rest):
+        self._get_spec_properties_observed_log(wl_rest,spec_rest)
+        return
+        print("Rest",spec_rest[3496])
+        wl_obs,spec_obs = self._transfer_to_observer_frame(wl_rest,spec_rest)
+        print("Rest",spec_rest[3496])
         dlam=np.diff(wl_obs)
 
         wl_obs=wl_obs[:-1]
-        spec_obs = spec[:-1]
+        spec_obs = spec_obs[:-1]
 
 
         # Get photometric proporties at observer frame: spectral flux
@@ -473,15 +479,117 @@ class PIGSpectrophotometry:
         sflux_F356W = np.sum(spec_obs*self.NC_F356W*dlam)
         sflux_F444W = np.sum(spec_obs*self.NC_F444W*dlam)
 
+        #----------------------------------------------------------
+        print("Average erg s-1 cm-2 A-1",sflux_F115W)
+        print("Expected erg s-1 cm-2 Hz-1",sflux_F115W/((3e8*1e10)/(11500**2)))
 
-        # Convert f_lam to f_nu for m_AB
-        Jy = 1e-23 #erg s-1 Hz-1 cm-2
-        lam = wl_obs
+        # To freq
+        lam=wl_obs
         f_lam = spec_obs
-        f_nu = 3.34e4*(lam**2)*f_lam
+        # Jy_nu = 1e-23 #erg s-1 Hz-1 cm-2
+        # f_nu = 3.34e4*(wl_obs**2)*f_lam*Jy_nu
 
-        m_AB = -2.5*np.log10(sflux_F070W/3631)
-        print(m_AB)
+        c=3e8*1e10
+        nu=c/lam
+        f_nu = ((wl_obs**2)/c)*f_lam
+        T_lam = self.NC_F115W
+        T_nu = T_lam * ((lam**2)/c)
+
+        f_got = np.sum(f_nu[:-1]*T_nu[:-1]*np.diff(nu))/np.sum(T_nu[:-1]*np.diff(nu))
+
+        print('got',f_got)
+
+        m_AB = -2.5*np.log10(f_got)-48.60
+        print("m_AB=",m_AB)
+
+        DL=self.luminosity_distance_Mpc
+        print("DL=",DL,"Mpc")
+        M_AB = m_AB - 5*(np.log10(DL*1e6)-1)
+        print("M_AB=",M_AB)
+
+        # Check in rest Frame
+        # wl_rest,spec_rest
+        lam=wl_rest
+        f_lam=spec_rest*3.846e33 #erg s-1 A-1
+
+        index=np.argmin(np.abs(wl_rest-1437))
+        print(index)
+        print(lam[index])
+        print(f_lam[index])
+        flux = np.mean(f_lam[index-5:index+5])
+        print(flux)
+        flux /= 4*np.pi*((10*(3.08e18))**2)
+
+        flux_nu = flux/(c/(1436**2)) 
+
+        m_AB_r = -2.5*np.log10(flux_nu)-48.60
+        print("M_AB_r=",m_AB_r)
+
+
+        # ------
+        # plt.plot(lam,f_lam,label="f_lam")
+        # plt.plot(nu,f_nu,label="f_nu")
+        # plt.plot(lam,self.NC_F200W)
+        # plt.plot(nu,self.NC_F200W)
+
+        # plt.xscale('log')
+        # plt.yscale('log')
+        # plt.legend()
+        #----------------------------------------------------------
+        # c=3e8*1e10  #in AA s-1
+        # Jy_nu = 1e-23 #erg s-1 Hz-1 cm-2
+        # # Jy_lam = (c/(20000**2))*3631*Jy_nu
+        # Jy_lam = (c/(19875**2))*3631*Jy_nu
+
+
+        # m_AB = -2.5*np.log10(sflux_F200W/(Jy_lam))
+        # print("m_AB_lam=",m_AB)
+
+    
+        # #----------------------------------------------------------
+        # f_lam = spec_obs
+        # lam = wl_obs
+
+        # e_lam = get_NIRCam_filter(lam,"F200W")
+        # lam_pivot = np.sqrt(np.sum(e_lam*lam*dlam)/np.sum((e_lam/lam)*dlam))
+        # print(lam_pivot)
+
+        # Jy = 1e-23
+        # f_nu = 3.34e4*(lam**2)*f_lam*Jy
+
+        # h = 6.64e-34
+        # c = 3e8*1e10
+        # nu = c/lam
+        # # dnu=np.abs(np.diff(nu))
+        # # E=h*nu
+        # # f_nu=f_nu[:-1]
+        # N = np.sum(f_nu * (e_lam*(dlam/lam))) # As elam
+        # D = 3631*Jy * np.sum(e_lam*(dlam/lam))   #\int e(nu) dnu/nu = \int e(lam) dlam/lam
+        # m_AB_nu=-2.5*np.log10(N/D)
+
+
+        # print("m_AB_nu",m_AB_nu)
+
+        # # Apparent to absolute
+        # # M = m - 5(log_10(DL)-1) - Kcorr    : DL = Luminosity distance
+        # M_AB = m_AB - 5*(np.log10(self.luminosity_distance_Mpc*1e6)-1)
+
+
+        # K-correction
+        # # M = m-DM-K
+        # print("M_AB=",M_AB,"without K-Correction")
+        # z = self.PIG.Header.Redshift()
+        # K = -2.5*np.log10(1+z)
+
+        # M_AB -= K
+        # print("M_AB=",M_AB,"with K-Correction")
+
+
+
+
+
+
+
 
 
 
@@ -494,7 +602,8 @@ class PIGSpectrophotometry:
                 "F200W" : (2.00e4,sflux_F200W),
                 "F277W" : (2.77e4,sflux_F277W),
                 "F356W" : (3.56e4,sflux_F356W),
-                "F444W" : (4.44e4,sflux_F444W)
+                "F444W" : (4.44e4,sflux_F444W),
+                "M_AB_F115W" : M_AB
                 },
 
             "SPEC":{
@@ -504,7 +613,42 @@ class PIGSpectrophotometry:
 
         return OUT
 
+    
+    def _get_spec_properties_observed_log(self,wl_rest,spec_rest):
+        c=3e8*1e10  # A Hz
+
+        lam_rest = wl_rest
+        f_lam_rest = spec_rest
+
+        lam_obs,f_lam_obs = self._transfer_to_observer_frame(lam_rest,f_lam_rest)
+
+        print("\nOBSERVER FRAME",'='*32)
+        print("- Filter : F115W -> 1.15um corresponds to 1437.5A (rest)")
+        self._load_filter(lam_obs)
+        T_lam_obs = self.NC_F115W
+
+        f_lam_obs_avg = np.sum(f_lam_obs[:-1]*T_lam_obs[:-1]*np.diff(lam_obs))
+        print(f"- Filter Flux : {f_lam_obs_avg:.02e} erg s-1 cm-2 A-1")
+        f_nu_obs_avg = f_lam_obs_avg / (c/(11500**2)) 
+        print(f"- Filter Flux : {f_nu_obs_avg:.02e} erg s-1 cm-2 Hz-1 (Method 1)")
+
+        nu_obs=c/lam_obs        
+        f_nu_obs = f_lam_obs*((lam_obs**2)/c)
+        T_nu_obs = T_lam_obs
+        f_nu_obs_avg_2 = np.sum(f_nu_obs[:-1]*T_nu_obs[:-1]*np.diff(nu_obs))/np.sum(T_nu_obs[:-1]*np.diff(nu_obs))
+        print(f"- Filter Flux : {f_nu_obs_avg_2:.02e} erg s-1 cm-2 Hz-1 (Method 2)")
+
+        m_AB_obs = -2.5*np.log10(f_nu_obs_avg)-48.60
+        print(f"- Apparent Magnitude (Observer Frame) : m_AB={m_AB_obs:.02f}")
+
+
+
         
+        
+        pass
+
+
+
 
 
     def show_spectrum(self,wl,spec,photo=None,show=False):
@@ -611,15 +755,34 @@ class PIGSpectrophotometry:
     def get_light_dict(self,target_gids):
         if isinstance(target_gids, int) and target_gids > 0:
             target_gids=[target_gids]
-        elif isinstance(target_gids, list) and all(isinstance(i, int) and i > 0 for i in target_gids): pass
-        elif isinstance(target_gids, np.ndarray) and all(isinstance(i, np.int64) and i > 0 for i in target_gids): pass
+        if isinstance(target_gids, np.uint32) and target_gids > 0:
+            target_gids=[target_gids]
+        elif isinstance(target_gids, list) and all(isinstance(g, int) and g > 0 for g in target_gids): pass
+        elif isinstance(target_gids, np.ndarray) and all(isinstance(g, np.int64) and g > 0 for g in target_gids): pass
+        elif isinstance(target_gids, np.ndarray) and all(isinstance(g, np.uint32) and g > 0 for g in target_gids): pass
         else: raise ValueError("Either int or List[int] are valid as target group id with id>0.")
 
 
-        DUMP=True
+        # DUMP PURPOSE
+        #-------------------------------------------------------
+        sfr = self.PIG.FOFGroups.StarFormationRate()
+
+        KUV=1.15e-28  #Msol yr-1 erg S-1 Hz-1
+        LUV = sfr/KUV
+        PC2CM = 3.086e18
+        D = 10*PC2CM  # In cm
+
+        fUV = LUV/(4*np.pi*D**2)
+        Jy=1e-23 #erg s-1 cm-2 Hz-1
+        mAB = -2.5*np.log10(fUV/(3631*Jy)+1e-309)
+        M_AB = mAB #as distance was 10pc
+        #-------------------------------------------------------
+
+
+        DUMP=False
         if DUMP:
-            outfile_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out.csv",'w')
-            outfile_fp.write("#GID STMASS NBLOBS MFRAC_MASK MFRC_LABLE\n")
+            outfile_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_L150N2040.csv",'w')
+            outfile_fp.write("#GID M_AB M_AB_MD\n")
 
 
         for tgid in target_gids:
@@ -654,6 +817,22 @@ class PIGSpectrophotometry:
             #     propout.append(self._get_spec_properties_obs(specout["WAVELENGTH_WITH_NEBULAR"]))
             
             # self.show_spectrum(specout,propout)
+            
+
+            # if DUMP:
+            #     for so,po in zip(specout,propout):
+            #         np.savetxt(outfile_fp,
+            #                    np.column_stack([
+            #                        tgid,propout["PHOTO"]["M_AB_F115W"]
+            #                        ]),
+            #                    fmt="%d %.4f")
+            #         pass
+                    
+            #         outfile_fp.flush()
+
+
+
+
 
 
             # SUMMED
@@ -661,21 +840,35 @@ class PIGSpectrophotometry:
             summed_spec = np.zeros_like(wl_rest)
             for i,spec in enumerate(specout["BLOBWISE_SPECTRA_WITH_NEBULAR"]):
                 # propout.append(self._get_spec_properties_obs(specout["WAVELENGTH_WITH_NEBULAR"]))
-                if i==0:continue
+                # if i==0:continue
                 summed_spec += spec
             
-            wl_obs,spec_obs = self._transfer_to_observer_frame(wl_rest,summed_spec)
-            propout=self._get_spec_properties_observed(wl_obs,spec_obs)
             
-            self.show_spectrum(wl_obs,spec_obs,[v for v in propout["PHOTO"].values()])
+            propout=self._get_spec_properties_observed(wl_rest,summed_spec)
+            
+            # self.show_spectrum(wl_obs,spec_obs,
+            #                    [
+            #                        propout["PHOTO"]["F070W"],
+            #                        propout["PHOTO"]["F090W"],
+            #                        propout["PHOTO"]["F115W"],
+            #                        propout["PHOTO"]["F150W"],
+            #                        propout["PHOTO"]["F200W"],
+            #                        propout["PHOTO"]["F277W"],
+            #                        propout["PHOTO"]["F356W"],
+            #                        propout["PHOTO"]["F444W"]
+            #                     ])
 
-
-            # if DUMP:
-            #     for so,po in zip(specout,propout):
-            #         np.savetxt()
-            #         pass
-                    
-            #         outfile_fp.flush()
+            # print(propout["PHOTO"]["M_AB_F115W"])
+            # print("MD",M_AB[tgid-1])
+            if DUMP:
+                np.savetxt(outfile_fp,
+                            np.column_stack([
+                                tgid,propout["PHOTO"]["M_AB_F115W"],
+                                M_AB[tgid-1]
+                                ]),
+                            fmt="%d %.4f %.4f")
+                
+                outfile_fp.flush()
 
 
 
