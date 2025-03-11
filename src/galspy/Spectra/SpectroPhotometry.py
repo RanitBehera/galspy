@@ -618,9 +618,9 @@ class PIGSpectrophotometry:
         c=3e8*1e10  # A Hz
 
         lam_rest = wl_rest
-        f_lam_rest = spec_rest
+        L_lam_rest = spec_rest
 
-        lam_obs,f_lam_obs = self._transfer_to_observer_frame(lam_rest,f_lam_rest)
+        lam_obs,f_lam_obs = self._transfer_to_observer_frame(lam_rest,L_lam_rest)
 
         print("\nOBSERVER FRAME",'='*32)
         print("- Filter : F115W -> 1.15um corresponds to 1437.5A (rest)")
@@ -639,12 +639,28 @@ class PIGSpectrophotometry:
         print(f"- Filter Flux : {f_nu_obs_avg_2:.02e} erg s-1 cm-2 Hz-1 (Method 2)")
 
         m_AB_obs = -2.5*np.log10(f_nu_obs_avg)-48.60
-        print(f"- Apparent Magnitude (Observer Frame) : m_AB={m_AB_obs:.02f}")
+        print(f"- Apparent AB Magnitude (Observer Frame) : m_AB = {m_AB_obs:.02f}")
+
+        DL=self.luminosity_distance_Mpc
+        print(f"- Luminosity Distance : DL = {DL:0.2f} Mpc")
+        M_AB_obs = m_AB_obs - 5*(np.log10(DL*1e6)-1)
+        print(f"- Absolute AB Magnitude (Observer Frame) : M_AB = {M_AB_obs:0.2f}")
 
 
+        print("\nRest FRAME",'='*32)
+        ind = np.argmin(np.abs(lam_rest-1437.5))
+        print(f"- Wavelength : {lam_rest[ind]:.02f}A (rest) [{lam_rest[ind-5]:.02f}A <---> {lam_rest[ind+5]:.02f}A]")
+        LSOL=3.846e33 #erg s-1
+        mean_lum_lam = np.mean(L_lam_rest[ind-5:ind+5])*LSOL
+        print(f"- Mean Luminosity : {mean_lum_lam:0.02e} erg s-1 A-1")
+        mean_flux_lam = mean_lum_lam/(4*np.pi*((10*(3.08e18))**2))
+        print(f"- Mean Flux (10pc) : {mean_flux_lam:0.02e} erg s-1 cm-2 A-1")
+        mean_flux_nu = mean_flux_lam/(c/(1437.5**2))
+        print(f"- Mean Flux (10pc): {mean_flux_nu:0.02e} erg s-1 cm-2 Hz-1")
+        M_AB_rest = -2.5*np.log10(mean_flux_nu)-48.60
+        print(f"- Absolute AB Magnitude (Rest Frame) : M_AB = {M_AB_rest:.02f}")
 
-        
-        
+
         pass
 
 
