@@ -623,7 +623,7 @@ class PIGSpectrophotometry:
         lam_obs,f_lam_obs = self._transfer_to_observer_frame(lam_rest,L_lam_rest)
 
         print("\nOBSERVER FRAME",'='*32)
-        print("- Filter : F115W -> 1.15um corresponds to 1437.5A (rest)")
+        print("- Filter : F115W -> 1.15um corresponds to 1437.5A (rest) for z=7")
         self._load_filter(lam_obs)
         T_lam_obs = self.NC_F115W
 
@@ -642,7 +642,7 @@ class PIGSpectrophotometry:
         print(f"- Apparent AB Magnitude (Observer Frame) : m_AB = {m_AB_obs:.02f}")
 
         DL=self.luminosity_distance_Mpc
-        print(f"- Luminosity Distance : DL = {DL:0.2f} Mpc")
+        print(f"- Luminosity Distance : DL = {DL:0.2f} Mpc for z=7")
         M_AB_obs = m_AB_obs - 5*(np.log10(DL*1e6)-1)
         print(f"- Absolute AB Magnitude (Observer Frame) : M_AB = {M_AB_obs:0.2f}")
 
