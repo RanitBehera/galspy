@@ -455,6 +455,16 @@ class PIGSpectrophotometry:
         return wl_obs,spec_obs
 
     def _get_spec_properties_observed(self,wl_rest,spec_rest):
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         self._get_spec_properties_observed_log(wl_rest,spec_rest)
         return
         print("Rest",spec_rest[3496])
@@ -616,14 +626,42 @@ class PIGSpectrophotometry:
     
     def _get_spec_properties_observed_log(self,wl_rest,spec_rest):
         c=3e8*1e10  # A Hz
+        LSOL=3.846e33 #erg s-1
+        z=self.PIG.Header.Redshift()
+
+        # np.savetxt("/mnt/home/student/cranit/RANIT/Repo/galspy/temp/share_anand/spectrum.txt",np.column_stack((wl_rest,spec_rest)),
+        #            header="Rest frame spectral luminosity at z=7\nUsing Cloudy resampling of BPASS templates.\nLuminosity Distance at z=7 : DL(z=7)=70498.47 Mpc\nCosmology : Om=0.3153; h=0.6736; FlatLCDM\nWavelength (lam) in Angstrom.\nSpectral Luminosity (L_lam) in Solar Luminosity per Angstrom.\nlam L_lam")
+
 
         lam_rest = wl_rest
         L_lam_rest = spec_rest
 
         lam_obs,f_lam_obs = self._transfer_to_observer_frame(lam_rest,L_lam_rest)
 
+        # plt.plot(lam_rest,L_lam_rest,label="Rest")
+        # x,y=np.loadtxt("/mnt/home/student/cranit/RANIT/Repo/galspy/temp/share_anand/spectrum.txt").T
+        # plt.plot(x,y,label="Shared",lw=0.8)
+
+        # plt.xscale("log")
+        # plt.yscale("log")
+        # plt.axvline(1437.5)
+        # plt.xlabel("Wavelength")
+        # plt.ylabel("Spectral Luminosity (erg s-1 A-1)")
+        # plt.legend()
+
+        # plt.figure()
+        # plt.plot(lam_obs,f_lam_obs,label="Obs")
+        # plt.xscale("log")
+        # plt.yscale("log")
+        # plt.xlabel("Wavelength")
+        # plt.ylabel("Spectral flux (erg s-1 cm-2 A-1)")
+        # plt.axvline(11500)
+        # plt.legend()
+
+        # plt.show()
+
         print("\nOBSERVER FRAME",'='*32)
-        print("- Filter : F115W -> 1.15um corresponds to 1437.5A (rest) for z=7")
+        print(f"- Filter : F115W -> 1.15um corresponds to 1437.5A (rest) for z={z:.02f}")
         self._load_filter(lam_obs)
         T_lam_obs = self.NC_F115W
 
@@ -643,8 +681,10 @@ class PIGSpectrophotometry:
 
         DL=self.luminosity_distance_Mpc
         print(f"- Luminosity Distance : DL = {DL:0.2f} Mpc for z=7")
-        M_AB_obs = m_AB_obs - 5*(np.log10(DL*1e6)-1)
+        M_AB_obs = m_AB_obs - 5*(np.log10(DL*1e6)-1) + 2.5*np.log10(1+z)
         print(f"- Absolute AB Magnitude (Observer Frame) : M_AB = {M_AB_obs:0.2f}")
+        lum_rest_expexted = 4*np.pi*((DL*3.086e24)**2)*(1+z)*f_lam_obs_avg
+        print(f"- Expected rest frame luminosity : L = {lum_rest_expexted:0.2e} erg s-1 A-1")
 
 
         print("\nRest FRAME",'='*32)
@@ -788,9 +828,8 @@ class PIGSpectrophotometry:
         PC2CM = 3.086e18
         D = 10*PC2CM  # In cm
 
-        fUV = LUV/(4*np.pi*D**2)
-        Jy=1e-23 #erg s-1 cm-2 Hz-1
-        mAB = -2.5*np.log10(fUV/(3631*Jy)+1e-309)
+        fUV = LUV/(4*np.pi*D**2)+1e-300
+        mAB = -2.5*np.log10(fUV)-48.6
         M_AB = mAB #as distance was 10pc
         #-------------------------------------------------------
 
@@ -828,6 +867,7 @@ class PIGSpectrophotometry:
             specout = self.gather_spectrum(lable_map,u,v,uedges,vedges,target_star_ids,target_star_mass)
             
 
+
             # BLOBWISE
             # for i,spec in enumerate(specout["BLOBWISE_SPECTRA_WITH_NEBULAR"]):
             #     propout.append(self._get_spec_properties_obs(specout["WAVELENGTH_WITH_NEBULAR"]))
@@ -862,6 +902,10 @@ class PIGSpectrophotometry:
             
             propout=self._get_spec_properties_observed(wl_rest,summed_spec)
             
+            print(f"\nLuminosity from MD : {LUV[tgid-1]:.02e} erg s-1 Hz-1 *")
+            print(f"Flux from MD : {fUV[tgid-1]:.02e}  erg s-1 cm-2 Hz-1 *")
+            print(f"AB Magnitude from MD : {M_AB[tgid-1]:.02f}")
+
             # self.show_spectrum(wl_obs,spec_obs,
             #                    [
             #                        propout["PHOTO"]["F070W"],
