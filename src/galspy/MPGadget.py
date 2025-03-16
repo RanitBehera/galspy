@@ -476,6 +476,7 @@ class _Sim:
     def __init__(self, mpgadget_outdir: str,rockstar_outbase:str=None) -> None:
         self.mpgadget_outdir = mpgadget_outdir
         self.rockstar_outbase = rockstar_outbase
+        self.sim_name = os.path.basename(os.path.abspath(self.mpgadget_outdir + "../../"))
 
     def PART(self,snap_num:int):
         if not isinstance(snap_num,int):raise TypeError
@@ -504,16 +505,25 @@ class _Sim:
         cosmology = self.GetCosmology()
         return FlatLambdaCDM(H0=cosmology["H0"],Om0=cosmology["Om0"])
     
-    def SnapNumFromZ(self,redshift):
+    def SnapNumFromRedshift(self,redshift):
+        # Get Snapnumbers and Scale Factors
         sn,a = numpy.loadtxt(self.mpgadget_outdir+os.sep+"Snapshots.txt").T
+        # Convert Snapnumbers type to "integer"
         sn = [int(sni) for sni in sn]
+        # Convert Scale Factors to Redshifts
         z = (1/a)-1
-        indices = numpy.array([i for i, zi in enumerate(z) if abs(zi - redshift) <= 0.001])
+        # Get indices where the difference between requested redshift and table row is less then tolerance
+        _TOLERANCE = 0.001
+        indices = numpy.array([i for i, zi in enumerate(z) if abs(zi - redshift) <= _TOLERANCE])
+
         if len(indices)==1:
+            # If only one element --> requested redshift exists
             return sn[indices[0]]
         elif len(indices)==0:
-            return -1
+            # If zero element --> requested redshift doesn't exists
+            return None
         else:
+            # If more than one element --> requested redshift appears twice, check it.
             RuntimeError("More than one box found. Try decereasing the tolerance or check for duplicate snaps.")
             return None
         

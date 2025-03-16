@@ -7,7 +7,7 @@ import matplotlib.colors as mcolors
 import cv2 as cv
 from typing import List
 import pickle
-from galspy.Utility import Cube3D
+from galspy.Utility.Visualization import Cube3D
 from galspy.MPGadget import _PIG
 from galspy.Spectra import SpectralTemplates
 from astropy.cosmology import FlatLambdaCDM
@@ -455,17 +455,40 @@ class PIGSpectrophotometry:
         return wl_obs,spec_obs
 
     def _get_spec_properties_observed(self,wl_rest,spec_rest):
+        # L : Luminosity
+        # f : flux
+        OUTDICT={}
+
+        c=3e8*1e10  # A Hz
+        LSOL=3.846e33 #erg s-1
+        z=self.PIG.Header.Redshift()
+        PC2CM = 3.086e18 # cm per parsec
+
+        lam_rest = wl_rest
+        L_lam_rest = spec_rest * LSOL
+
+        # ===== REST FRAME PROPERTIES
+        lam_uv = 1500 #A
+        lam_uv_ind = np.argmin(np.abs(lam_rest-lam_uv) )
+        rf_L_lam_UV =  np.mean(L_lam_rest[lam_uv_ind-5:lam_uv_ind+5])
+        rf_f_lam_UV =  rf_L_lam_UV / (4*np.pi*((10*PC2CM)**2))
+        rf_f_nu_UV =  rf_f_lam_UV * (lam_uv**2)/c
+        rf_MAB_UV = -2.5*np.log10(rf_f_nu_UV)-48.6
+
+        print(rf_MAB_UV)
+        
+        
+        # ===== OBSERVED FRAME PROPERTIES
+        
+        
+        
+        # ===== INFERED REST FRAME PROPERTIES
         
         
         
         
         
-        
-        
-        
-        
-        
-        self._get_spec_properties_observed_log(wl_rest,spec_rest)
+        # self._get_spec_properties_observed_log(wl_rest,spec_rest)
         return
         print("Rest",spec_rest[3496])
         wl_obs,spec_obs = self._transfer_to_observer_frame(wl_rest,spec_rest)
