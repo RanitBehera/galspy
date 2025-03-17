@@ -447,8 +447,7 @@ class PIGSpectrophotometry:
 
 
     def _transfer_to_observer_frame(self,wl_rest,spec_rest):
-        LSOL=3.846e33 #erg s-1
-        spec_obs=spec_rest*LSOL
+        spec_obs=spec_rest
         z=self.PIG.Header.Redshift()
         wl_obs = wl_rest*(1+z)
         spec_obs*=self.observer_dilution
@@ -464,187 +463,61 @@ class PIGSpectrophotometry:
         z=self.PIG.Header.Redshift()
         PC2CM = 3.086e18 # cm per parsec
 
+        # ===== REST FRAME PROPERTIES
         lam_rest = wl_rest
         L_lam_rest = spec_rest * LSOL
-
-        # ===== REST FRAME PROPERTIES
         lam_uv = 1500 #A
         lam_uv_ind = np.argmin(np.abs(lam_rest-lam_uv) )
-        rf_L_lam_UV =  np.mean(L_lam_rest[lam_uv_ind-5:lam_uv_ind+5])
+        lam_uv_ind_n = np.argmin(np.abs(lam_rest-(lam_uv-100)))
+        lam_uv_ind_p = np.argmin(np.abs(lam_rest-(lam_uv+100)))
+        rf_L_lam_UV =  np.mean(L_lam_rest[lam_uv_ind_n:lam_uv_ind_p])
         rf_f_lam_UV =  rf_L_lam_UV / (4*np.pi*((10*PC2CM)**2))
         rf_f_nu_UV =  rf_f_lam_UV * (lam_uv**2)/c
         rf_MAB_UV = -2.5*np.log10(rf_f_nu_UV)-48.6
+        OUTDICT["RF_L_LAM_UV"]=rf_L_lam_UV
+        OUTDICT["RF_F_LAM_UV"]=rf_f_lam_UV
+        OUTDICT["RF_F_NU_UV"]=rf_f_nu_UV
+        OUTDICT["RF_MAB_UV"]=rf_MAB_UV
 
-        print(rf_MAB_UV)
-        
-        
+
         # ===== OBSERVED FRAME PROPERTIES
+        lam_obs,f_lam_obs = self._transfer_to_observer_frame(lam_rest,L_lam_rest)
+        dlam_obs = np.diff(lam_obs)
+        lam_obs,f_lam_obs=lam_obs[:-1],f_lam_obs[:-1]
+        self._load_filter(lam_obs)  # This loads the throughput, already normalised
+        f_lam_obs_dlam_obs = f_lam_obs*dlam_obs
+        of_f_lam_F070W = np.sum(f_lam_obs_dlam_obs*self.NC_F070W)
+        of_f_lam_F090W = np.sum(f_lam_obs_dlam_obs*self.NC_F090W)
+        of_f_lam_F115W = np.sum(f_lam_obs_dlam_obs*self.NC_F115W)
+        of_f_lam_F150W = np.sum(f_lam_obs_dlam_obs*self.NC_F150W)
+        of_f_lam_F200W = np.sum(f_lam_obs_dlam_obs*self.NC_F200W)
+        of_f_lam_F277W = np.sum(f_lam_obs_dlam_obs*self.NC_F277W)
+        of_f_lam_F356W = np.sum(f_lam_obs_dlam_obs*self.NC_F356W)
+        of_f_lam_F444W = np.sum(f_lam_obs_dlam_obs*self.NC_F444W)
+        OUTDICT["OF_F_LAM_F070W"]=of_f_lam_F070W
+        OUTDICT["OF_F_LAM_F090W"]=of_f_lam_F090W
+        OUTDICT["OF_F_LAM_F115W"]=of_f_lam_F115W
+        OUTDICT["OF_F_LAM_F150W"]=of_f_lam_F150W
+        OUTDICT["OF_F_LAM_F200W"]=of_f_lam_F200W
+        OUTDICT["OF_F_LAM_F277W"]=of_f_lam_F277W
+        OUTDICT["OF_F_LAM_F356W"]=of_f_lam_F356W
+        OUTDICT["OF_F_LAM_F444W"]=of_f_lam_F444W
         
         
-        
+
+
+
         # ===== INFERED REST FRAME PROPERTIES
         
         
         
-        
-        
-        # self._get_spec_properties_observed_log(wl_rest,spec_rest)
-        return
-        print("Rest",spec_rest[3496])
-        wl_obs,spec_obs = self._transfer_to_observer_frame(wl_rest,spec_rest)
-        print("Rest",spec_rest[3496])
-        dlam=np.diff(wl_obs)
+        return OUTDICT
 
-        wl_obs=wl_obs[:-1]
-        spec_obs = spec_obs[:-1]
-
-
-        # Get photometric proporties at observer frame: spectral flux
-
-        self._load_filter(wl_obs)
-
-        sflux_F070W = np.sum(spec_obs*self.NC_F070W*dlam)
-        sflux_F090W = np.sum(spec_obs*self.NC_F090W*dlam)
-        sflux_F115W = np.sum(spec_obs*self.NC_F115W*dlam)
-        sflux_F150W = np.sum(spec_obs*self.NC_F150W*dlam)
-        sflux_F200W = np.sum(spec_obs*self.NC_F200W*dlam)
-        sflux_F277W = np.sum(spec_obs*self.NC_F277W*dlam)
-        sflux_F356W = np.sum(spec_obs*self.NC_F356W*dlam)
-        sflux_F444W = np.sum(spec_obs*self.NC_F444W*dlam)
-
-        #----------------------------------------------------------
-        print("Average erg s-1 cm-2 A-1",sflux_F115W)
-        print("Expected erg s-1 cm-2 Hz-1",sflux_F115W/((3e8*1e10)/(11500**2)))
-
-        # To freq
-        lam=wl_obs
-        f_lam = spec_obs
-        # Jy_nu = 1e-23 #erg s-1 Hz-1 cm-2
-        # f_nu = 3.34e4*(wl_obs**2)*f_lam*Jy_nu
-
-        c=3e8*1e10
-        nu=c/lam
-        f_nu = ((wl_obs**2)/c)*f_lam
-        T_lam = self.NC_F115W
-        T_nu = T_lam * ((lam**2)/c)
-
-        f_got = np.sum(f_nu[:-1]*T_nu[:-1]*np.diff(nu))/np.sum(T_nu[:-1]*np.diff(nu))
-
-        print('got',f_got)
-
-        m_AB = -2.5*np.log10(f_got)-48.60
-        print("m_AB=",m_AB)
-
-        DL=self.luminosity_distance_Mpc
-        print("DL=",DL,"Mpc")
-        M_AB = m_AB - 5*(np.log10(DL*1e6)-1)
-        print("M_AB=",M_AB)
-
-        # Check in rest Frame
-        # wl_rest,spec_rest
-        lam=wl_rest
-        f_lam=spec_rest*3.846e33 #erg s-1 A-1
-
-        index=np.argmin(np.abs(wl_rest-1437))
-        print(index)
-        print(lam[index])
-        print(f_lam[index])
-        flux = np.mean(f_lam[index-5:index+5])
-        print(flux)
-        flux /= 4*np.pi*((10*(3.08e18))**2)
-
-        flux_nu = flux/(c/(1436**2)) 
-
-        m_AB_r = -2.5*np.log10(flux_nu)-48.60
-        print("M_AB_r=",m_AB_r)
-
-
-        # ------
-        # plt.plot(lam,f_lam,label="f_lam")
-        # plt.plot(nu,f_nu,label="f_nu")
-        # plt.plot(lam,self.NC_F200W)
-        # plt.plot(nu,self.NC_F200W)
-
-        # plt.xscale('log')
-        # plt.yscale('log')
-        # plt.legend()
-        #----------------------------------------------------------
-        # c=3e8*1e10  #in AA s-1
-        # Jy_nu = 1e-23 #erg s-1 Hz-1 cm-2
-        # # Jy_lam = (c/(20000**2))*3631*Jy_nu
-        # Jy_lam = (c/(19875**2))*3631*Jy_nu
-
-
-        # m_AB = -2.5*np.log10(sflux_F200W/(Jy_lam))
-        # print("m_AB_lam=",m_AB)
-
-    
-        # #----------------------------------------------------------
-        # f_lam = spec_obs
-        # lam = wl_obs
-
-        # e_lam = get_NIRCam_filter(lam,"F200W")
-        # lam_pivot = np.sqrt(np.sum(e_lam*lam*dlam)/np.sum((e_lam/lam)*dlam))
-        # print(lam_pivot)
-
-        # Jy = 1e-23
-        # f_nu = 3.34e4*(lam**2)*f_lam*Jy
-
-        # h = 6.64e-34
-        # c = 3e8*1e10
-        # nu = c/lam
-        # # dnu=np.abs(np.diff(nu))
-        # # E=h*nu
-        # # f_nu=f_nu[:-1]
-        # N = np.sum(f_nu * (e_lam*(dlam/lam))) # As elam
-        # D = 3631*Jy * np.sum(e_lam*(dlam/lam))   #\int e(nu) dnu/nu = \int e(lam) dlam/lam
-        # m_AB_nu=-2.5*np.log10(N/D)
-
-
-        # print("m_AB_nu",m_AB_nu)
-
-        # # Apparent to absolute
-        # # M = m - 5(log_10(DL)-1) - Kcorr    : DL = Luminosity distance
-        # M_AB = m_AB - 5*(np.log10(self.luminosity_distance_Mpc*1e6)-1)
-
-
-        # K-correction
-        # # M = m-DM-K
-        # print("M_AB=",M_AB,"without K-Correction")
-        # z = self.PIG.Header.Redshift()
-        # K = -2.5*np.log10(1+z)
-
-        # M_AB -= K
-        # print("M_AB=",M_AB,"with K-Correction")
+     
 
 
 
 
-
-
-
-
-
-
-        OUT = {
-            "PHOTO":{
-                "F070W" : (0.70e4,sflux_F070W),
-                "F090W" : (0.90e4,sflux_F090W),
-                "F115W" : (1.15e4,sflux_F115W),
-                "F150W" : (1.50e4,sflux_F150W),
-                "F200W" : (2.00e4,sflux_F200W),
-                "F277W" : (2.77e4,sflux_F277W),
-                "F356W" : (3.56e4,sflux_F356W),
-                "F444W" : (4.44e4,sflux_F444W),
-                "M_AB_F115W" : M_AB
-                },
-
-            "SPEC":{
-
-                }
-        }
-
-        return OUT
 
     
     def _get_spec_properties_observed_log(self,wl_rest,spec_rest):
@@ -857,14 +730,12 @@ class PIGSpectrophotometry:
         #-------------------------------------------------------
 
 
-        DUMP=False
+        DUMP=True
         if DUMP:
-            outfile_fp = open("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_L150N2040.csv",'w')
-            outfile_fp.write("#GID M_AB M_AB_MD\n")
+            outfile_fp = open(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_{self.PIG.sim_name}_z{str(np.round(self.PIG.Header.Redshift(),2)).replace('.','p')}.csv",'w')
 
-
-        for tgid in target_gids:
-            print(f"TGID = {tgid}")
+        for rownum,tgid in enumerate(target_gids):
+            print(f"TGID = {tgid} ({rownum+1}/{len(target_gids)})")
             target_mask = (self.all_stars_gid==tgid)
 
             target_stars_gid = self.all_stars_gid[target_mask]
@@ -925,9 +796,9 @@ class PIGSpectrophotometry:
             
             propout=self._get_spec_properties_observed(wl_rest,summed_spec)
             
-            print(f"\nLuminosity from MD : {LUV[tgid-1]:.02e} erg s-1 Hz-1 *")
-            print(f"Flux from MD : {fUV[tgid-1]:.02e}  erg s-1 cm-2 Hz-1 *")
-            print(f"AB Magnitude from MD : {M_AB[tgid-1]:.02f}")
+            # print(f"\nLuminosity from MD : {LUV[tgid-1]:.02e} erg s-1 Hz-1 *")
+            # print(f"Flux from MD : {fUV[tgid-1]:.02e}  erg s-1 cm-2 Hz-1 *")
+            # print(f"AB Magnitude from MD : {M_AB[tgid-1]:.02f}")
 
             # self.show_spectrum(wl_obs,spec_obs,
             #                    [
@@ -943,14 +814,16 @@ class PIGSpectrophotometry:
 
             # print(propout["PHOTO"]["M_AB_F115W"])
             # print("MD",M_AB[tgid-1])
+
             if DUMP:
-                np.savetxt(outfile_fp,
-                            np.column_stack([
-                                tgid,propout["PHOTO"]["M_AB_F115W"],
-                                M_AB[tgid-1]
-                                ]),
-                            fmt="%d %.4f %.4f")
+                if rownum==0:
+                    outfile_fp.write("# RF : REST FRAME\n# OF : OBSERVED FRAME\n# IRF : INFERED REST FRAME\n")
+                    outfile_fp.write("# TGID "+" ".join(propout.keys())+"\n")
+
+                rowval = [rownum+1,tgid] + [v for v in propout.values()]
+                fmt = "%d %d %.4e %.4e %.4e %.4f %.4e %.4e %.4e %.4e %.4e %.4e %.4e %.4e"
                 
+                np.savetxt(outfile_fp,np.column_stack(rowval),fmt=fmt)
                 outfile_fp.flush()
 
 

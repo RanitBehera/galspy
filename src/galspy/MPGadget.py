@@ -198,6 +198,8 @@ class _PART(_Folder):
         self._5         = self.BlackHole
 
         self.Header     = _PARTHeader(self.path)
+        self.sim_name = os.path.basename(os.path.abspath(self.path + "../../../"))
+        print("From PART",self.sim_name)
 
 class _FOFGroups(_NodeGroup):
     def __init__(self,path):
@@ -241,6 +243,9 @@ class _PIG(_Folder):
 
         self.Header     = _PIGHeader(self.path)
         self.FOFGroups  = _FOFGroups(os.path.join(self.path,"FOFGroups"))
+        self.sim_name = os.path.basename(os.path.abspath(self.path + "../../../"))
+
+
 
     def GetStarsSpecIndex(self):
         SEARCH_DIR = _PIG.CACHE_DIR

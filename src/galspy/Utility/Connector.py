@@ -1,7 +1,7 @@
 from typing import Literal
 from galspy.Utility.Visualization import Cube3D
 from galspy.Utility.MassFunction import MassFunction, MassFunctionLiterature, LMF_OPTIONS
-
+from galspy.Spectra.Utility import LuminosityFunction
 
 # The purpose of this class is to
 # easily access the existing functions in other areas of utility.
@@ -17,6 +17,7 @@ class _Utility:
     def MassFunctionLiterature(self,model_name:LMF_OPTIONS,cosmology:dict,redshift,mass_range,output:Literal["dn/dlnM","(M2/rho0)*(dn/dm)"]):
         return MassFunctionLiterature(model_name,cosmology,redshift,mass_range,output)
     
-    
+    def LumimosityFunction(self,MUVAB,VOLUME,LogBinStep):
+        return LuminosityFunction(MUVAB,VOLUME,LogBinStep)
 
 

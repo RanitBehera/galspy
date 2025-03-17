@@ -2,8 +2,10 @@ import galspy as gs
 import numpy as np
 import matplotlib.pyplot as plt
 
-root=gs.NavigationRoot(gs.NINJA.L150N2040)
-PIG=root.PIG(43)
+SIM=gs.NavigationRoot(gs.NINJA.L150N2040)
+
+SN = SIM.SnapNumFromRedshift(9)
+PIG=SIM.PIG(SN)
 
 
 sm = PIG.FOFGroups.MassByType().T[4]
@@ -14,7 +16,8 @@ spm=gs.PIGSpectrophotometry(PIG)
 
 # spm.get_light_dict(np.arange(1,100))
 # spm.get_light_dict([2])
-spm.get_light_dict(gids[0])
+# spm.get_light_dict([int(gids[0]),int(gids[1])])
+spm.get_light_dict(gids)
 
 
 

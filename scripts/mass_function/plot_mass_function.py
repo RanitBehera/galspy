@@ -31,7 +31,7 @@ for SIM,C in zip(SIMS,COLORS):
     mask = M>lower_limit 
     plt.plot(M[mask],dn_dlogM[mask],label=f"{SIM.sim_name}; z={z:.02f}")
     
-    # Dark Matter Mass Function
+    # Dark Stellar Mass Function
     fof_stellar_mass = PIG.FOFGroups.MassByType().T[4]*1e10
     M,dn_dlogM,error=gs.Utility.MassFunction(fof_stellar_mass,box_size)
     lower_limit = 32*PIG.Header.MassTable()[4]*1e10
