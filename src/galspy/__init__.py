@@ -1,5 +1,6 @@
 from galspy.MPGadget import NavigationRoot
 from galspy.Utility import Utility
+from galspy.Analysis import Plots
 from galspy.Spectra.SpectroPhotometry import PIGSpectrophotometry
 
 class NINJA:

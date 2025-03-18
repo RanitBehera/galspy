@@ -17,7 +17,7 @@ class _Utility:
     def MassFunctionLiterature(self,model_name:LMF_OPTIONS,cosmology:dict,redshift,mass_range,output:Literal["dn/dlnM","(M2/rho0)*(dn/dm)"]):
         return MassFunctionLiterature(model_name,cosmology,redshift,mass_range,output)
     
-    def LumimosityFunction(self,MUVAB,VOLUME,LogBinStep):
-        return LuminosityFunction(MUVAB,VOLUME,LogBinStep)
+    def LumimosityFunction(self,MUVAB,boxsize,LogBinStep):
+        return LuminosityFunction(MUVAB,boxsize**3,LogBinStep)
 
 
