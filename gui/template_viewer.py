@@ -10,9 +10,13 @@ from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
 TEMPLATES_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array" 
 TEMPLATES = [
     "stellar_chabrier300_bin.specs",
-    "nebular_in_chabrier300_bin.specs",
-    "nebular_out_chabrier300_bin.specs"
+    # "nebular_in_chabrier300_bin.specs",
+    # "nebular_out_chabrier300_bin.specs",
+    "stellar_chabrier100_bin.specs",
+    "stellar_salpeter100_bin.specs"
 ]
+
+# Check default_check variable below
 
 # ===== FILEPATHS
 TEMPLATES_FILEPATHS = [TEMPLATES_DIR + os.sep + tmp for tmp in TEMPLATES]
@@ -129,7 +133,7 @@ menubar.add_cascade(label="Age", menu=age_menu)
 
 
 # Set default checks
-default_files = ["nebular_in_chabrier300_bin.specs"]
+default_files = ["stellar_salpeter100_bin.specs"]
 default_metals = [0.00001]
 default_ages = [6.0]
 

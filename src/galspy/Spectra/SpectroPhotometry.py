@@ -732,7 +732,7 @@ class PIGSpectrophotometry:
 
         DUMP=True
         if DUMP:
-            outfile_fp = open(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_{self.PIG.sim_name}_z{str(np.round(self.PIG.Header.Redshift(),2)).replace('.','p')}_N8.csv",'w')
+            outfile_fp = open(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_{self.PIG.sim_name}_z{str(np.round(self.PIG.Header.Redshift(),2)).replace('.','p')}_stellar.csv",'w')
 
         for rownum,tgid in enumerate(target_gids):
             print(f"TGID = {tgid} ({rownum+1}/{len(target_gids)})")
@@ -786,9 +786,9 @@ class PIGSpectrophotometry:
 
 
             # SUMMED
-            wl_rest = specout["WAVELENGTH_WITH_NEBULAR"]
+            wl_rest = specout["WAVELENGTH_STELLAR"]
             summed_spec = np.zeros_like(wl_rest)
-            for i,spec in enumerate(specout["BLOBWISE_SPECTRA_WITH_NEBULAR"]):
+            for i,spec in enumerate(specout["BLOBWISE_SPECTRA_STELLAR"]):
                 # propout.append(self._get_spec_properties_obs(specout["WAVELENGTH_WITH_NEBULAR"]))
                 # if i==0:continue
                 summed_spec += spec

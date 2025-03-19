@@ -2,14 +2,14 @@ import galspy as gs
 import numpy as np
 import matplotlib.pyplot as plt
 
-SIM=gs.NavigationRoot(gs.NINJA.L150N2040)
+SIM=gs.NavigationRoot(gs.NINJA.L250N2040)
 
-SN = SIM.SnapNumFromRedshift(9)
+SN = SIM.SnapNumFromRedshift(7)
 PIG=SIM.PIG(SN)
 
 
 sm = PIG.FOFGroups.MassByType().T[4]
-mask = sm>8*PIG.Header.MassTable()[4]
+mask = sm>25*PIG.Header.MassTable()[4]
 gids = PIG.FOFGroups.GroupID()[mask]
 
 spm=gs.PIGSpectrophotometry(PIG)
