@@ -732,7 +732,7 @@ class PIGSpectrophotometry:
 
         DUMP=True
         if DUMP:
-            outfile_fp = open(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_{self.PIG.sim_name}_z{str(np.round(self.PIG.Header.Redshift(),2)).replace('.','p')}.csv",'w')
+            outfile_fp = open(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_{self.PIG.sim_name}_z{str(np.round(self.PIG.Header.Redshift(),2)).replace('.','p')}_N8.csv",'w')
 
         for rownum,tgid in enumerate(target_gids):
             print(f"TGID = {tgid} ({rownum+1}/{len(target_gids)})")

@@ -39,19 +39,28 @@ class _Plots:
 
 
         # ----- PLOT
-        fig,axs = plt.subplots(1,3)
+        fig,axs = plt.subplots(1,3,figsize=(15,5))
+        HEXBIN = False
 
-        # plt.plot(gas_mass[mask]*MASS_UNIT,gas_metal_mass[mask]*MASS_UNIT,'.',ms=2)
         ax0:plt.Axes=axs[0]
-        ax0.hexbin(gas_mass[mask]*MASS_UNIT,gas_metal_mass[mask]*MASS_UNIT,
-                   gridsize=30,cmap="Oranges",xscale='log',yscale='log',bins='log')
+        if not HEXBIN:
+            ax0.plot(gas_mass[mask]*MASS_UNIT,gas_metal_mass[mask]*MASS_UNIT,'.',ms=2)
+        else:
+            ax0.hexbin(gas_mass[mask]*MASS_UNIT,gas_metal_mass[mask]*MASS_UNIT,
+                    gridsize=30,cmap="Oranges",xscale='log',yscale='log',bins='log')
         
         ax1:plt.Axes=axs[1]
-        ax1.hexbin(stellar_mass[mask]*MASS_UNIT,gas_metal_mass[mask]*MASS_UNIT,
-                   gridsize=30,cmap="Oranges",xscale='log',yscale='log',bins='log')
+        if not HEXBIN:
+            ax1.plot(stellar_mass[mask]*MASS_UNIT,gas_metal_mass[mask]*MASS_UNIT,'.',ms=2)
+        else:
+            ax1.hexbin(stellar_mass[mask]*MASS_UNIT,gas_metal_mass[mask]*MASS_UNIT,
+                    gridsize=30,cmap="Oranges",xscale='log',yscale='log',bins='log')
 
         ax2:plt.Axes=axs[2]
-        ax2.hexbin(stellar_mass[mask]*MASS_UNIT,stellar_metal_mass[mask]*MASS_UNIT,
+        if not HEXBIN:
+            ax2.plot(stellar_mass[mask]*MASS_UNIT,stellar_metal_mass[mask]*MASS_UNIT,'.',ms=2)
+        else:
+            ax2.hexbin(stellar_mass[mask]*MASS_UNIT,stellar_metal_mass[mask]*MASS_UNIT,
                    gridsize=30,cmap="Oranges",xscale='log',yscale='log',bins='log')
         
         # ----- BEUTIFICATION
@@ -75,7 +84,8 @@ class _Plots:
                      (0,1),(8,-8),"axes fraction","offset pixels",va="top",ha="left",fontsize=14)
 
         plt.subplots_adjust(bottom=0.15,left=0.15,right=0.85)
-        plt.show()
+        # plt.show()
+        plt.savefig("/mnt/home/student/cranit/RANIT/Repo/galspy/temp/Mar19/met_scatter_at_z12.png",dpi=400)
 
     def main_sequence_plot(self):
         pass

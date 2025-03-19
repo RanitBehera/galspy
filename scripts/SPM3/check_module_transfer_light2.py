@@ -9,7 +9,7 @@ PIG=SIM.PIG(SN)
 
 
 sm = PIG.FOFGroups.MassByType().T[4]
-mask = sm>50*PIG.Header.MassTable()[4]
+mask = sm>8*PIG.Header.MassTable()[4]
 gids = PIG.FOFGroups.GroupID()[mask]
 
 spm=gs.PIGSpectrophotometry(PIG)
