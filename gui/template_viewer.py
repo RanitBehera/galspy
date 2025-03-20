@@ -22,8 +22,14 @@ TEMPLATES = [
 TEMPLATES_FILEPATHS = [TEMPLATES_DIR + os.sep + tmp for tmp in TEMPLATES]
 
 # ===== HELPER FUNCTIONS
+def blank_callback_mpl(event):
+    return
+
 def tkinter_show_info(msg:str,title:str="Info"):
     messagebox.showinfo(title, msg)
+
+
+
 
 
 
@@ -130,6 +136,68 @@ for T in AGES:
     )
     if int(10*T)%10==9:age_menu.add_separator()
 menubar.add_cascade(label="Age", menu=age_menu)
+
+# Utility
+# Utility State Variables
+TK_SHOW_FILENAME_ON_HOVER=tk.BooleanVar()
+
+def on_move(event):
+    ax=plt.gca()
+    if not event.inaxes == ax:return
+    x_min, x_max = numpy.array(ax.get_xlim())
+    y_min, y_max = numpy.array(ax.get_ylim())
+
+    if plt.gca().get_xscale()=="log":
+        x_min,x_max=numpy.log10(x_min),numpy.log10(x_max)
+    if plt.gca().get_yscale()=="log":
+        y_min,y_max=numpy.log10(y_min),numpy.log10(y_max)
+
+    x_span = x_max - x_min
+    y_span = y_max - y_min
+    
+
+    # mouse position
+    mouse_x = (event.xdata-x_min)/x_span
+    mouse_y = (event.ydata-y_min)/y_span
+
+    inax_lines = plt.gca().get_lines()
+
+    slice_points = []
+    for line in inax_lines:
+        # normalised
+        xdata = (numpy.log10(line.get_xdata())-x_min)/x_span
+        ydata = (numpy.log10(line.get_ydata())-y_min)/y_span
+
+        closest_x_index = numpy.argmin(numpy.abs(xdata-mouse_x))
+        cxi = closest_x_index
+        slice_points.append((xdata[cxi],ydata[cxi])) 
+
+    ngb_dist=[]
+    for x,y in slice_points:
+        dist = (((x-mouse_x)/x_span)**2 + ((y-mouse_y)/y_span))**0.5
+        ngb_dist.append(dist)
+
+    min_dist_line_index = numpy.argmin(ngb_dist)
+    print(ngb_dist[min_dist_line_index])
+
+
+
+_listener_obj = None
+def toggle_view_filename_on_hover():
+    global _listener_obj
+    if TK_SHOW_FILENAME_ON_HOVER.get():
+        _listener_obj = fig.canvas.mpl_connect('motion_notify_event', on_move)
+    else:
+        fig.canvas.mpl_disconnect(_listener_obj)
+
+
+
+
+
+view_menu = tk.Menu(menubar,tearoff=0)
+view_menu.add_checkbutton(label="Filename on Hover",variable=TK_SHOW_FILENAME_ON_HOVER,onvalue=True,offvalue=False,command=toggle_view_filename_on_hover)
+
+menubar.add_cascade(label="View", menu=view_menu)
 
 
 # Set default checks

@@ -112,14 +112,15 @@ class Templates:
                 spec_list[spec_index]=aged_flux[T_index]
 
                 print(f"\r{spec_index}","/",len(Z_foots)*len(T_foots),end="")
-
+        
+        print("\r")
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath,"wb") as fp: pickle.dump(spec_list,fp)
 
 
     def GetStellarTemplates(self,imf:BPASS.AVAIL_MODEL_HINT,system:Literal["Single","Binary"]):
         filename = self._get_filename(imf,system,"stellar")     #< This will use BPASS
-        filename = self._get_filename(imf,system,"nebular_in")     #< This will use Cloudy out   - Automate them
+        # filename = self._get_filename(imf,system,"nebular_in")     #< This will use Cloudy out, use it only after running cloudy   - Automate them
         filepath = Templates.CACHE_DIR + os.sep + filename
 
         if not os.path.exists(filepath):

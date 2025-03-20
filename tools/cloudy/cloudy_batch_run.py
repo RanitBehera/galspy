@@ -4,13 +4,14 @@ import time
 import os
 import pickle
 import shutil
+from concurrent.futures import ThreadPoolExecutor
 
 # Temporary directory where cloudy will dump data
 # before this scripts gathers spectrum to dictionary
 TEMPDIR="/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/cloudy_cache_temp"
 
 
-STELLAR_FILE = "/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/stellar_chabrier300_bin.specs"
+STELLAR_FILE = "/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/stellar_kroupa300bh_bin.specs"
 
 
 
@@ -94,8 +95,8 @@ def _CreateNebularCache(stellar_filepath:str):
     print("Done")
 
     print("Running Batch Cloudy ... ")
-    # with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
-    #     executor.map(RunCloudyInstance, range(len(stellar_specs)))
+    with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+        executor.map(RunCloudyInstance, range(len(stellar_specs)))
 
     print("Gathering output spectras ... ")
     inspec_list = []
@@ -125,7 +126,7 @@ def _CreateNebularCache(stellar_filepath:str):
     outspec_list[1:,:]=outspec_list[1:,:]/LSOL
     print("Done")
 
-    print("Rversing Wavelength Order ... ",end="")
+    print("Reversing Wavelength Order ... ",end="")
     inspec_list=inspec_list[:,::-1]
     outspec_list=outspec_list[:,::-1]
     print("Done")
