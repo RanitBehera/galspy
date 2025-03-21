@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 TEMPDIR="/mnt/home/student/cranit/RANIT/Repo/galspy/study/cloudy/cloudy_cache_temp"
 
 
-STELLAR_FILE = "/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/stellar_kroupa300bh_bin.specs"
+STELLAR_FILE = "/mnt/home/student/cranit/RANIT/Repo/galspy/cache/spectra/array/stellar_salpeter100_bin.specs"
 
 
 
