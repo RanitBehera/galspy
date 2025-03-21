@@ -17,6 +17,9 @@ class _Plots:
         matplotlib.rc('font', **font)
         matplotlib.rc('text', usetex=True)
 
+        # colors = ['magenta','deepskyblue','cyan','limegreen','goldenrod','tomato','firebrick']
+        # matplotlib.rc('axes', prop_cycle=matplotlib.cycler(color=colors))
+
     def mass_metallicity_scatter(self):
         _Plots.SetStyle(14)
 

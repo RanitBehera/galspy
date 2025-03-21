@@ -1,0 +1,25 @@
+
+from galspy.Spectra.Templates import Templates
+tp = Templates()
+
+print("Binary")
+tp.GetStellarTemplates("CHABRIER_UPTO_100M","Binary")
+tp.GetStellarTemplates("CHABRIER_UPTO_300M","Binary")
+tp.GetStellarTemplates("KROUPA_UPTO_100M","Binary")
+tp.GetStellarTemplates("KROUPA_UPTO_100M_BOTTOM_HEAVY","Binary")
+tp.GetStellarTemplates("KROUPA_UPTO_100M_TOP_HEAVY","Binary")
+tp.GetStellarTemplates("KROUPA_UPTO_300M","Binary")
+tp.GetStellarTemplates("KROUPA_UPTO_300M_BOTTOM_HEAVY","Binary")
+tp.GetStellarTemplates("KROUPA_UPTO_300M_TOP_HEAVY","Binary")
+tp.GetStellarTemplates("SALPETER_UPTO_100M","Binary")
+
+print("Single")
+tp.GetStellarTemplates("CHABRIER_UPTO_100M","Single")
+tp.GetStellarTemplates("CHABRIER_UPTO_300M","Single")
+tp.GetStellarTemplates("KROUPA_UPTO_100M","Single")
+tp.GetStellarTemplates("KROUPA_UPTO_100M_BOTTOM_HEAVY","Single")
+tp.GetStellarTemplates("KROUPA_UPTO_100M_TOP_HEAVY","Single")
+tp.GetStellarTemplates("KROUPA_UPTO_300M","Single")
+tp.GetStellarTemplates("KROUPA_UPTO_300M_BOTTOM_HEAVY","Single")
+tp.GetStellarTemplates("KROUPA_UPTO_300M_TOP_HEAVY","Single")
+tp.GetStellarTemplates("SALPETER_UPTO_100M","Single")
