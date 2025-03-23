@@ -137,11 +137,13 @@ def DoforFile(filepath,label,boxsize_MPC):
 
 
 
-DoforFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_L150N2040_z7p0.csv","L150N2040 (ST+NB)",150)
-DoforFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_L150N2040_z7p0_stellar.csv","L150N2040 (ST)",150)
+DoforFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data_old/out_L150N2040_z7p0.csv","L150N2040 (ST+NB)",150)
+DoforFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data_old/out_L150N2040_z7p0_stellar.csv","L150N2040 (ST)",150)
 # DoforFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_L250N2040_z7p0_stellar.csv","L250N2040 (ST)",250)
 
 
+plt.xlabel("MUV")
+plt.xlabel("Phi")
 
 plt.legend()
 plt.show()

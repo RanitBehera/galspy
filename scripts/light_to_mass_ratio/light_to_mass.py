@@ -1,22 +1,38 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import galspy as gs
-import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+from typing import Literal
+
+# Initialise Figure
+gs.SetPlotStyle()
+fig = plt.figure(figsize=(12,8))
+gsp = GridSpec(2,2,figure=fig)
+ax00 = fig.add_subplot(gsp[0,0])
+ax01 = fig.add_subplot(gsp[0,1])
+ax10 = fig.add_subplot(gsp[1,0])
+ax11 = fig.add_subplot(gsp[1,1])
 
 
 
 
-# REDSHIFT = 7.0
 SIM = gs.NavigationRoot(gs.NINJA.L150N2040)
+SIM250 = gs.NavigationRoot(gs.NINJA.L250N2040)
+SIM150WW = gs.NavigationRoot(gs.NINJA.L150N2040_WIND_WEAK)
 
-def ForRedshift(REDSHIFT):
+
+
+
+
+
+def ForRedshift(BOX,REDSHIFT,Ax):
     red_to_name = {
         7:"z7p0",
         8:"z8p0",
         9:"z9p0",
     }
 
-
-    table = np.loadtxt(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data_old/out_L150N2040_{red_to_name[REDSHIFT]}.csv",
+    table = np.loadtxt(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_L150N2040_{red_to_name[REDSHIFT]}.csv",
                     usecols=(1,2))
 
     tgid,rf_L_lam_UV = table.T
@@ -50,30 +66,3 @@ def ForRedshift(REDSHIFT):
 
     plt.axvline(x_median,color='k',ls='--')
     plt.axhline(y_median,color='k',ls='--')
-
-
-plt.gca().set_xscale("log")
-plt.gca().set_yscale("log")
-    
-    # plt.xlim(1e8,1e13)
-    # plt.ylim(1e28,1e33)
-    
-plt.xlabel("DM Mass $(M_\odot/h)$")
-plt.ylabel("$L_{\lambda=1500}^{rest}$/DM Mass")
-plt.title("L150N2040")
-plt.legend()
-plt.axis("equal")
-# plt.colorbar()
-
-# plt.figure()
-ForRedshift(7)
-# plt.figure()
-ForRedshift(8)
-# plt.figure()
-ForRedshift(9)
-
-plt.legend()
-
-plt.show()
-
-

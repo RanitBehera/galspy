@@ -5,7 +5,7 @@ from typing import Literal
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import cv2 as cv
-from typing import List
+from typing import List,Literal
 import pickle
 from galspy.Utility.Visualization import Cube3D
 from galspy.MPGadget import _PIG
@@ -13,6 +13,9 @@ from galspy.Spectra import SpectralTemplates
 from astropy.cosmology import FlatLambdaCDM
 from galspy.Spectra.jwst import get_NIRCam_filter
 from galspy.Spectra.jwst import _AVAIL_JWST_FILTERS_HINT
+from galspy.Spectra.Templates import Templates
+from galspy.Spectra.Templates import BPASS
+
 
 
 
@@ -269,19 +272,27 @@ class PIGSpectrophotometry:
         self.all_star_ids = PIG.Star.ID()
 
         self._specs_template_index = PIG.GetStarsSpecIndex()
-
-        if PIGSpectrophotometry._template_specs_stellar is None:
-            PIGSpectrophotometry._template_specs_stellar = SpectralTemplates.GetStellarTemplates("CHABRIER_UPTO_300M","Binary")
-
-        if PIGSpectrophotometry._template_specs_with_nebular is None:
-            _template_specs_nebular = SpectralTemplates.GetNebularTemplates("CHABRIER_UPTO_300M","Binary")
-            PIGSpectrophotometry._template_specs_with_nebular = PIGSpectrophotometry._template_specs_stellar + _template_specs_nebular
-            PIGSpectrophotometry._template_specs_with_nebular[0] = _template_specs_nebular[0]
+        
+        self.LoadSpectrums("CHABRIER_UPTO_300M","Binary")
 
         self.luminosity_distance_Mpc = None     # Will get assigned in _get_observer_frame_dilution_factor
         self.pixel_resolution = self._get_pixel_resolution()
         self.observer_dilution = self._get_observer_frame_dilution_factor()
 
+
+
+    def LoadSpectrums(self,imf:BPASS.AVAIL_MODEL_HINT,system:Literal["Single","Binary"]):
+        tp=Templates()
+        self.fnsuffix = tp._get_filename(imf,system).removesuffix(".specs").removeprefix("_")
+
+
+        if PIGSpectrophotometry._template_specs_stellar is None:
+            PIGSpectrophotometry._template_specs_stellar = SpectralTemplates.GetStellarTemplates(imf,system)
+
+        if PIGSpectrophotometry._template_specs_with_nebular is None:
+            _template_specs_nebular = SpectralTemplates.GetNebularTemplates(imf,system)
+            PIGSpectrophotometry._template_specs_with_nebular = PIGSpectrophotometry._template_specs_stellar + _template_specs_nebular
+            PIGSpectrophotometry._template_specs_with_nebular[0] = _template_specs_nebular[0]
 
 
     def _get_pixel_resolution(self):
@@ -731,8 +742,10 @@ class PIGSpectrophotometry:
 
 
         DUMP=True
+        DUMP_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data"
         if DUMP:
-            outfile_fp = open(f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_{self.PIG.sim_name}_z{str(np.round(self.PIG.Header.Redshift(),2)).replace('.','p')}_stellar.csv",'w')
+            outfile_st = open(f"{DUMP_DIR}/out_{self.PIG.sim_name}_z{str(np.round(self.PIG.Header.Redshift(),2)).replace('.','p')}_st_{self.fnsuffix}.csv",'w')
+            outfile_stnb = open(f"{DUMP_DIR}/out_{self.PIG.sim_name}_z{str(np.round(self.PIG.Header.Redshift(),2)).replace('.','p')}_stnb_{self.fnsuffix}.csv",'w')
 
         for rownum,tgid in enumerate(target_gids):
             print(f"TGID = {tgid} ({rownum+1}/{len(target_gids)})")
@@ -786,48 +799,78 @@ class PIGSpectrophotometry:
 
 
             # SUMMED
-            wl_rest = specout["WAVELENGTH_STELLAR"]
-            summed_spec = np.zeros_like(wl_rest)
-            for i,spec in enumerate(specout["BLOBWISE_SPECTRA_STELLAR"]):
-                # propout.append(self._get_spec_properties_obs(specout["WAVELENGTH_WITH_NEBULAR"]))
-                # if i==0:continue
-                summed_spec += spec
+            wl_rest_st = specout["WAVELENGTH_STELLAR"]
+            wl_rest_stnb = specout["WAVELENGTH_WITH_NEBULAR"]
+            summed_spec_st = np.zeros_like(wl_rest_st)
+            summed_spec_stnb = np.zeros_like(wl_rest_stnb)
+            for spec_st,spec_stnb in zip(specout["BLOBWISE_SPECTRA_STELLAR"],specout["BLOBWISE_SPECTRA_WITH_NEBULAR"]):
+                summed_spec_st += spec_st
+                summed_spec_stnb += spec_stnb
             
             
-            propout=self._get_spec_properties_observed(wl_rest,summed_spec)
+            propout_st = self._get_spec_properties_observed(wl_rest_st,summed_spec_st)
+            propout_stnb = self._get_spec_properties_observed(wl_rest_stnb,summed_spec_stnb)
             
-            # print(f"\nLuminosity from MD : {LUV[tgid-1]:.02e} erg s-1 Hz-1 *")
-            # print(f"Flux from MD : {fUV[tgid-1]:.02e}  erg s-1 cm-2 Hz-1 *")
-            # print(f"AB Magnitude from MD : {M_AB[tgid-1]:.02f}")
-
-            # self.show_spectrum(wl_obs,spec_obs,
-            #                    [
-            #                        propout["PHOTO"]["F070W"],
-            #                        propout["PHOTO"]["F090W"],
-            #                        propout["PHOTO"]["F115W"],
-            #                        propout["PHOTO"]["F150W"],
-            #                        propout["PHOTO"]["F200W"],
-            #                        propout["PHOTO"]["F277W"],
-            #                        propout["PHOTO"]["F356W"],
-            #                        propout["PHOTO"]["F444W"]
-            #                     ])
-
-            # print(propout["PHOTO"]["M_AB_F115W"])
-            # print("MD",M_AB[tgid-1])
 
             if DUMP:
                 if rownum==0:
-                    outfile_fp.write("# RF : REST FRAME\n# OF : OBSERVED FRAME\n# IRF : INFERED REST FRAME\n")
-                    outfile_fp.write("# TGID "+" ".join(propout.keys())+"\n")
+                    outfile_st.write("# RF : REST FRAME\n# OF : OBSERVED FRAME\n# IRF : INFERED REST FRAME\n")
+                    outfile_st.write("# TGID "+" ".join(propout_st.keys())+"\n")
+                    outfile_stnb.write("# RF : REST FRAME\n# OF : OBSERVED FRAME\n# IRF : INFERED REST FRAME\n")
+                    outfile_stnb.write("# TGID "+" ".join(propout_stnb.keys())+"\n")
 
-                rowval = [rownum+1,tgid] + [v for v in propout.values()]
                 fmt = "%d %d %.4e %.4e %.4e %.4f %.4e %.4e %.4e %.4e %.4e %.4e %.4e %.4e"
-                
-                np.savetxt(outfile_fp,np.column_stack(rowval),fmt=fmt)
-                outfile_fp.flush()
+                rowval_st = [rownum+1,tgid] + [v for v in propout_st.values()]
+                np.savetxt(outfile_st,np.column_stack(rowval_st),fmt=fmt)
+                rowval_stnb = [rownum+1,tgid] + [v for v in propout_stnb.values()]
+                np.savetxt(outfile_stnb,np.column_stack(rowval_stnb),fmt=fmt)
 
-
+                outfile_st.flush()
+                outfile_stnb.flush()
 
 
         if DUMP:
-            outfile_fp.close()
+            outfile_st.close()
+            outfile_stnb.close()
+
+
+
+
+
+
+    # self.show_spectrum(wl_obs,spec_obs,
+    #                    [
+    #                        propout["PHOTO"]["F070W"],
+    #                        propout["PHOTO"]["F090W"],
+    #                        propout["PHOTO"]["F115W"],
+    #                        propout["PHOTO"]["F150W"],
+    #                        propout["PHOTO"]["F200W"],
+    #                        propout["PHOTO"]["F277W"],
+    #                        propout["PHOTO"]["F356W"],
+    #                        propout["PHOTO"]["F444W"]
+    #                     ])
+
+    # print(propout["PHOTO"]["M_AB_F115W"])
+    # print("MD",M_AB[tgid-1])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
