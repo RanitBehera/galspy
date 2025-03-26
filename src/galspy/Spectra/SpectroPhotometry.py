@@ -15,7 +15,8 @@ from galspy.Spectra.jwst import get_NIRCam_filter
 from galspy.Spectra.jwst import _AVAIL_JWST_FILTERS_HINT
 from galspy.Spectra.Templates import Templates
 from galspy.Spectra.Templates import BPASS
-
+from galspy.Spectra.Dust import DustExtinction
+import galspy as gs
 
 
 
@@ -272,7 +273,8 @@ class PIGSpectrophotometry:
         self.all_star_ids = PIG.Star.ID()
 
         self._specs_template_index = PIG.GetStarsSpecIndex()
-        
+        self._filter_wl = np.array([0])
+
         self.LoadSpectrums("CHABRIER_UPTO_300M","Binary")
 
         self.luminosity_distance_Mpc = None     # Will get assigned in _get_observer_frame_dilution_factor
@@ -431,29 +433,33 @@ class PIGSpectrophotometry:
 
 
 
-    def _load_filter(self,wl):
-       if getattr(self,"NC_F070W",None) is None: 
+    def _load_filter(self,wl,reload_filter=False):
+       if not np.array_equal(wl,self._filter_wl):
+           reload_filter=True
+           
+       self._filter_wl=wl
+       if getattr(self,"NC_F070W",None) is None or reload_filter: 
             self.NC_F070W = get_NIRCam_filter(wl,"F070W")
 
-       if getattr(self,"NC_F090W",None) is None: 
+       if getattr(self,"NC_F090W",None) is None or reload_filter: 
             self.NC_F090W = get_NIRCam_filter(wl,"F090W")
 
-       if getattr(self,"NC_F115W",None) is None: 
+       if getattr(self,"NC_F115W",None) is None or reload_filter: 
             self.NC_F115W = get_NIRCam_filter(wl,"F115W")
 
-       if getattr(self,"NC_F150W",None) is None: 
+       if getattr(self,"NC_F150W",None) is None or reload_filter: 
             self.NC_F150W = get_NIRCam_filter(wl,"F150W")
        
-       if getattr(self,"NC_F200W",None) is None: 
+       if getattr(self,"NC_F200W",None) is None or reload_filter: 
             self.NC_F200W = get_NIRCam_filter(wl,"F200W")
 
-       if getattr(self,"NC_F270W",None) is None: 
+       if getattr(self,"NC_F270W",None) is None or reload_filter: 
             self.NC_F277W = get_NIRCam_filter(wl,"F277W")
 
-       if getattr(self,"NC_F356W",None) is None: 
+       if getattr(self,"NC_F356W",None) is None or reload_filter: 
             self.NC_F356W = get_NIRCam_filter(wl,"F356W")
 
-       if getattr(self,"NC_F444W",None) is None: 
+       if getattr(self,"NC_F444W",None) is None or reload_filter: 
             self.NC_F444W = get_NIRCam_filter(wl,"F444W")
 
 
@@ -490,6 +496,9 @@ class PIGSpectrophotometry:
         OUTDICT["RF_F_NU_UV"]=rf_f_nu_UV
         OUTDICT["RF_MAB_UV"]=rf_MAB_UV
 
+        # UB Slope
+        X,Y,beta = gs.Utility.UltravioletSlope(lam_rest,L_lam_rest,1400,2600,lam_uv)
+        OUTDICT["RF_UV_BETA"]=beta
 
         # ===== OBSERVED FRAME PROPERTIES
         lam_obs,f_lam_obs = self._transfer_to_observer_frame(lam_rest,L_lam_rest)
@@ -715,7 +724,7 @@ class PIGSpectrophotometry:
 
 
 
-    def get_light_dict(self,target_gids):
+    def get_light_dict(self,target_gids,dump_dir):
         if isinstance(target_gids, int) and target_gids > 0:
             target_gids=[target_gids]
         if isinstance(target_gids, np.uint32) and target_gids > 0:
@@ -740,12 +749,16 @@ class PIGSpectrophotometry:
         M_AB = mAB #as distance was 10pc
         #-------------------------------------------------------
 
+        
+        REDDEN = True
 
         DUMP=True
-        DUMP_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data"
+        DUMP_DIR = dump_dir
         if DUMP:
             outfile_st = open(f"{DUMP_DIR}/out_{self.PIG.sim_name}_z{str(np.round(self.PIG.Header.Redshift(),2)).replace('.','p')}_st_{self.fnsuffix}.csv",'w')
             outfile_stnb = open(f"{DUMP_DIR}/out_{self.PIG.sim_name}_z{str(np.round(self.PIG.Header.Redshift(),2)).replace('.','p')}_stnb_{self.fnsuffix}.csv",'w')
+            if REDDEN:
+                outfile_stnbde = open(f"{DUMP_DIR}/out_{self.PIG.sim_name}_z{str(np.round(self.PIG.Header.Redshift(),2)).replace('.','p')}_stnbde_{self.fnsuffix}.csv",'w')
 
         for rownum,tgid in enumerate(target_gids):
             print(f"TGID = {tgid} ({rownum+1}/{len(target_gids)})")
@@ -807,9 +820,23 @@ class PIGSpectrophotometry:
                 summed_spec_st += spec_st
                 summed_spec_stnb += spec_stnb
             
+            # Reddened
+            if REDDEN:
+                de = DustExtinction()
+                mask = (wl_rest_stnb>10)&(wl_rest_stnb<300000)
+                wl_rest_stnbde,summed_spec_stnbde=de.get_reddened_spectrum(wl_rest_stnb[mask],summed_spec_stnb[mask],"Calzetti",0.5)
+
+            # plt.plot(wl_rest_stnb,summed_spec_stnb)
+            # plt.plot(wl_rest_stnbde,summed_spec_stnbde)
+            # plt.xscale("log")
+            # plt.yscale("log")
+            # plt.show()
+            # exit()
             
             propout_st = self._get_spec_properties_observed(wl_rest_st,summed_spec_st)
             propout_stnb = self._get_spec_properties_observed(wl_rest_stnb,summed_spec_stnb)
+            if REDDEN:
+                propout_stnbde = self._get_spec_properties_observed(wl_rest_stnbde,summed_spec_stnbde)
             
 
             if DUMP:
@@ -818,20 +845,31 @@ class PIGSpectrophotometry:
                     outfile_st.write("# TGID "+" ".join(propout_st.keys())+"\n")
                     outfile_stnb.write("# RF : REST FRAME\n# OF : OBSERVED FRAME\n# IRF : INFERED REST FRAME\n")
                     outfile_stnb.write("# TGID "+" ".join(propout_stnb.keys())+"\n")
+                    if REDDEN:
+                        outfile_stnbde.write("# RF : REST FRAME\n# OF : OBSERVED FRAME\n# IRF : INFERED REST FRAME\n")
+                        outfile_stnbde.write("# TGID "+" ".join(propout_stnbde.keys())+"\n")
 
-                fmt = "%d %d %.4e %.4e %.4e %.4f %.4e %.4e %.4e %.4e %.4e %.4e %.4e %.4e"
+                fmt = "%d %d %.4e %.4e %.4e %.4f %.4f %.4e %.4e %.4e %.4e %.4e %.4e %.4e %.4e"
+
                 rowval_st = [rownum+1,tgid] + [v for v in propout_st.values()]
                 np.savetxt(outfile_st,np.column_stack(rowval_st),fmt=fmt)
                 rowval_stnb = [rownum+1,tgid] + [v for v in propout_stnb.values()]
                 np.savetxt(outfile_stnb,np.column_stack(rowval_stnb),fmt=fmt)
+                if REDDEN:
+                    rowval_stnbde = [rownum+1,tgid] + [v for v in propout_stnbde.values()]
+                    np.savetxt(outfile_stnbde,np.column_stack(rowval_stnbde),fmt=fmt)
 
                 outfile_st.flush()
                 outfile_stnb.flush()
+                if REDDEN:
+                    outfile_stnbde.flush()
 
 
         if DUMP:
             outfile_st.close()
             outfile_stnb.close()
+            if REDDEN:
+                outfile_stnbde.close()
 
 
 

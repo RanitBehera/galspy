@@ -45,6 +45,10 @@ def ContinnumFinder(X,Y,Xs:float,Xe:float,N:int=10,mask:callable=None):
 
 
 def SlopeFinder(ang,flam,ang_start,ang_end,ang_repr,guess):
+    mask = flam>0
+    ang=ang[mask]
+    flam=flam[mask]
+
     log_ang = numpy.log10(ang)
     log_flam = numpy.log10(flam)
     log_ang_start,log_ang_end,log_ang_repr = numpy.log10(numpy.row_stack((ang_start,ang_end,ang_repr)))
@@ -65,72 +69,11 @@ def SlopeFinder(ang,flam,ang_start,ang_end,ang_repr,guess):
     return SX,SY,beta
 
 
-def BandFluxFinder(ang,flam,ang_repr,ang_range):
-    mask1 = (ang>=ang_repr-ang_range)
-    mask2 = (ang<=ang_repr+ang_range)
-    mask = mask1 & mask2
 
-    band_ang = ang[mask]
-    band_flam = flam[mask]
-
-    sort = numpy.argsort(band_ang)
-    band_lam = band_ang[sort]
-    band_flam = band_flam[sort]
-
-
-    dlam = numpy.diff(band_lam)
-    avg_flux = numpy.sum(band_flam[:-1] * dlam)/(band_lam[-1]-band_lam[0])
-
-    return avg_flux
-
-def TwoBandSlopeFinder(ang,flam,lam1,lam2,range1,range2):
-    # Make sure lam1<lam2
-    if lam1>lam2:
-        lam1,lam2 = lam2,lam1
-        range1,range2 = range2,range1
-    
-    flx1 = BandFluxFinder(ang,flam,lam1,range1)
-    flx2 = BandFluxFinder(ang,flam,lam2,range2)
-
-    log10_flux_ratio = numpy.log10(flx1/flx2)
-    log10_lam_ratio = numpy.log10(lam1/lam2)
-
-    return log10_flux_ratio/log10_lam_ratio
-
-
-def LuminosityToABMagnitude(lum_erg_s_A,lam_repr):
-    area = 4 * numpy.pi * (10 * 3.086e18)**2
-    lam = 1400 #UV
-    f_lam = lum_erg_s_A/area
-    f_nu_Jy = (3.34e4*(lam_repr)**2)*f_lam
-
-    M_AB = -2.5*numpy.log10(f_nu_Jy/3631)
-    return M_AB
-
-
-
-
-def LuminosityFunction(MUVAB,VOLUME,LogBinStep):
-    # MUVAB=numpy.nan_to_num(MUVAB)
-    MUVAB = MUVAB[MUVAB!=0.0]
-    MUVAB = MUVAB[MUVAB!=numpy.inf]
-    
-    # log10_Mass=numpy.log10(MUVAB)
-    # Will exponent on e in front-end to get back mass, So no confilict with log10
-    log_MUVAB=MUVAB
-
-    log_bin_start=numpy.floor(min(log_MUVAB))
-    log_bin_end=numpy.ceil(max(log_MUVAB))
-
-
-    BinCount=numpy.zeros(int((log_bin_end-log_bin_start)/LogBinStep))
-
-    for lm in log_MUVAB:
-        i=int((lm-log_bin_start)/LogBinStep)
-        BinCount[i]+=1
-
-    log_L=numpy.arange(log_bin_start,log_bin_end,LogBinStep)+(LogBinStep/2)
-    dn_dlogL=BinCount/(VOLUME*LogBinStep)
-    error=numpy.sqrt(BinCount)/(VOLUME*LogBinStep)
-
-    return log_L,dn_dlogL,error
+def LuminosityFunction(MAB,VOLUME,bins):
+    bin_count,bin_edges = numpy.histogram(MAB,bins=bins)
+    bin_center = (bin_edges[1:]+bin_edges[:-1])/2
+    bin_span = numpy.diff(bin_edges)
+    bin_phi = bin_count / (bin_span * VOLUME)
+    error=numpy.sqrt(bin_count) / (bin_span * VOLUME)
+    return bin_center,bin_phi,error

@@ -26,14 +26,14 @@ for SIM,C in zip(SIMS,COLORS):
 
     # Dark Matter Mass Function
     fof_dm_mass = PIG.FOFGroups.MassByType().T[1]*1e10
-    M,dn_dlogM,error=gs.Utility.MassFunction(fof_dm_mass,box_size)
+    M,dn_dlogM,error=gs.Utility.MassFunction(fof_dm_mass,box_size,20)
     lower_limit = 32*PIG.Header.MassTable()[1]*1e10
     mask = M>lower_limit 
     plt.plot(M[mask],dn_dlogM[mask],label=f"{SIM.sim_name}; z={z:.02f}")
     
     # Dark Stellar Mass Function
     fof_stellar_mass = PIG.FOFGroups.MassByType().T[4]*1e10
-    M,dn_dlogM,error=gs.Utility.MassFunction(fof_stellar_mass,box_size)
+    M,dn_dlogM,error=gs.Utility.MassFunction(fof_stellar_mass,box_size,20)
     lower_limit = 32*PIG.Header.MassTable()[4]*1e10
     mask = M>lower_limit 
     plt.plot(M[mask],dn_dlogM[mask],label=f"{SIM.sim_name}; z={z:.02f}",marker='*')

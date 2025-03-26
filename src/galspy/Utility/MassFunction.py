@@ -9,27 +9,19 @@ from galspy.MPGadget import _PIG
 # --- BACK END
 # ===============================================
 
-def _mass_function_from_mass_list(Mass,VOLUME,LogBinStep):
+def _mass_function_from_mass_list(Mass,VOLUME,bins):
     Mass = Mass[Mass!=0]
-    
     # log10_Mass=numpy.log10(Mass)
     # Will exponent on e in front-end to get back mass, So no confilict with log10
     log_Mass=numpy.log(Mass)
+    
+    bin_count,bin_edges = numpy.histogram(Mass,bins=bins)
+    bin_center = (bin_edges[1:]+bin_edges[:-1])/2
+    bin_span = numpy.diff(bin_edges)
+    bin_phi = bin_count / (bin_span * VOLUME)
+    error=numpy.sqrt(bin_count)
+    return bin_center,bin_phi,error
 
-    log_bin_start=numpy.floor(min(log_Mass))
-    log_bin_end=numpy.ceil(max(log_Mass))
-
-    BinCount=numpy.zeros(int((log_bin_end-log_bin_start)/LogBinStep))
-
-    for lm in log_Mass:
-        i=int((lm-log_bin_start)/LogBinStep)
-        BinCount[i]+=1
-
-    log_M=numpy.arange(log_bin_start,log_bin_end,LogBinStep)+(LogBinStep/2)
-    dn_dlogM=BinCount/(VOLUME*LogBinStep)
-    error=numpy.sqrt(BinCount)/(VOLUME*LogBinStep)
-
-    return log_M,dn_dlogM,error
 
 
 #https://bdiemer.bitbucket.io/colossus/lss_mass_function.html
@@ -54,7 +46,7 @@ def MassFunction(mass_list,
     
     volume = (box_size)**3
     log_M, dn_dlogM,error = _mass_function_from_mass_list(mass_list,volume,LogBinStep)
-    M = numpy.exp(log_M)
+    M = numpy.exp(log_M)        # <-- Here taking e instead of 10, same as in backend
     return M,dn_dlogM,error
 
 
