@@ -36,36 +36,18 @@ def InitAxis(ax:plt.Axes,redshift,obs_key_list:OBS_DICT_HINT=[],label=""):
         ax.errorbar(MAB,Phi,label=key + f" {label}",yerr=[Phi_n,Phi_p],ls=' ',marker='.',capsize=3,ms=8)
 
 
-InitAxis(ax00,10,["Oesch+18"])
-InitAxis(ax01,9,["Bouwens+21"])
-InitAxis(ax10,8,["Bouwens+21"])
-InitAxis(ax11,7,["Bouwens+21"])
+# InitAxis(ax00,10,["Oesch+18"])
+# InitAxis(ax01,9,["Bouwens+21"])
+# InitAxis(ax10,8,["Bouwens+21"])
+# # InitAxis(ax11,7,["Bouwens+21"])
+# InitAxis(ax11,15,["Bouwens+21"])
+
+
+
 
 for ax in [ax00,ax01,ax10,ax11]:
     ax.legend()
     ax.set_yscale("log")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -2,19 +2,19 @@ import galspy as gs
 import numpy as np
 import matplotlib.pyplot as plt
 
-SIM=gs.NavigationRoot(gs.NINJA.L150N2040)
+SIM=gs.NavigationRoot(gs.NINJA.L150N2040_WIND_WEAK)
 
-SN = SIM.SnapNumFromRedshift(7)
+SN = SIM.SnapNumFromRedshift(9)
 PIG=SIM.PIG(SN)
 
 
 sm = PIG.FOFGroups.MassByType().T[4]
-mask = sm>25*PIG.Header.MassTable()[4]
+mask = sm>8*PIG.Header.MassTable()[4]
 gids = PIG.FOFGroups.GroupID()[mask]
 
 spm=gs.PIGSpectrophotometry(PIG)
 
-DUMP_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data"
+DUMP_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data_26mar"
 # spm.get_light_dict(np.arange(1,100))
 # spm.get_light_dict([2])
 # spm.get_light_dict([int(gids[0]),int(gids[1])],)
