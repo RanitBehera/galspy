@@ -199,7 +199,6 @@ class _PART(_Folder):
 
         self.Header     = _PARTHeader(self.path)
         self.sim_name = os.path.basename(os.path.abspath(self.path + "../../../"))
-        print("From PART",self.sim_name)
 
 class _FOFGroups(_NodeGroup):
     def __init__(self,path):

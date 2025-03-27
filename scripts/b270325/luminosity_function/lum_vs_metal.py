@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 
 
-data = np.loadtxt("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_L150N2040_z7p0_st_chabrier300_bin.csv",
+data = np.loadtxt("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/analysis_b270325/SPM3/data/out_L150N2040_z7p0_st_chabrier300_bin.csv",
                   usecols=(1,5))
 TGID,MAB = data.T
 TGID = np.int64(TGID)
