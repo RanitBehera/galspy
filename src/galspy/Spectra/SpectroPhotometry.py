@@ -750,7 +750,7 @@ class PIGSpectrophotometry:
         #-------------------------------------------------------
 
         
-        REDDEN = True
+        REDDEN = False
 
         DUMP=True
         DUMP_DIR = dump_dir

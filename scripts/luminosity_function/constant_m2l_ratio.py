@@ -45,8 +45,8 @@ if __name__=="__main__":
     PLOT=True
     if PLOT:
         import matplotlib.pyplot as plt
-        from load_observation import load_to_axis
-        load_to_axis(plt.gca(),REDSHIFT,["Bouwens+21"])
+        from load_observation import load_obs_to_axis
+        load_obs_to_axis(plt.gca(),REDSHIFT,["Bouwens+21"])
         plt.plot(bin_AB,bin_Phi)
         plt.yscale("log")
         plt.show()

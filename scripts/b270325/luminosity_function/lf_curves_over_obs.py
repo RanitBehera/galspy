@@ -44,9 +44,14 @@ InitAxis(ax11,7,["Bouwens+21"])
 
 # -------------------------
 # NINJA
+SIM = gs.NavigationRoot(gs.NINJA.L150N2040)
+PIG = SIM.PIG(SIM.SnapNumFromRedshift(7))
+SMASS=PIG.FOFGroups.MassByType().T[4]*1e10/0.6736
+
 def DoforFile(filepath,label,boxsize_MPC,ax):
-    table = np.loadtxt(filepath)
-    M_AB = table.T[5]
+    table = np.loadtxt(filepath,usecols=(1,5))
+    TGID,M_AB = table.T
+    TGID=TGID.astype(np.int64)
     log_L,dn_dlogL,error=gs.Utility.LumimosityFunction(M_AB,boxsize_MPC/0.6736,20)
     # log_L=log_L[1:-7]
     # dn_dlogL=dn_dlogL[1:-7]
@@ -59,6 +64,20 @@ def DoforFile(filepath,label,boxsize_MPC,ax):
     # plt.plot(XLF,YLF+error,color='k',alpha=0.3)
     # plt.plot(XLF,YLF-error,color='k',alpha=0.3)
 
+    # --------------------------------
+    tsmass=SMASS[TGID-1]
+    def GetA(mstar,mab,m1,m2,K):
+        return 10**(m1*np.log10(mstar)+m2*mab+K)
+
+    A6=GetA(tsmass,M_AB,0.0319,-0.3083,-6.8107)
+    MAB_D=M_AB+A6/10
+    log_L,dn_dlogL,error=gs.Utility.LumimosityFunction(MAB_D,boxsize_MPC/0.6736,20)
+    XLF = log_L
+    YLF = dn_dlogL
+    ax.plot(XLF,YLF,'--',label=label)
+
+
+
 
 
 for ax in [ax11]:
@@ -66,9 +85,9 @@ for ax in [ax11]:
     ax.set_yscale("log")
 
 
-DoforFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_L150N2040_z7p0_st_chabrier300_bin.csv","L150N2040 (ST)",150,ax11)
-DoforFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_L150N2040_z7p0_stnb_chabrier300_bin.csv","L150N2040 (ST+NB)",150,ax11)
-DoforFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_L150N2040_z7p0_stnbde_chabrier300_bin.csv","L150N2040 (ST+NB+DE)",150,ax11)
+DoforFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/b270325/SPM3/data/out_L150N2040_z7p0_st_chabrier300_bin.csv","L150N2040 (ST)",150,ax11)
+DoforFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/b270325/SPM3/data/out_L150N2040_z7p0_stnb_chabrier300_bin.csv","L150N2040 (ST+NB)",150,ax11)
+# DoforFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/b270325/SPM3/data/out_L150N2040_z7p0_stnbde_chabrier300_bin.csv","L150N2040 (ST+NB+DE)",150,ax11)
 
 # DoforFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_L250N2040_z7p0_st_chabrier300_bin.csv","L250N2040 (ST)",250,ax11)
 # DoforFile("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_L250N2040_z7p0_stnb_chabrier300_bin.csv","L250N2040 (ST+NB)",250,ax11)
