@@ -49,10 +49,10 @@ def ForFile(path,boxsize,path2,snapnum):
         mask=BLOBNUM!=0
         uvlum_st = UV_F115W_ST[mask]
         uvlum_stnb = UV_F115W_STNB[mask]
-        log_L,dn_dlogL,error = LuminosityFunction(Lum2MAB(uvlum_st),BOXSIZE**3,0.5)
-        plt.plot(log_L,dn_dlogL,label="BLOB-wise (Stellar)")
-        log_L,dn_dlogL,error = LuminosityFunction(Lum2MAB(uvlum_stnb),BOXSIZE**3,0.5)
-        # plt.plot(log_L,dn_dlogL,label="BLOB-wise (Stellar+Nebular)")
+        bin_AB,bin_phi,error = LuminosityFunction(Lum2MAB(uvlum_st),BOXSIZE**3,0.5)
+        plt.plot(bin_AB,bin_phi,label="BLOB-wise (Stellar)")
+        bin_AB,bin_phi,error = LuminosityFunction(Lum2MAB(uvlum_stnb),BOXSIZE**3,0.5)
+        # plt.plot(bin_AB,bin_phi,label="BLOB-wise (Stellar+Nebular)")
 
     plot_blobwise_lf()
 
@@ -61,17 +61,17 @@ def ForFile(path,boxsize,path2,snapnum):
         unq,ind= np.unique(GID,return_index=True)
         uvlum_st = SUM_ST_W0[ind]
         uvlum_stnb = SUM_STNB_W0[ind]
-        log_L,dn_dlogL,error = LuminosityFunction(Lum2MAB(uvlum_st),BOXSIZE**3,0.5)
-        # plt.plot(log_L,dn_dlogL,label="GID-wise-W (Stellar)")
-        log_L,dn_dlogL,error = LuminosityFunction(Lum2MAB(uvlum_stnb),BOXSIZE**3,0.5)
-        # plt.plot(log_L,dn_dlogL,label="GID-wise-W (Stellar+Nebular)")
+        bin_AB,bin_phi,error = LuminosityFunction(Lum2MAB(uvlum_st),BOXSIZE**3,0.5)
+        # plt.plot(bin_AB,bin_phi,label="GID-wise-W (Stellar)")
+        bin_AB,bin_phi,error = LuminosityFunction(Lum2MAB(uvlum_stnb),BOXSIZE**3,0.5)
+        # plt.plot(bin_AB,bin_phi,label="GID-wise-W (Stellar+Nebular)")
 
         uvlum_st = SUM_ST_WO0[ind]
         uvlum_stnb = SUM_STNB_WO0[ind]
-        log_L,dn_dlogL,error = LuminosityFunction(Lum2MAB(uvlum_st),BOXSIZE**3,0.5)
-        # plt.plot(log_L,dn_dlogL,label="GID-wise-WO (Stellar)")
-        log_L,dn_dlogL,error = LuminosityFunction(Lum2MAB(uvlum_stnb),BOXSIZE**3,0.5)
-        # plt.plot(log_L,dn_dlogL,label="GID-wise-WO (Stellar+Nebular)")
+        bin_AB,bin_phi,error = LuminosityFunction(Lum2MAB(uvlum_st),BOXSIZE**3,0.5)
+        # plt.plot(bin_AB,bin_phi,label="GID-wise-WO (Stellar)")
+        bin_AB,bin_phi,error = LuminosityFunction(Lum2MAB(uvlum_stnb),BOXSIZE**3,0.5)
+        # plt.plot(bin_AB,bin_phi,label="GID-wise-WO (Stellar+Nebular)")
 
     # plot_gidwise_lf()
 
@@ -93,8 +93,8 @@ def ForFile(path,boxsize,path2,snapnum):
         M_AB = mAB #as distance was 10pc
         
 
-        log_L,dn_dlogL,error = LuminosityFunction(M_AB,BOXSIZE**3,0.5)   # 200 multiplied so that it gets cancelled in the other logic
-        plt.plot(log_L,dn_dlogL,label="MD Scaling")
+        bin_AB,bin_phi,error = LuminosityFunction(M_AB,BOXSIZE**3,0.5)   # 200 multiplied so that it gets cancelled in the other logic
+        plt.plot(bin_AB,bin_phi,label="MD Scaling")
 
     plot_lf_sfr()
 

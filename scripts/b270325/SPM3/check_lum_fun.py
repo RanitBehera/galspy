@@ -13,11 +13,11 @@ def ForFile(path,boxsize):
 
 
 
-    log_L,dn_dlogL,error = LuminosityFunction(mab,BOXSIZE**3,0.5)   # 200 multiplied so that it gets cancelled in the other logic
-    plt.plot(log_L,dn_dlogL,label="Light")
+    bin_AB,bin_phi,error = LuminosityFunction(mab,BOXSIZE**3,0.5)   # 200 multiplied so that it gets cancelled in the other logic
+    plt.plot(bin_AB,bin_phi,label="Light")
 
-    log_L,dn_dlogL,error = LuminosityFunction(mab_s,BOXSIZE**3,0.5)   # 200 multiplied so that it gets cancelled in the other logic
-    plt.plot(log_L,dn_dlogL,label="MD Scaling")
+    bin_AB,bin_phi,error = LuminosityFunction(mab_s,BOXSIZE**3,0.5)   # 200 multiplied so that it gets cancelled in the other logic
+    plt.plot(bin_AB,bin_phi,label="MD Scaling")
 
 
 

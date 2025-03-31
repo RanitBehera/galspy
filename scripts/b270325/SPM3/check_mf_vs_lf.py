@@ -19,7 +19,7 @@ box_size = PIG.Header.BoxSize()/1000
 # ================ LUMINOSITY FUNCTION
 table = np.loadtxt("/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/SPM3/data/out_L150N2040_z7p0.csv")
 M_AB = table.T[5]
-log_L,dn_dlogL,error=gs.Utility.LumimosityFunction(M_AB,box_size/h,0.5)
+bin_AB,bin_phi,error=gs.Utility.LumimosityFunction(M_AB,box_size/h,0.5)
 
 
 log_L=log_L[1:-7]
@@ -107,7 +107,7 @@ YMF=np.log10(dn_dlogM)
 
 
 
-log_L,dn_dlogL,error=gs.Utility.LumimosityFunction(M_AB,box_size/h,0.5)
+bin_AB,bin_phi,error=gs.Utility.LumimosityFunction(M_AB,box_size/h,0.5)
 
 
 XMF = log_L

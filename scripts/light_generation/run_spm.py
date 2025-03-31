@@ -1,16 +1,13 @@
 import galspy as gs
 import numpy as np
 
-# SIM=gs.NavigationRoot(gs.NINJA.L250N2040)
-# SN = SIM.SnapNumFromRedshift(7)
-# PIG=SIM.PIG(SN)
-
-SIM=gs.NavigationRoot("/mnt/home/student/cranit/Data/MP_Gadget/Nishi/L50N1008/SNAPS")
-PIG=SIM.PIG(42)
+SIM=gs.NavigationRoot(gs.NINJA.L150N2040_WIND_WEAK)
+SN = SIM.SnapNumFromRedshift(14)
+PIG=SIM.PIG(SN)
 
 
 sm = PIG.FOFGroups.MassByType().T[4]
-mask = sm>16*PIG.Header.MassTable()[4]
+mask = sm>6*PIG.Header.MassTable()[4]
 gids = PIG.FOFGroups.GroupID()[mask]
 
 spm=gs.PIGSpectrophotometry(PIG)

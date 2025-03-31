@@ -52,13 +52,13 @@ def DoforFile(filepath,label,boxsize_MPC,ax):
     table = np.loadtxt(filepath,usecols=(1,5))
     TGID,M_AB = table.T
     TGID=TGID.astype(np.int64)
-    log_L,dn_dlogL,error=gs.Utility.LumimosityFunction(M_AB,boxsize_MPC/0.6736,20)
+    bin_AB,bin_phi,error=gs.Utility.LumimosityFunction(M_AB,boxsize_MPC/0.6736,20)
     # log_L=log_L[1:-7]
     # dn_dlogL=dn_dlogL[1:-7]
 
-    XLF = log_L
+    XLF = bin_AB
     # YLF = np.log10(dn_dlogL)
-    YLF = dn_dlogL
+    YLF = bin_phi
     ax.plot(XLF,YLF,'-',label=label)
     plt.fill_between(XLF,YLF+error,YLF-error,color='k',alpha=0.2,ec=None)
     # plt.plot(XLF,YLF+error,color='k',alpha=0.3)
@@ -71,9 +71,9 @@ def DoforFile(filepath,label,boxsize_MPC,ax):
 
     A6=GetA(tsmass,M_AB,0.0319,-0.3083,-6.8107)
     MAB_D=M_AB+A6/10
-    log_L,dn_dlogL,error=gs.Utility.LumimosityFunction(MAB_D,boxsize_MPC/0.6736,20)
-    XLF = log_L
-    YLF = dn_dlogL
+    bin_AB,bin_phi,error=gs.Utility.LumimosityFunction(MAB_D,boxsize_MPC/0.6736,20)
+    XLF = bin_AB
+    YLF = bin_phi
     ax.plot(XLF,YLF,'--',label=label)
 
 

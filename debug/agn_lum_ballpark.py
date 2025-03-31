@@ -94,7 +94,7 @@ def _lum_function_from_lum_list(Lum,VOLUME,LogBinStep):
     dn_dlogL=BinCount/(VOLUME*LogBinStep)
     error=np.sqrt(BinCount)/(VOLUME*LogBinStep)
 
-    return log_L,dn_dlogL,error
+    return bin_AB,bin_phi,error
 
 
 

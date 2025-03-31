@@ -47,14 +47,14 @@ plt.ylim(-3,0)
 
 # -------------------------
 target= TGID[0]
-print(target)
+print("TGID",target)
 
 gas_gid = PIG.Gas.GroupID()
 mask = gas_gid==target
 gas_mass = PIG.Gas.Mass()[mask]
 gas_met = PIG.Gas.Metallicity()[mask]
 gas_pos = PIG.Gas.Position()[mask]
-
+gas_sfr = PIG.Gas.StarFormationRate()[mask]
 
 star_gid = PIG.Star.GroupID()
 mask = star_gid==target
@@ -68,37 +68,47 @@ star_pos = PIG.Star.Position()[mask]
 
 
 
-plt.figure()
 from galspy.Utility.Visualization import Cube3D
 
+
+mask_met = np.log10(gas_met/0.02)> -1
+mask_sfr = np.log10(gas_sfr)> -3
+
+plt.figure()
 c3d = Cube3D()
-
-mask_met = (gas_met/0.02)>0.01
-
 c3d.add_points(gas_pos[mask_met],points_size=10,points_color='b')
 c3d.add_points(gas_pos[~mask_met],points_size=5,points_color='y')
 c3d.add_points(star_pos,points_size=5,points_color='r')
+c3d.show(False)
 
+plt.figure()
+c3d = Cube3D()
+c3d.add_points(gas_pos[mask_sfr],points_size=10,points_color='b')
+c3d.add_points(gas_pos[~mask_sfr],points_size=5,points_color='y')
+c3d.add_points(star_pos,points_size=5,points_color='r')
 c3d.show(False)
 
 
 
 
-plt.figure()
-def GetA(mstar,mab,m1,m2,K):
-    return 10**(m1*np.log10(mstar)+m2*mab+K)
 
-A6=GetA(SMASS*1e10/0.6736,MAB,0.0319,-0.3083,-6.8107)
-A8=GetA(SMASS*1e10/0.6736,MAB,0.5585,-0.0953,-6.9932)
 
-plt.plot(MAB,A8,'.',ms=2,label="z=8")
-plt.plot(MAB,A6,'.',ms=2,label="z=6")
-plt.yscale("log")
 
-plt.xlabel("$M_{AB}$")
-plt.ylabel("$A_{1500}$")
-plt.title("z=7")
-plt.legend()
+# plt.figure()
+# def GetA(mstar,mab,m1,m2,K):
+#     return 10**(m1*np.log10(mstar)+m2*mab+K)
+
+# A6=GetA(SMASS*1e10/0.6736,MAB,0.0319,-0.3083,-6.8107)
+# A8=GetA(SMASS*1e10/0.6736,MAB,0.5585,-0.0953,-6.9932)
+
+# plt.plot(MAB,A8,'.',ms=2,label="z=8")
+# plt.plot(MAB,A6,'.',ms=2,label="z=6")
+# plt.yscale("log")
+
+# plt.xlabel("$M_{AB}$")
+# plt.ylabel("$A_{1500}$")
+# plt.title("z=7")
+# plt.legend()
 plt.show()
  
 

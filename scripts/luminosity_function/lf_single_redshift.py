@@ -6,8 +6,8 @@ from load_observation import load_obs_to_axis
 from load_lum_function import load_lf_to_axis
 
 REDSHIFT = 7
-load_obs_to_axis(plt.gca(),REDSHIFT,["Bouwens+21"])
-load_lf_to_axis(plt.gca(),REDSHIFT,"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/light_generation/data")
+load_obs_to_axis(plt.gca(),REDSHIFT,["Bouwens+21","Donnan+24","Whitler+25","Oesch+18"])
+load_lf_to_axis(plt.gca(),REDSHIFT,"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/light_generation/data",12)
 
 plt.yscale("log")
 plt.legend()

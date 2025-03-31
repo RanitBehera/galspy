@@ -342,7 +342,7 @@ class PIGSpectrophotometry:
 
 
 
-    def _get_projection_img(self,position,mass,direction:Literal["XY","YZ","ZX"]="XY",mode:Literal["count","mass"]="count"):
+    def _get_projection_img(self,position,mass,direction:Literal["XY","YZ","ZX"],mode:Literal["count","mass"]="count"):
         if direction not in ["XY","YZ","ZX"]:
             raise ValueError("Invalid Direction")
 
@@ -470,7 +470,7 @@ class PIGSpectrophotometry:
         spec_obs*=self.observer_dilution
         return wl_obs,spec_obs
 
-    def _get_spec_properties_observed(self,wl_rest,spec_rest):
+    def _get_spec_properties(self,wl_rest,spec_rest):
         # L : Luminosity
         # f : flux
         OUTDICT={}
@@ -551,7 +551,6 @@ class PIGSpectrophotometry:
 
         lam_rest = wl_rest
         L_lam_rest = spec_rest
-
         lam_obs,f_lam_obs = self._transfer_to_observer_frame(lam_rest,L_lam_rest)
 
         # plt.plot(lam_rest,L_lam_rest,label="Rest")
@@ -642,9 +641,12 @@ class PIGSpectrophotometry:
 
 
     def get_photometry_images(self,target_gid):
-        if not (isinstance(target_gid, int) and target_gid > 0):
-            raise ValueError("Integerer greather than zero needed")
+        # TODO:
+        # if not (isinstance(target_gid, int) and target_gid > 0):
+            # raise ValueError("Integerer greather than zero needed")
 
+        target_gid=int(target_gid)
+   
         tgid = target_gid
 
         print(f"TGID = {tgid}")
@@ -674,22 +676,24 @@ class PIGSpectrophotometry:
         mass_scale = self._get_mass_factor_scaling(target_star_mass)  # Right now twice the mass means twice the light
 
         # To observer frame
-        spec_obs = tmp_specs_with_nebular*self.observer_dilution
-        wl_obs = tmp_specs_with_nebular[0]*(1+self.PIG.Header.Redshift())
-
         LSOL=3.846e33 #erg s-1
-        spec_obs *=LSOL
-        self._load_filter(wl_obs)
+        lam_rest=tmp_specs_with_nebular[0]
+        L_lam_rest=tmp_specs_with_nebular[1:]*LSOL
+        lam_obs,f_lam_obs = self._transfer_to_observer_frame(lam_rest,L_lam_rest)
+        dlam_obs = np.diff(lam_obs)
+        lam_obs,f_lam_obs=lam_obs[:-1],f_lam_obs[:,:-1]
+        self._load_filter(lam_obs)  # This loads the throughput, already normalised
+        f_lam_obs_dlam_obs = np.multiply(f_lam_obs,dlam_obs.T)
 
         # Template Photometry
-        tp_F070W = np.sum(spec_obs*self.NC_F070W,axis=1)
-        tp_F090W = np.sum(spec_obs*self.NC_F090W,axis=1)
-        tp_F115W = np.sum(spec_obs*self.NC_F115W,axis=1)
-        tp_F150W = np.sum(spec_obs*self.NC_F150W,axis=1)
-        tp_F200W = np.sum(spec_obs*self.NC_F200W,axis=1)
-        tp_F277W = np.sum(spec_obs*self.NC_F277W,axis=1)
-        tp_F356W = np.sum(spec_obs*self.NC_F356W,axis=1)
-        tp_F444W = np.sum(spec_obs*self.NC_F444W,axis=1)
+        tp_F070W = np.sum(f_lam_obs_dlam_obs*self.NC_F070W,axis=1)
+        tp_F090W = np.sum(f_lam_obs_dlam_obs*self.NC_F090W,axis=1)
+        tp_F115W = np.sum(f_lam_obs_dlam_obs*self.NC_F115W,axis=1)
+        tp_F150W = np.sum(f_lam_obs_dlam_obs*self.NC_F150W,axis=1)
+        tp_F200W = np.sum(f_lam_obs_dlam_obs*self.NC_F200W,axis=1)
+        tp_F277W = np.sum(f_lam_obs_dlam_obs*self.NC_F277W,axis=1)
+        tp_F356W = np.sum(f_lam_obs_dlam_obs*self.NC_F356W,axis=1)
+        tp_F444W = np.sum(f_lam_obs_dlam_obs*self.NC_F444W,axis=1)
 
         # Initialise the images
         img_F070W = np.zeros_like(image)
@@ -752,7 +756,7 @@ class PIGSpectrophotometry:
         
         REDDEN = False
 
-        DUMP=True
+        DUMP=False
         DUMP_DIR = dump_dir
         if DUMP:
             outfile_st = open(f"{DUMP_DIR}/out_{self.PIG.sim_name}_z{str(np.round(self.PIG.Header.Redshift(),2)).replace('.','p')}_st_{self.fnsuffix}.csv",'w')
@@ -770,7 +774,7 @@ class PIGSpectrophotometry:
             target_star_ids = self.all_star_ids[target_mask]
 
             # LABLE MAP
-            image,uedges,vedges,pr_mode,u,v = self._get_projection_img(target_star_position,target_star_mass,"XY","mass")
+            image,uedges,vedges,pr_mode,u,v = self._get_projection_img(target_star_position,target_star_mass,"ZX","mass")
             finder = BlobFinder(image)
             cvout = finder.opencv_findblobs()
             cvout["TARGET_GID"] = tgid
@@ -833,10 +837,10 @@ class PIGSpectrophotometry:
             # plt.show()
             # exit()
             
-            propout_st = self._get_spec_properties_observed(wl_rest_st,summed_spec_st)
-            propout_stnb = self._get_spec_properties_observed(wl_rest_stnb,summed_spec_stnb)
+            propout_st = self._get_spec_properties(wl_rest_st,summed_spec_st)
+            propout_stnb = self._get_spec_properties(wl_rest_stnb,summed_spec_stnb)
             if REDDEN:
-                propout_stnbde = self._get_spec_properties_observed(wl_rest_stnbde,summed_spec_stnbde)
+                propout_stnbde = self._get_spec_properties(wl_rest_stnbde,summed_spec_stnbde)
             
 
             if DUMP:
@@ -871,7 +875,7 @@ class PIGSpectrophotometry:
             if REDDEN:
                 outfile_stnbde.close()
 
-
+        return wl_rest_st,wl_rest_stnb,summed_spec_st,summed_spec_stnb
 
 
 

@@ -8,13 +8,13 @@ class _Plots:
         self.PIG = PIG
 
     def SetStyle(fontsize=12):
-        font = {
-                'family':'serif',
-                'serif':['Roboto'],
-                'size':fontsize,
-                # 'weight' : 'bold'
-                }
-        matplotlib.rc('font', **font)
+        # font = {
+        #         'family':'serif',
+        #         'serif':['Roboto'],
+        #         'size':fontsize,
+        #         # 'weight' : 'bold'
+        #         }
+        # matplotlib.rc('font', **font)
         matplotlib.rc('text', usetex=True)
 
         # colors = ['magenta','deepskyblue','cyan','limegreen','goldenrod','tomato','firebrick']

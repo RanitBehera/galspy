@@ -59,7 +59,7 @@ def DoforFile(filepath,label,boxsize_MPC,ax):
     
     [print(mab) for mab in M_AB]
     
-    log_L,dn_dlogL,error=gs.Utility.LumimosityFunction(M_AB,boxsize_MPC/h,10)
+    bin_AB,bin_phi,error=gs.Utility.LumimosityFunction(M_AB,boxsize_MPC/h,10)
     XLF = log_L
     # YLF = np.log10(dn_dlogL)
     YLF = dn_dlogL

@@ -32,7 +32,7 @@ def DoForSim(sim_path:str,redshift=7):
     M_AB = -2.5 * np.log10(f_nu) - 48.6
 
     # Luminosity function
-    log_L,dn_dlogL,error=gs.Utility.LumimosityFunction(M_AB,box_size/h,10)
+    bin_AB,bin_phi,error=gs.Utility.LumimosityFunction(M_AB,box_size/h,10)
     XMF = log_L
     YMF = np.log10(dn_dlogL+1e-300)
     if sim_path==gs.NINJA.L150N2040:
@@ -124,7 +124,7 @@ plt.plot(x,y,':',label="Astrid")
 def DoforFile(filepath,label,boxsize_MPC):
     table = np.loadtxt(filepath)
     M_AB = table.T[5]
-    log_L,dn_dlogL,error=gs.Utility.LumimosityFunction(M_AB,boxsize_MPC/0.6736,10)
+    bin_AB,bin_phi,error=gs.Utility.LumimosityFunction(M_AB,boxsize_MPC/0.6736,10)
     log_L=log_L[1:-7]
     dn_dlogL=dn_dlogL[1:-7]
 

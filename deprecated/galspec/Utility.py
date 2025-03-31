@@ -133,4 +133,4 @@ def LuminosityFunction(MUVAB,VOLUME,LogBinStep):
     dn_dlogL=BinCount/(VOLUME*LogBinStep)
     error=numpy.sqrt(BinCount)/(VOLUME*LogBinStep)
 
-    return log_L,dn_dlogL,error
+    return bin_AB,bin_phi,error
