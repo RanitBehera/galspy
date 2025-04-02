@@ -59,6 +59,41 @@ class _Gas(_NodeGroup):
         self.StarFormationRate           = self.AddNode("StarFormationRate")
         self.Velocity                    = self.AddNode("Velocity")
 
+    def GetDensityAndTemperature(self,rho,ie,nebynh):
+        # ----- UNITS
+        h=0.6736
+        h=1
+        M_SOL = 1.9885e33 # grams
+        M_UNIT = 1e10 * M_SOL/h
+        KPC = 3.086e21 # cm
+        L_UNIT = KPC/h
+        DEN_UNIT = M_UNIT/(L_UNIT**3)
+        VEL_UNIT = 1e5 # cm/s
+        T_UNIT = L_UNIT/VEL_UNIT #s
+        E_UNIT = M_UNIT * (L_UNIT/T_UNIT)**2
+        IE_UNIT = E_UNIT/M_UNIT
+
+        # print(DEN_UNIT,E_UNIT,IE_UNIT)
+        # CHECKED: the units match with stdout units when h=1
+
+        # -------
+        rho *=DEN_UNIT
+        ie *=IE_UNIT
+        
+        # -------
+        MP = 1.67e-27 #Proton mass in grams
+        GAMMA = 5/3
+        MIN_GAS_TEMP = 5.0 #K
+        KB = 1.38e-16
+        X = 0.74 
+
+        mu=4/(X*(3+4*nebynh)+1)
+        temp = (GAMMA-1)*(MP/KB)*mu*ie
+        
+        return rho,temp
+
+
+
 class _DarkMatter(_NodeGroup):
     def __init__(self,path):
         super().__init__(path)

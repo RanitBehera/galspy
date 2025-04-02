@@ -7,13 +7,36 @@ from astropy.cosmology import FlatLambdaCDM
 SIM=gs.NavigationRoot(gs.NINJA.L150N2040)
 PIG=SIM.PIG(z=7.0)
 
+print("hi")
 
 # Gas Fields
 gid = PIG.Gas.GroupID()
-pos = PIG.Gas.Position()
-mass = PIG.Gas.Mass()
-metallicity = PIG.Gas.Metallicity()
+# pos = PIG.Gas.Position()
+# mass = PIG.Gas.Mass()
+# metallicity = PIG.Gas.Metallicity()
 
+
+
+TGID = 2
+mask = gid==TGID
+
+rho = PIG.Gas.Density()[mask]
+ie = PIG.Gas.InternalEnergy()[mask]
+nebynh = PIG.Gas.ElectronAbundance()[mask]
+
+rho,temp = PIG.Gas.GetDensityAndTemperature(rho,ie,nebynh)
+
+plt.plot(rho,temp,'.',ms=1)
+plt.xscale("log")
+plt.yscale("log")
+plt.show()
+
+
+
+
+
+
+exit()
 
 
 def _get_pixel_resolution():
@@ -93,4 +116,4 @@ def ForTGID(TGID):
 
 
 # for i in range(10):
-ForTGID(2)
+# ForTGID(2)
