@@ -198,7 +198,9 @@ class _PART(_Folder):
         self._5         = self.BlackHole
 
         self.Header     = _PARTHeader(self.path)
-        self.sim_name = os.path.basename(os.path.abspath(self.path + "../../../"))
+        self.sim_name   = os.path.basename(os.path.abspath(self.path + "../../../"))
+        self.snap_name  = os.path.basename(os.path.abspath(self.path))
+
 
 class _FOFGroups(_NodeGroup):
     def __init__(self,path):
@@ -242,7 +244,8 @@ class _PIG(_Folder):
 
         self.Header     = _PIGHeader(self.path)
         self.FOFGroups  = _FOFGroups(os.path.join(self.path,"FOFGroups"))
-        self.sim_name = os.path.basename(os.path.abspath(self.path + "../../../"))
+        self.sim_name   = os.path.basename(os.path.abspath(self.path + "../../../"))
+        self.snap_name  = os.path.basename(os.path.abspath(self.path))
 
 
 
@@ -482,11 +485,19 @@ class _Sim:
         self.rockstar_outbase = rockstar_outbase
         self.sim_name = os.path.basename(os.path.abspath(self.mpgadget_outdir + "../../"))
 
-    def PART(self,snap_num:int):
+    def PART(self,snap_num:int=None,z:float=None):
+        if snap_num is None:
+            if z is None:raise ValueError("Either Snapnumber or Redshift is needed.")
+            else:snap_num = self.SnapNumFromRedshift(z)
+
         if not isinstance(snap_num,int):raise TypeError
         return _PART(os.path.join(self.mpgadget_outdir,"PART_" + self._FixedFormatSnapNumber(snap_num)))
 
-    def PIG(self,snap_num:int):
+    def PIG(self,snap_num:int=None,z:float=None):
+        if snap_num is None:
+            if z is None:raise ValueError("Either Snapnumber or Redshift is needed.")
+            else:snap_num = self.SnapNumFromRedshift(z)
+
         if not isinstance(snap_num,int):raise TypeError
         return _PIG(os.path.join(self.mpgadget_outdir,"PIG_" + self._FixedFormatSnapNumber(snap_num)))
     
