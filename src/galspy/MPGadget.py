@@ -36,6 +36,31 @@ class _NodeGroup(_Folder):
     def AddNode(self,field_subdir_name):
         return _Node(os.path.join(self.path,field_subdir_name))
 
+
+class _Units:
+    def __init__(self,header:dict):
+        # Units are in CGS with h=1
+        self.Length             = header["UnitLength_in_cm"]
+        self.Mass               = header["UnitMass_in_g"]
+        self.Velocity           = header["UnitVelocity_in_cm_per_s"]
+        self.Density            = self.Mass/(self.Length**3)
+        self.Time               = self.Length/self.Velocity
+        self.Energy             = self.Mass * (self.Velocity**2)
+        self.InternalEnergy     = self.Energy/self.Mass
+
+    def print(self):
+        CELL_WIDTH=16
+        print("UNITS (in h=1)",'-'*32)
+        print("-","Length".ljust(CELL_WIDTH),':',self.Length,"cm")
+        print("-","Mass".ljust(CELL_WIDTH),':',self.Mass,"g")
+        print("-","Velocity".ljust(CELL_WIDTH),':',self.Velocity,"cm/s")
+        print("-","Density".ljust(CELL_WIDTH),':',self.Density,"g/cm3")
+        print("-","Time".ljust(CELL_WIDTH),':',self.Time,"s")
+        print("-","Energy".ljust(CELL_WIDTH),':',self.Energy)
+        print("-","InternalEnergy".ljust(CELL_WIDTH),':',self.InternalEnergy)
+        # CHECKED: the units match with stdout units when h=1
+
+
 class _Gas(_NodeGroup):
     def __init__(self,path):
         super().__init__(path)
@@ -59,28 +84,10 @@ class _Gas(_NodeGroup):
         self.StarFormationRate           = self.AddNode("StarFormationRate")
         self.Velocity                    = self.AddNode("Velocity")
 
-    def GetDensityAndTemperature(self,rho,ie,nebynh):
-        # ----- UNITS
-        h=0.6736
-        h=1
-        M_SOL = 1.9885e33 # grams
-        M_UNIT = 1e10 * M_SOL/h
-        KPC = 3.086e21 # cm
-        L_UNIT = KPC/h
-        DEN_UNIT = M_UNIT/(L_UNIT**3)
-        VEL_UNIT = 1e5 # cm/s
-        T_UNIT = L_UNIT/VEL_UNIT #s
-        E_UNIT = M_UNIT * (L_UNIT/T_UNIT)**2
-        IE_UNIT = E_UNIT/M_UNIT
+    def GetDensityAndTemperature(self,rho,ie,nebynh,Units:_Units):
+        rho *=Units.Density
+        ie *=Units.InternalEnergy
 
-        # print(DEN_UNIT,E_UNIT,IE_UNIT)
-        # CHECKED: the units match with stdout units when h=1
-
-        # -------
-        rho *=DEN_UNIT
-        ie *=IE_UNIT
-        
-        # -------
         MP = 1.67e-27 #Proton mass in grams
         GAMMA = 5/3
         MIN_GAS_TEMP = 5.0 #K
@@ -162,10 +169,12 @@ class _BlackHole(_NodeGroup):
         self.Velocity                    = self.AddNode("Velocity")
 
 
+
 class _PARTHeader:
     def __init__(self, path: str) -> None:
         self.path = os.path.join(path,"Header/attr-v2")
         self._header = bf.Attribute(self.path).Read()
+        self.Units = _Units(self._header)
         
     def BoxSize(self):                    return self._header["BoxSize"]
     def CMBTemperature(self):             return self._header["CMBTemperature"]
@@ -196,6 +205,11 @@ class _PIGHeader(_Folder):
     def __init__(self, path: str) -> None:
         self.path = os.path.join(path,"Header/attr-v2")
         self._header = bf.Attribute(self.path).Read()
+        # self.Units   = _PART(path.replace("PIG","PART")).Header.Units
+        # Simple replace will not work for secondarty snapshots where PART is deleted
+        self.Units   = _PART(os.path.abspath(path+"/../PART_000")).Header.Units
+
+
 
     def BoxSize(self):                    return self._header["BoxSize"]
     def CMBTemperature(self):             return self._header["CMBTemperature"]

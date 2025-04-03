@@ -7,7 +7,7 @@ from galspy.Utility.Visualization import Cube3D
 from matplotlib.collections import PathCollection
 
 
-SIM=gs.NavigationRoot(gs.NINJA.L150N2040)
+SIM=gs.NavigationRoot(gs.NINJA.L150N2040_WIND_WEAK)
 PIG=SIM.PIG(z=7.0)
 
 class SelectFromCollection:
@@ -37,6 +37,7 @@ class SelectFromCollection:
                 raise ValueError('Collection must have a facecolor')
             elif len(self.fc_c3d) == 1:
                 self.fc_c3d = np.tile(self.fc_c3d, (len(self.xyzs_c3d), 1))
+
 
 
 
@@ -84,18 +85,38 @@ class SelectFromCollection:
             self.ax_c3d.figure.canvas.draw_idle()
 
 
+print("READING","-"*32)
+gid = PIG.Gas.GroupID()
+rho = PIG.Gas.Density()
+ie = PIG.Gas.InternalEnergy()
+nebynh = PIG.Gas.ElectronAbundance()
+vel = PIG.Gas.Velocity()
+
+gid_star =PIG.Star.GroupID()
+gid_bh = PIG.BlackHole.GroupID()
+pos_star = PIG.Star.Position()
+pos_bh = PIG.BlackHole.Position()
+
+UNITS=PIG.Header.Units
+
 def Target(tgid):
-    gid = PIG.Gas.GroupID()
     tmask = gid==tgid
-    rho = PIG.Gas.Density()[tmask]
-    ie = PIG.Gas.InternalEnergy()[tmask]
-    nebynh = PIG.Gas.ElectronAbundance()[tmask]
-    dens,temp = PIG.Gas.GetDensityAndTemperature(rho,ie,nebynh)
+    trho = rho[tmask]
+    tie = ie[tmask]
+    tnebynh = nebynh[tmask]
+    tvel = vel[tmask] 
+    dens,temp = PIG.Gas.GetDensityAndTemperature(trho,tie,tnebynh,UNITS)
+
     tpos = PIG.Gas.Position()[tmask]
+
+    tpos_star = pos_star[gid_star==tgid]
+    tpos_bh = pos_bh[gid_bh==tgid]
 
     # --------------
     c3d = Cube3D()
     c3d.add_points(tpos,points_size=1,points_color='r')
+    # c3d.add_points(tpos_star,points_size=4,points_color='c',points_marker='*')
+    # c3d.add_points(tpos_bh,points_size=1000,points_color='k',points_marker='+')
     ax_c3d=c3d.show(False)
 
     # --------------
@@ -111,6 +132,10 @@ def Target(tgid):
 
     plt.show()
 
+print("Enter GID else 'q' to exit.")
 
-Target(4)
+T=input("TGID = ")
+while T.lower() not in ['q']:
+    Target(int(T))
+    T=input("TGID = ")
 
