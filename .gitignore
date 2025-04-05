@@ -13,4 +13,4 @@ stdout.txt
 **/images
 **/dump
 **/imgs**
-stdout_pbs
+log/*
