@@ -116,7 +116,7 @@ def Target(tgid):
     c3d = Cube3D()
     c3d.add_points(tpos,points_size=1,points_color='r')
     # c3d.add_points(tpos_star,points_size=4,points_color='c',points_marker='*')
-    # c3d.add_points(tpos_bh,points_size=1000,points_color='k',points_marker='+')
+    c3d.add_points(tpos_bh,points_size=10000,points_color='k',points_marker='+')
     ax_c3d=c3d.show(False)
 
     # --------------

@@ -55,6 +55,8 @@ class Cube3D:
         self._need_bound_update=True
 
     def add_points(self,pos:list[list[float]],points_size=1,points_color=None,points_alpha=1,points_marker='.'):
+        # TODO : For one position convert to list
+        
         if len(pos)==0:return
         self._points_bank.append({
             "POSITION"  : pos,
