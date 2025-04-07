@@ -1,9 +1,9 @@
 #!/bin/bash
-#PBS -N ""M4P
+#PBS -N "M4P"
 #PBS -q "debug"
 #PBS -l walltime=1:00:00
 #PBS -l select=2:ncpus=32:mpiprocs=32
-##PBS -l place=scatter
+#PBS -l place=scatter
 #PBS -o "/dev/null"
 #PBS -e "/dev/null"
 #PBS -j oe
