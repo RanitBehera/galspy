@@ -1,8 +1,9 @@
 #!/bin/bash
-#PBS -N "MPI"
+#PBS -N ""M4P
 #PBS -q "debug"
 #PBS -l walltime=1:00:00
-#PBS -l select=2:ncpus=32:mpiprocs=32:ompthreads=1
+#PBS -l select=2:ncpus=32:mpiprocs=32
+##PBS -l place=scatter
 #PBS -o "/dev/null"
 #PBS -e "/dev/null"
 #PBS -j oe
@@ -31,7 +32,7 @@ done
 echo "Environment found.">>$PBS_OUTDIR/pbs.log
 #=======================================================================================
 # python /mnt/home/student/cranit/RANIT/Repo/galspy/debug/mpicheck/test1.py
-mpiexec --hostfile $PBS_NODEFILE -n 64 python /mnt/home/student/cranit/RANIT/Repo/galspy/debug/mpicheck/test1.py
+/mnt/csoft/compilers/mpich-3.3.1/bin/mpiexec --hostfile $PBS_NODEFILE -n 64 python /mnt/home/student/cranit/RANIT/Repo/galspy/debug/mpicheck/test1.py
 #=======================================================================================
 echo "[ ENDED ] $(date)">>$PBS_OUTDIR/pbs.log
 
