@@ -52,7 +52,7 @@ if False:
 
 
 # %%
-tgid=1
+tgid=425
 # def Target(tgid):
     # STEP 0 - Mask for target particles 
 print("- STEP 0 : Masking for target particles ...")
@@ -86,6 +86,8 @@ def GetCD(PROBE_SPACING,PROBE_RADIUS):
     end_points_z = np.min(tpos.T[2]) + 0.8*(np.max(tpos.T[2])-np.min(tpos.T[2]))
     end_point = np.array(start_point)
     end_point[2] = end_points_z
+
+    print("start_pos",start_point)
 
     # probe_z = np.arange(start_point[2],end_point[2],PROBE_SPACING)
 

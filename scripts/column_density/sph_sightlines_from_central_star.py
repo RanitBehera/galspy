@@ -1,3 +1,4 @@
+# %%
 import galspy as gs
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,33 +11,26 @@ UNITS=PIG.Header.Units
 
 
 print("Target Box ".ljust(32,"="))
-print("- Simulation",":",PIG.sim_name)
-print("- Snapshit",":",PIG.snap_name)
-print("- Redshift",":",f"{PIG.Header.Redshift():.02f}")
+PIG.print_box_info()
 
 
 print("\nReading Fields ".ljust(32,"="))
 print("- Gas".ljust(8),">","GroupIDs")
-# gas_gid = PIG.Gas.GroupID()
+gas_gid = PIG.Gas.GroupID()
 print("- Gas".ljust(8),">","Positions")
-# gas_pos = PIG.Gas.Position()
+gas_pos = PIG.Gas.Position()
 print("- Gas".ljust(8),">","Masses")
-# gas_mass = PIG.Gas.Mass()
+gas_mass = PIG.Gas.Mass()
 print("- Gas".ljust(8),">","Metallicity")
-# gas_met = PIG.Gas.Metallicity()
+gas_met = PIG.Gas.Metallicity()
 print("- Gas".ljust(8),">","Smoothing Lengths")
-# gas_sml = PIG.Gas.SmoothingLength()
-print("- Star".ljust(8),">","Group IDs")
-# star_gid = PIG.Star.GroupID()
-print("- Star".ljust(8),">","Positions")
-# star_pos = PIG.Star.Position()
-print("- Star".ljust(8),">","Potentials")
-# star_pot = PIG.Star.Potential()
+gas_sml = PIG.Gas.SmoothingLength()
+print("- Star".ljust(8),">","Central Location")
+
 print("- FOF".ljust(8),">","GroupIDs")
 fof_gids = PIG.FOFGroups.GroupID()
 print("- FOF".ljust(8),">","Stellar Mass")
 fof_st_mass = PIG.FOFGroups.MassByType().T[4]
-
 
 
 # MASK FOFS =======================
@@ -67,7 +61,16 @@ print("\nUsing Kernel :",Kernel.__name__)
 # ================================
 
 
+# %%
+cstar_loc = PIG.GetCentralStarLocation()
+
+
+
+# %%
 def TargetFoF(tgid):
-    pass
-    # tmask_gas = gas_gid==TGID
-    # tmask_star = star_gid==TGID
+    tmask_gas = gas_gid==tgid
+    tmask_star = star_gid==tgid
+
+
+TargetFoF(2)
+# %%
