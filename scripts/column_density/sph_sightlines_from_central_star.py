@@ -83,7 +83,7 @@ def TargetFoF(tgid):
     ept[2] = ept_z
 
     # Probe points
-    PROBE_SPACING = 0.1*PIG.Header.BoxSize()/2040
+    PROBE_SPACING = 0.01*PIG.Header.BoxSize()/2040
     PROBE_RADIUS = np.max(gas_sml)
 
     num_points = np.int32((ept[2]-spt[2])/PROBE_SPACING)
@@ -96,39 +96,65 @@ def TargetFoF(tgid):
         return (tgid,-1)
 
     ngb_ids=tree.query_ball_point(probe_points,PROBE_RADIUS)
-    probe_vals=np.zeros(len(probe_points))
+    probe_dens=np.zeros(len(probe_points))
+    probe_mets=np.zeros(len(probe_points))
     for i in range(len(ngb_ids)):
         pp=probe_points[i]
         pp_ngb_ids=ngb_ids[i]
         pp_ngb_sml = tgas_sml[pp_ngb_ids]
         pp_ngb_dist = np.linalg.norm(tgas_pos[pp_ngb_ids]-pp,axis=1)
         # -------
-        # pp_ngb_mass = tgas_mass[pp_ngb_ids]
-        # pp_ngb_mass = tgas_mass[pp_ngb_ids]*tgas_met[pp_ngb_ids]
-        pp_ngb_mass = tgas_mass[pp_ngb_ids]*((tgas_met[pp_ngb_ids]/0.02)**0.7)
+        pp_ngb_mass = tgas_mass[pp_ngb_ids]
+        pp_ngb_met_mass = tgas_mass[pp_ngb_ids]*tgas_met[pp_ngb_ids]
+        # pp_ngb_mass = tgas_mass[pp_ngb_ids]*((tgas_met[pp_ngb_ids]/0.02)**0.7)
         # -------
-        probe_vals[i]=np.sum(pp_ngb_mass*CubicSpline(pp_ngb_dist,pp_ngb_sml))
+        probe_dens[i]=np.sum(pp_ngb_mass*CubicSpline(pp_ngb_dist,pp_ngb_sml))
+        probe_mets[i]=np.sum(pp_ngb_met_mass*CubicSpline(pp_ngb_dist,pp_ngb_sml))
 
-    # Integrate
-    ndens = probe_vals
+    # ----- Salting
+    probe_dens +=1e-30 #To avoid divide by zero errors
+    _Z = probe_mets/probe_dens
+    # ----- Metallicity Scaling
+    probe_dens *=(_Z/0.02)**1.0
+    # ----- Units
+    h=0.6736
+    probe_dens *= PIG.Header.Units.Density * (h**2)
+    probe_z *= PIG.Header.Units.Length/h
+    # ----- Density to Number
+    probe_ndens = probe_dens * 0.75 / 1.67e-24
+    # ----- Comoving to Physical
+    # probe_ndens *=(1+7)**3
+    # probe_z /=(1+7)
+
+    # ----- Integrate
     ds=np.diff(probe_z)
-    N=np.sum(ndens[:-1]*ds)
+    N=np.sum(probe_ndens[:-1]*ds)
 
-    return (tgid,N)
+    # ----- Convert to Physical
+    kappa = 1/3e21
+    AV = N*kappa
 
 
+    return (tgid,N,AV)
+
+
+
+
+# %%
 TFOF_GIDS = TFOF_GIDS[:5000]
 clm_den = {}
 with Pool(24) as pool:
-    for tgid,cld in tqdm(pool.imap_unordered(TargetFoF,TFOF_GIDS),total=len(TFOF_GIDS)):
-        clm_den[tgid]=cld
+    for tgid,cld,AV in tqdm(pool.imap_unordered(TargetFoF,TFOF_GIDS),total=len(TFOF_GIDS)):
+        clm_den[tgid]=(cld,AV)
 
 clm_den=dict(sorted(clm_den.items()))
 
-filepath = f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/column_density/data/{PIG.sim_name}_z7p0_Av_a0p7.dict"
+filepath = f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/column_density/data/{PIG.sim_name}_z7p0_Av_a1p0.dict"
 
 os.makedirs(os.path.dirname(filepath), exist_ok=True)
 with open(filepath,"wb") as fp:
     pickle.dump(clm_den,fp)
 
 
+
+# %%

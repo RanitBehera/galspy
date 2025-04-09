@@ -21,7 +21,10 @@ met = PIG.Gas.Metallicity()
 sml = PIG.Gas.SmoothingLength()
 # den = PIG.Gas.Density()
 mass = PIG.Gas.Mass()
+# %%
+nhy_frac = PIG.Gas.NeutralHydrogenFraction()
 
+# %%
 gid_star = PIG.Star.GroupID()
 pos_star = PIG.Star.Position()
 pot_star = PIG.Star.Potential()
@@ -37,6 +40,12 @@ def CubicSpline(r,h): #q=r/h
     output = np.select(conditions,[I1,I2,I3])
 
     return output
+
+
+
+
+
+
 
 # %%
 from galspy.Spectra.Dust import DustExtinction
@@ -55,6 +64,7 @@ tpos=pos[tmask]
 tmet=met[tmask]
 tsml=sml[tmask]
 tmass=mass[tmask]
+tnhy_frac = nhy_frac[tmask]
 
 tstar_pos = pos_star[gid_star==tgid]
 tstar_pot = pot_star[gid_star==tgid]
@@ -112,8 +122,8 @@ def GetCD(PROBE_SPACING,PROBE_RADIUS):
         ngb_sml = tsml[cngb_ids]
         ngb_dist = np.linalg.norm(tpos[cngb_ids]-pp,axis=1)
         # -----
-        ngb_mass = tmass[cngb_ids]
-        ngb_metal_mass = tmass[cngb_ids] * tmet[cngb_ids]
+        ngb_mass = tmass[cngb_ids]*tnhy_frac[cngb_ids]
+        ngb_metal_mass = tmass[cngb_ids] * tmet[cngb_ids] *tnhy_frac[cngb_ids]
         # -----
         probe_val[i]=np.sum(ngb_mass*CubicSpline(ngb_dist,ngb_sml))
         probe_met_val[i]=np.sum(ngb_metal_mass*CubicSpline(ngb_dist,ngb_sml))
@@ -123,7 +133,7 @@ def GetCD(PROBE_SPACING,PROBE_RADIUS):
     probe_val +=1e-30
     prob_Z = probe_met_val/probe_val
 
-    # Metallicity Sacling
+    # Metallicity Scaling
     probe_val *=(prob_Z/0.02)**0.7
     # h factor for physical
     probe_val=probe_val*PIG.Header.Units.Density * (0.6736**2)
@@ -131,15 +141,15 @@ def GetCD(PROBE_SPACING,PROBE_RADIUS):
     # hydrogen number densityfraction
     ndens=probe_val*0.75/1.67e-24
     # Comoving to physical redshift account
-    # ndens *=(1+7)**2
-
+    # ndens *=(1+7)**3
+    # probe_z /=(1+7)
     
     # Integrate to get column density
     ds=np.diff(probe_z)
     N=np.sum(ndens[:-1]*ds)
 
     # Optical Exctinction from Column density
-    kappa = 1/2e31
+    kappa = 1/3e21
     AV=N*kappa
     AUV=de.get_extinction([1500],"Calzetti",AV)[0]
 
