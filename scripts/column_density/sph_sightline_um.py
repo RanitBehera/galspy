@@ -122,29 +122,36 @@ def GetCD(PROBE_SPACING,PROBE_RADIUS):
         pp=probe_points[i]
         ngb_sml = tsml[cngb_ids]
         ngb_dist = np.linalg.norm(tpos[cngb_ids]-pp,axis=1)
-        ngb_mass = tmass[cngb_ids]
+        ngb_mass = tmass[cngb_ids] * (tmet[cngb_ids]/0.02)**0.7
         probe_val[i]=np.sum(ngb_mass*CubicSpline(ngb_dist,ngb_sml))
 
     print("Probe Vals")
-    probe_val=probe_val*PIG.Header.Units.Density
+    probe_val=probe_val*PIG.Header.Units.Density * (0.6736**2)
     ndens=probe_val/1.67e-24
     ndens=ndens*0.75
 
 
 
     # Integrate
-    # z_mask = probe_z<91850
-    # probe_z=probe_z[z_mask]
-    # ndens=ndens[z_mask]
+    z_mask = probe_z<18030
+    probe_z=probe_z[z_mask]
+    ndens=ndens[z_mask]
 
 
     ds=np.diff(probe_z)
-    ds *=PIG.Header.Units.Length
+    ds *=PIG.Header.Units.Length/0.6736
 
+
+    ndens *=(1+7)**3
+    ds /=(1+7)
 
 
     N=np.sum(ndens[:-1]*ds)
-    ax.plot(probe_z[:-1]-probe_z[0],ndens[:-1],'.-',label=f"{num_points} - {N:0.2e}")
+
+
+    AV=N/3.05e22
+
+    ax.plot(probe_z[:-1],ndens[:-1],'.-',label=f"{num_points} - {N:0.2e} - AV = {AV:.02f}")
 
     return N, end_points_z-probe_z[0]
 
@@ -169,7 +176,7 @@ Ni,end_points_z=GetCD(0.02*G_PROBE_SPACING,G_PROBE_RADIUS)
 # for ez in EZ:
 #     ax.axvline(ez)
 
-ax.axvline(end_points_z)
+# ax.axvline(end_points_z)
 
 ax.legend()
 ax.set_yscale("log")

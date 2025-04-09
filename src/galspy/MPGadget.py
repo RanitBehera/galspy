@@ -9,7 +9,7 @@ from galspy.Spectra.Templates import GetCachedStarsSpecTemplateIndex
 import numpy
 import bigfile as bigf
 from astropy.cosmology import FlatLambdaCDM
-from galspy.Spectra.ColumnDensity import GetCentralStarPosition
+from galspy.Spectra.ColumnDensity import GetCentralStarPosition, GetStellarSPHColumnDensity
 
 class _Folder:
     def __init__(self,path:str) -> None:
@@ -329,11 +329,15 @@ class _PIG(_Folder):
 
         return GetCentralStarPosition(FILEPATH,self,num_pool_worker=24)
 
-    def GetStellarColumnDensity(self):
+    def GetStellarSPHColumnDensity(self):
         SEARCH_DIR = _PIG.CACHE_DIR
         SEARCH_DIR += os.sep + self.sim_name + os.sep + self.snap_name
-        FILENAME = "CentralStarLocation.dict"
+        FILENAME = "StellarSPHColumnDensity.dict"
         FILEPATH = SEARCH_DIR + os.sep + FILENAME
+
+        return GetStellarSPHColumnDensity(FILEPATH,self,num_pool_worker=24)
+
+
 
 
 class _Param_GenIC:

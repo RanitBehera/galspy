@@ -1,3 +1,4 @@
+# %%
 import galspy as gs
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,4 +13,9 @@ UNITS=PIG.Header.Units
 print("Target Box ".ljust(32,"="))
 PIG.print_box_info()
 
-cstar_loc = PIG.GetCentralStarPosition()
+
+clm_den = PIG.GetStellarSPHColumnDensity()
+
+# gids=PIG.Star.GroupID()
+
+# %%
