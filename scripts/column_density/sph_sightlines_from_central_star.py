@@ -123,15 +123,15 @@ def TargetFoF(tgid):
     # ----- Density to Number
     probe_ndens = probe_dens * 0.75 / 1.67e-24
     # ----- Comoving to Physical
-    # probe_ndens *=(1+7)**3
-    # probe_z /=(1+7)
+    probe_ndens *=(1+7)**3
+    probe_z /=(1+7)
 
     # ----- Integrate
     ds=np.diff(probe_z)
     N=np.sum(probe_ndens[:-1]*ds)
 
     # ----- Convert to Physical
-    kappa = 1/3e21
+    kappa = 1/3e22
     AV = N*kappa
 
 
@@ -141,7 +141,6 @@ def TargetFoF(tgid):
 
 
 # %%
-TFOF_GIDS = TFOF_GIDS[:5000]
 clm_den = {}
 with Pool(24) as pool:
     for tgid,cld,AV in tqdm(pool.imap_unordered(TargetFoF,TFOF_GIDS),total=len(TFOF_GIDS)):
@@ -149,7 +148,7 @@ with Pool(24) as pool:
 
 clm_den=dict(sorted(clm_den.items()))
 
-filepath = f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/column_density/data/{PIG.sim_name}_z7p0_Av_a1p0.dict"
+filepath = f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/column_density/data/{PIG.sim_name}_z7p0_Av_a1p0_with_z.dict"
 
 os.makedirs(os.path.dirname(filepath), exist_ok=True)
 with open(filepath,"wb") as fp:

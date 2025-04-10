@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from typing import Literal
 
 
-OBS_DICT_HINT = Literal["Bouwens+21","Oesch+18","Donnan+24","Whitler+25"]
+OBS_DICT_HINT = Literal["Bouwens+21","Oesch+18","Donnan+24","Whitler+25","Finkelstein+15"]
 
 OBS_DATA_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/obs/uvlf"
 def load_obs_to_axis(ax:plt.Axes,redshift,obs_key_list:OBS_DICT_HINT=[],label_suffix=""):
@@ -15,6 +15,7 @@ def load_obs_to_axis(ax:plt.Axes,redshift,obs_key_list:OBS_DICT_HINT=[],label_su
         z,*_ = data.T
         mask = z==redshift
         z,MAB,Phi,MAB_n,MAB_p,Phi_n,Phi_p = data[mask].T
+        if len(z)<1:continue
         ax.errorbar(MAB,Phi,yerr=[Phi_n,Phi_p],xerr=[MAB_n,MAB_p],
                     label=f"{key} {label_suffix}"
                     ,ls=' ',marker='.',capsize=3,ms=8)
