@@ -142,7 +142,7 @@ def GetCD(PROBE_SPACING,PROBE_RADIUS):
     ndens=probe_val*0.75/1.67e-24
     # Comoving to physical redshift account
     # ndens *=(1+7)**3
-    # probe_z /=(1+7)
+    # probe_z /=(1+7)+
     
     # Integrate to get column density
     ds=np.diff(probe_z)

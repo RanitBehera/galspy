@@ -11,7 +11,7 @@ from multiprocessing import Pool
 
 
 SIM = gs.NavigationRoot(gs.NINJA.L150N2040)
-PIG = SIM.PIG(z=7)
+PIG = SIM.PIG(z=6)
 UNITS=PIG.Header.Units
 
 
@@ -118,13 +118,13 @@ def TargetFoF(tgid):
     probe_dens *=(_Z/0.02)**1.0
     # ----- Units
     h=0.6736
-    probe_dens *= PIG.Header.Units.Density * (h**2)
+    probe_dens *= PIG.Header.Units.Density * (h**2)   # Mass / Volume
     probe_z *= PIG.Header.Units.Length/h
     # ----- Density to Number
     probe_ndens = probe_dens * 0.75 / 1.67e-24
     # ----- Comoving to Physical
-    probe_ndens *=(1+7)**3
-    probe_z /=(1+7)
+    probe_ndens *=(1+PIG.Header.Redshift())**3
+    probe_z /=(1+PIG.Header.Redshift())
 
     # ----- Integrate
     ds=np.diff(probe_z)
@@ -148,7 +148,7 @@ with Pool(24) as pool:
 
 clm_den=dict(sorted(clm_den.items()))
 
-filepath = f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/column_density/data/{PIG.sim_name}_z7p0_Av_a1p0_with_z.dict"
+filepath = f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/column_density/data/{PIG.sim_name}_z10p0_Av_a1p0.dict"
 
 os.makedirs(os.path.dirname(filepath), exist_ok=True)
 with open(filepath,"wb") as fp:
