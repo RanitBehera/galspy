@@ -29,6 +29,7 @@ exclude_filters=[]
 for i,file in enumerate(filters):
     if file in exclude_filters:continue
     wave,trans = np.loadtxt(os.path.join(FILTER_DIR,file)).T
+    wave=wave/(1+7)
     trans = trans#/max(trans)
     lam_repr = np.sum(wave*trans)/np.sum(trans)
 

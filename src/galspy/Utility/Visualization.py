@@ -207,10 +207,10 @@ class Cube3D:
         # ax.tight_layout()
 
         # Hide labels and ticks
-        # ax.axis("off")
-        # ax.set_zticks([],[])
-        # ax.set_xticks([],[])
-        # ax.set_yticks([],[])
+        ax.axis("off")
+        ax.set_zticks([],[])
+        ax.set_xticks([],[])
+        ax.set_yticks([],[])
         # ax.xaxis.set_tick_params(pad=-100)
 
 

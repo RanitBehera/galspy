@@ -6,8 +6,7 @@ from scipy.spatial import KDTree
 import pickle
 from tqdm import tqdm
 import os
-from multiprocessing import Pool
-
+from galspy.Utility.Visualization import Cube3D
 
 
 SIM = gs.NavigationRoot(gs.NINJA.L150N2040)
@@ -68,7 +67,8 @@ print("\nUsing Kernel :",Kernel.__name__)
 
 # ================================
 # %%
-def TargetFoF(tgid):
+# plt.figure(figsize=(10,10))
+def TargetFoF(tgid,probe_spacing_factor=0.01,probe_radius_factor=1,with_metal=False,metal_factor=1,label=""):
     tmask_gas = gas_gid==tgid
     tgas_pos = gas_pos[tmask_gas]
     tgas_mass = gas_mass[tmask_gas]
@@ -83,8 +83,8 @@ def TargetFoF(tgid):
     ept[2] = ept_z
 
     # Probe points
-    PROBE_SPACING = 0.01*PIG.Header.BoxSize()/2040
-    PROBE_RADIUS = np.max(gas_sml)
+    PROBE_SPACING = probe_spacing_factor*PIG.Header.BoxSize()/2040
+    PROBE_RADIUS = probe_radius_factor*np.max(gas_sml)
 
     num_points = np.int32((ept[2]-spt[2])/PROBE_SPACING)
     probe_z = np.linspace(spt[2],ept[2],num_points)
@@ -115,7 +115,8 @@ def TargetFoF(tgid):
     probe_dens +=1e-30 #To avoid divide by zero errors
     _Z = probe_mets/probe_dens
     # ----- Metallicity Scaling
-    probe_dens *=(_Z/0.02)**1.0
+    if with_metal:
+        probe_dens *=(_Z/0.02)**metal_factor
     # ----- Units
     h=0.6736
     probe_dens *= PIG.Header.Units.Density * (h**2)   # Mass / Volume
@@ -136,25 +137,43 @@ def TargetFoF(tgid):
     AV = N/(epsilon*kappa)
 
 
+
+    # ----- Visualisation
+    if False:
+        fig = plt.figure(figsize=(10, 7))
+        ax = fig.add_subplot(111, projection='3d')
+        c3d=Cube3D(ax)
+        c3d.add_points(tgas_pos,1,(0.7,0.7,0.7),0.2,'.')
+        c3d.get_axis().plot(*np.row_stack((spt,ept)).T,'-k',lw=1)
+        c3d.add_points(probe_points,100,'r',1,'+')
+        for pp in probe_points:
+            pass
+            c3d.add_sphere_wire(pp,0.5*PROBE_RADIUS,'k')
+        c3d.show()
+
+
+    if True:
+        # plt.plot((probe_z-probe_z[0])/3.086e21,probe_ndens,'-',label=f"R={probe_radius_factor} ({len(probe_z)}) ; N={np.log10(N):.02f}")
+        # plt.plot((probe_z-probe_z[0])/3.086e21,probe_ndens,'-',label=f"S={probe_spacing_factor} ({len(probe_z)}) ; N={np.log10(N):.02f}")
+        plt.plot((probe_z-probe_z[0])/3.086e21,probe_ndens,'-',label=label+ f" N={np.log10(N):.02f} ; $A_V$={AV:.02f}")
+
     return (tgid,N,AV)
 
+TGID=20
+TargetFoF(TGID,0.01,1,False,1,"No Scaling ;")
+TargetFoF(TGID,0.01,1,True,1,"Scaling a=1 ;")
+TargetFoF(TGID,0.01,1,True,0.7, "Saling a=0.7 ;")
 
-
-
-# %%
-# TFOF_GIDS=TFOF_GIDS[1:20000]
-clm_den = {}
-with Pool(24) as pool:
-    for tgid,cld,AV in tqdm(pool.imap_unordered(TargetFoF,TFOF_GIDS),total=len(TFOF_GIDS)):
-        clm_den[tgid]=(cld,AV)
-
-clm_den=dict(sorted(clm_den.items()))
-
-filepath = f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/column_density/data/{PIG.sim_name}_{PIG.redshift_name}.dict"
-
-os.makedirs(os.path.dirname(filepath), exist_ok=True)
-with open(filepath,"wb") as fp:
-    pickle.dump(clm_den,fp)
+# plt.xscale("log")
+plt.yscale("log")
+plt.ylim(1e-5,1e3)
+plt.legend(title=f"$\kappa$={2e21} ; $\epsilon$={15}")
+# plt.title("No Cloud Metallicity Scaling")
+plt.xlabel("Physical Sightline Distance (kpc)")
+plt.ylabel("Physical Number Density ($cm^{-3}$)")
+plt.grid(alpha=0.3)
+plt.annotate(f"{PIG.sim_name} : TGID = {TGID}",(0,0),(4,4),"axes fraction","offset pixels",ha="left",va="bottom")
+plt.show()
 
 
 

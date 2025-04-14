@@ -250,6 +250,7 @@ class _PART(_Folder):
         self.Header     = _PARTHeader(self.path)
         self.sim_name   = os.path.basename(os.path.abspath(self.path + "../../../"))
         self.snap_name  = os.path.basename(os.path.abspath(self.path))
+        self.redshift_name  = f"z{self.Header.Redshift():.02f}".replace(".",'p')
 
     def print_box_info(self,cell_width=8):
         print("- Simulation".ljust(cell_width),":",self.sim_name)
@@ -300,6 +301,7 @@ class _PIG(_Folder):
         self.FOFGroups  = _FOFGroups(os.path.join(self.path,"FOFGroups"))
         self.sim_name   = os.path.basename(os.path.abspath(self.path + "../../../"))
         self.snap_name  = os.path.basename(os.path.abspath(self.path))
+        self.redshift_name  = f"z{self.Header.Redshift():.02f}".replace(".",'p')
 
     def print_box_info(self,cell_width=8):
         print("- Simulation".ljust(cell_width),":",self.sim_name)

@@ -1,7 +1,7 @@
 import numpy as np
 import galspy.FileTypes.ConfigFile as cf
 
-FILE="/mnt/home/student/cranit/NINJA/simulations/L150N2040_WIND_WEAK/run/paramfile.gadget"
+FILE="/mnt/home/student/cranit/NINJA/simulations/L50N2040/run/paramfile.gadget"
 
 param = cf.ReadAsDictionary(FILE)
 

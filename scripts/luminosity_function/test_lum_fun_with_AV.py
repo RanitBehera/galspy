@@ -15,7 +15,7 @@ de = DustExtinction()
 
 
 # Light
-load_obs_to_axis(plt.gca(),7,["Bouwens+21","Donnan+24","Whitler+25","Oesch+18","Finkelstein+15"])
+load_obs_to_axis(plt.gca(),7,["Bouwens+21","Donnan+24","Whitler+25","Oesch+18","Finkelstein+15","Harikane+23"])
 
 PATH_DIR1 = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/light_generation/data/"
 PATH_DIR2 = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/column_density/data/"
@@ -41,23 +41,28 @@ def DoForFile(filepath1:str,filepath2:str,boxsize,label:str):
         if i>20:break
 
     mMAB_AV = mMAB + AUV
-    mMAB_AV = mMAB_AV[mMAB_AV< -16]
+    # mMAB_AV = mMAB_AV[mMAB_AV< -16]
 
+    bins=np.arange(-25,-15,0.5)
 
     h=0.6736
-    bin_AB,bin_phi,error=gs.Utility.LumimosityFunction(mMAB,boxsize/h,20)
-    plt.gca().plot(bin_AB,bin_phi,'-',label=f"ST+NB - {label}" )
-    bin_AB,bin_phi,error=gs.Utility.LumimosityFunction(mMAB_AV,boxsize/h,15)
-    plt.gca().plot(bin_AB,bin_phi,'-',label=f"ST+NB+DE - {label}")
+    bin_AB,bin_phi,error=gs.Utility.LumimosityFunction(mMAB,boxsize/h,bins)
+    plt.gca().plot(bin_AB,bin_phi,'.-',label=f"ST+NB - {label}" )
+    plt.fill_between(bin_AB,bin_phi-0.9*error,bin_phi+0.9*error,color='k',alpha=0.2,ec=None)
+
+    bin_AB,bin_phi,error=gs.Utility.LumimosityFunction(mMAB_AV,boxsize/h,bins)
+    plt.gca().plot(bin_AB,bin_phi,'.-',label=f"ST+NB+DE - {label}")
+    plt.fill_between(bin_AB,bin_phi-0.9*error,bin_phi+0.9*error,color='k',alpha=0.2,ec=None)
 
 
  
 DoForFile("out_L150N2040_z7p0_stnb_chabrier300_bin.csv","L150N2040_z7p0_Av_a1p0.dict",150,"L150N2040")
 DoForFile("out_L250N2040_z7p0_stnb_chabrier300_bin.csv","L250N2040_z7p0_Av_a1p0.dict",250,"L250N2040")
+# DoForFile("out_L250N2040_z7p0_stnb_chabrier300_bin.csv","L250N2040_z7p0_Av_a1p0_FS.dict",250,"L250N2040 (FS)")
 
 
 
-plt.xlim(-26,-15)
+# plt.xlim(-26,-15)
 plt.yscale("log")
 plt.xlabel("M_UV")
 plt.ylabel("$\phi$")
