@@ -12,8 +12,8 @@ gids = PIG.FOFGroups.GroupID()[mask]
 
 spm=gs.PIGSpectrophotometry(PIG)
 
-DUMP_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/light_generation/data"
+DUMP_DIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/light_generation/data2"
 # spm.get_light_dict(np.arange(1,100))
 # spm.get_light_dict([2])
 # spm.get_light_dict([int(gids[0]),int(gids[1])],)
-spm.get_light_dict(gids, DUMP_DIR)
+spm.get_light_dict(3, DUMP_DIR)

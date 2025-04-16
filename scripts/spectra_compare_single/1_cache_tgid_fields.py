@@ -27,6 +27,8 @@ print("- Star".ljust(8),">","Masses")
 star_mass = PIG.Star.Mass()
 print("- Star".ljust(8),">","Potentials")
 star_pot = PIG.Star.Potential()
+print("- Star".ljust(8),">","IDs")
+star_id = PIG.Star.ID()
 
 DDIR = "/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/spectra_compare_single/data"
 def Dump(tgid,field,name:str):
@@ -51,6 +53,7 @@ def DoFor(TGID):
     m_star_pos  = star_pos[masks]
     m_star_mass = star_mass[masks]
     m_star_pot  = star_pot[masks]
+    m_star_id  = star_id[masks]
 
     
     Dump(TGID,m_gas_gid,"gas_gid")
@@ -62,6 +65,7 @@ def DoFor(TGID):
     Dump(TGID,m_star_pos,"star_pos")
     Dump(TGID,m_star_mass,"star_mass")
     Dump(TGID,m_star_pot,"star_pot")
+    Dump(TGID,m_star_id,"star_id")
 
 
 DoFor(3)

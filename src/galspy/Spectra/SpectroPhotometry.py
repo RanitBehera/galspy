@@ -16,6 +16,7 @@ from galspy.Spectra.jwst import _AVAIL_JWST_FILTERS_HINT
 from galspy.Spectra.Templates import Templates
 from galspy.Spectra.Templates import BPASS
 from galspy.Spectra.Dust import DustExtinction
+import galspy.Spectra.Voigt as vgt
 import galspy as gs
 
 
@@ -754,9 +755,10 @@ class PIGSpectrophotometry:
         #-------------------------------------------------------
 
         
-        REDDEN = False
-
+        REDDEN = True
         DUMP=False
+        DLA=True
+
         DUMP_DIR = dump_dir
         if DUMP:
             outfile_st = open(f"{DUMP_DIR}/out_{self.PIG.sim_name}_z{str(np.round(self.PIG.Header.Redshift(),2)).replace('.','p')}_st_{self.fnsuffix}.csv",'w')
@@ -830,12 +832,31 @@ class PIGSpectrophotometry:
                 mask = (wl_rest_stnb>10)&(wl_rest_stnb<300000)
                 wl_rest_stnbde,summed_spec_stnbde=de.get_reddened_spectrum(wl_rest_stnb[mask],summed_spec_stnb[mask],"Calzetti",0.5)
 
-            # plt.plot(wl_rest_stnb,summed_spec_stnb)
-            # plt.plot(wl_rest_stnbde,summed_spec_stnbde)
+
+            # Check Specs
+            plt.plot(wl_rest_st,summed_spec_st,label="Star Only")
+            plt.plot(wl_rest_stnb,summed_spec_stnb,label="Star + Nebular")
+            plt.plot(wl_rest_stnbde,summed_spec_stnbde, label="Star + Nebular + Dust (Av=0.5)")
+
+            # Voigt
+            line=vgt.Line(1215.67,6.265e8,0.4162,"LyA")
+            cloud = vgt.AbsorbingCloud(10000,1)
+            dla=vgt.Voigt(line,cloud)
+            # lambda_A=wl_rest_st[wl_rest_st>1100 & wl_rest_st<1300]
+            tau=dla.get_tau(10**23,wl_rest_stnb)
+            transmission = np.exp(-tau)
+            plt.plot(wl_rest_stnb,summed_spec_stnb*transmission, label="Star + Nebular + DLA ($N_{HI}$=23)")
+            plt.axvline(1446,color='k',ls='--',lw=1)
+            plt.axvspan(1272,1595,color='k',alpha=0.1,ec=None)
             # plt.xscale("log")
-            # plt.yscale("log")
-            # plt.show()
-            # exit()
+            plt.yscale("log")
+            plt.xlim(1100,1700)
+            plt.ylim(1e4,1e9)
+            plt.legend()
+            plt.xlabel("Wavelength ($\\AA$)")
+            plt.ylabel("Spectral Luminosity ($L_\odot/\\AA$)")
+            plt.show()
+            exit()
             
             propout_st = self._get_spec_properties(wl_rest_st,summed_spec_st)
             propout_stnb = self._get_spec_properties(wl_rest_stnb,summed_spec_stnb)
