@@ -337,7 +337,7 @@ class _PIG(_Folder):
         FILENAME = "StellarSPHColumnDensity.dict"
         FILEPATH = SEARCH_DIR + os.sep + FILENAME
 
-        return GetStellarSPHColumnDensity(FILEPATH,self,num_pool_worker=24)
+        # return GetStellarSPHColumnDensity(FILEPATH,self,num_pool_worker=24)
 
 
 

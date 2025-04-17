@@ -285,8 +285,8 @@ class PIGSpectrophotometry:
 
 
     def LoadSpectrums(self,imf:BPASS.AVAIL_MODEL_HINT,system:Literal["Single","Binary"]):
-        tp=Templates()
-        self.fnsuffix = tp._get_filename(imf,system).removesuffix(".specs").removeprefix("_")
+        # tp=Templates()
+        self.fnsuffix = SpectralTemplates._get_filename(imf,system).removesuffix(".specs").removeprefix("_")
 
 
         if PIGSpectrophotometry._template_specs_stellar is None:

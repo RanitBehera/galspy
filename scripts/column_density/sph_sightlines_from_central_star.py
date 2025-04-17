@@ -93,7 +93,7 @@ def TargetFoF(tgid):
     # Tree and Probe
     tree = KDTree(tgas_pos)
     if len(probe_points)==0:
-        return (tgid,-1)
+        return (tgid,0,0)
 
     ngb_ids=tree.query_ball_point(probe_points,PROBE_RADIUS)
     probe_dens=np.zeros(len(probe_points))
