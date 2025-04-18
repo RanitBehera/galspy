@@ -11,7 +11,7 @@ from multiprocessing import Pool
 
 
 SIM = gs.NavigationRoot(gs.NINJA.L150N2040_WIND_WEAK)
-PIG = SIM.PIG(z=10)
+PIG = SIM.PIG(z=7)
 UNITS=PIG.Header.Units
 
 
@@ -20,8 +20,6 @@ PIG.print_box_info()
 
 
 print("\nReading Fields ".ljust(32,"="))
-print("- Gas".ljust(8),">","GroupIDs")
-gas_gid = PIG.Gas.GroupID()
 print("- Gas".ljust(8),">","Positions")
 gas_pos = PIG.Gas.Position()
 print("- Gas".ljust(8),">","Masses")
@@ -34,6 +32,8 @@ print("- FOF".ljust(8),">","GroupIDs")
 fof_gids = PIG.FOFGroups.GroupID()
 print("- FOF".ljust(8),">","Stellar Mass")
 fof_st_mass = PIG.FOFGroups.MassByType().T[4]
+print("- FOF".ljust(8),">","Block Index")
+BS,BE = PIG.GetParticleBlockIndex(gs.GAS)
 print("- Star".ljust(8),">","Central Location")
 star_cpos = PIG.GetCentralStarPosition()
 
@@ -69,11 +69,10 @@ print("\nUsing Kernel :",Kernel.__name__)
 # ================================
 # %%
 def TargetFoF(tgid):
-    tmask_gas = gas_gid==tgid
-    tgas_pos = gas_pos[tmask_gas]
-    tgas_mass = gas_mass[tmask_gas]
-    tgas_sml = gas_sml[tmask_gas]
-    tgas_met = gas_met[tmask_gas]
+    tgas_pos = gas_pos[BS[tgid]:BE[tgid]]
+    tgas_mass = gas_mass[BS[tgid]:BE[tgid]]
+    tgas_sml = gas_sml[BS[tgid]:BE[tgid]]
+    tgas_met = gas_met[BS[tgid]:BE[tgid]]
     spos = star_cpos[tgid]
 
     # Start point and end point
@@ -87,6 +86,7 @@ def TargetFoF(tgid):
     PROBE_RADIUS = np.max(gas_sml)
 
     num_points = np.int32((ept[2]-spt[2])/PROBE_SPACING)
+    if num_points<0:print(tgid,ept[2],spt[2],PROBE_SPACING)
     zstops = np.linspace(spt[2],ept[2],num_points)
     probe_points = np.array([[spt[0],spt[1],zp] for zp in zstops])
 
@@ -150,8 +150,8 @@ def TargetFoF(tgid):
 # TFOF_GIDS=TFOF_GIDS[1:20000]
 clm_den = {}
 with Pool(24) as pool:
-    for tgid,cld,AV in tqdm(pool.imap_unordered(TargetFoF,TFOF_GIDS),total=len(TFOF_GIDS)):
-        clm_den[tgid]=(cld,AV)
+    for tgid,N,NZ in tqdm(pool.imap_unordered(TargetFoF,TFOF_GIDS),total=len(TFOF_GIDS)):
+        clm_den[tgid]=(N,NZ)
 
 clm_den=dict(sorted(clm_den.items()))
 

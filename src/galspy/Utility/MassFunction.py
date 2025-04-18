@@ -15,7 +15,7 @@ def _mass_function_from_mass_list(Mass,VOLUME,bins):
     # Will exponent on e in front-end to get back mass, So no confilict with log10
     log_Mass=numpy.log(Mass)
     
-    bin_count,bin_edges = numpy.histogram(Mass,bins=bins)
+    bin_count,bin_edges = numpy.histogram(log_Mass,bins=bins)
     bin_center = (bin_edges[1:]+bin_edges[:-1])/2
     bin_span = numpy.diff(bin_edges)
     bin_phi = bin_count / (bin_span * VOLUME)

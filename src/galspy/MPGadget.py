@@ -345,6 +345,28 @@ class _PIG(_Folder):
 
         # return GetStellarSPHColumnDensity(FILEPATH,self,num_pool_worker=24)
 
+    def GetParticleBlockIndex(self,ptype=None):
+        lbt=self.FOFGroups.LengthByType().T
+        cum_lbt=numpy.cumsum(lbt,axis=1)
+        zeros = numpy.zeros((cum_lbt.shape[0],1))
+        block_start = numpy.int64(numpy.hstack((zeros,zeros,cum_lbt)))
+        block_end = numpy.int64(numpy.hstack((zeros,cum_lbt,zeros)))
+
+        # block_slices = numpy.empty(block_start.shape, dtype=object)
+        # for idx, _ in numpy.ndenumerate(block_start):
+        #     block_slices[idx] = slice(block_start[idx], block_end[idx])
+
+        if ptype is not None:
+            # block_slices=block_slices[ptype]
+            block_start=block_start[ptype]
+            block_end=block_end[ptype]
+        
+        return block_start,block_end
+
+        # USE AS:
+        # BS,BE = PIG.GetParticleBlockIndex(gs.STAR)
+        # TFIELD = FIELD[BS[TGID]:BE[TGID]]
+
 
 
 

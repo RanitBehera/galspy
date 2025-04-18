@@ -5,6 +5,13 @@ from galspy.Spectra.SpectroPhotometry import PIGSpectrophotometry
 
 
 SetPlotStyle = _Plots.SetStyle
+
+GAS = 0
+DARKMATTER = 1
+STAR = 4
+BLACKHOLE = 5
+
+
 class NINJA:
     L150N2040 = "/mnt/home/student/cranit/NINJA/simulations/L150N2040/SNAPS"
     L250N2040 = "/mnt/home/student/cranit/NINJA/simulations/L250N2040/SNAPS"

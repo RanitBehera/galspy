@@ -4,12 +4,12 @@ from multiprocessing import Pool
 from tqdm import tqdm
 import pickle
 from scipy.spatial import KDTree
+import galspy as gs
 
 # ===================================================================
 def _get_central_star_position(tgid):
-    tmask = star_gid==tgid
-    tstar_pot = star_pot[tmask]
-    tstar_pos = star_pos[tmask]
+    tstar_pot = star_pot[star_BS[tgid]:star_BE[tgid]]
+    tstar_pos = star_pos[star_BS[tgid]:star_BE[tgid]]
     cloc=tstar_pos[np.argmin(tstar_pot)]
     return (tgid, cloc)
 
@@ -18,11 +18,11 @@ def GetCentralStarPosition(filepath,PIG,num_pool_worker):
         print("Central star location cache file not found ...")
         print("Creating Cache ...")
 
-        global star_gid,star_pos,star_pot
+        global star_gid,star_pos,star_pot,star_BS,star_BE
         star_gid = PIG.Star.GroupID()
         star_pos = PIG.Star.Position()
         star_pot = PIG.Star.Potential()
-
+        star_BS,star_BE=PIG.GetParticleBlockIndex(gs.STAR)
         all_gids = PIG.FOFGroups.GroupID()
         all_st_len = PIG.FOFGroups.LengthByType().T[4]
         mask = all_st_len>0
@@ -125,6 +125,8 @@ def GetStellarSPHColumnDensity(filepath,PIG,num_pool_worker):
         gas_met = PIG.Gas.Metallicity()
         print("- Gas".ljust(8),">","Smoothing Lengths")
         gas_sml = PIG.Gas.SmoothingLength()
+        print("- FOF".ljust(8),">","Block Index")
+
 
 
         global avg_ips
