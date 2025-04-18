@@ -95,10 +95,16 @@ class _Gas(_NodeGroup):
         KB = 1.38e-16
         X = 0.74 
 
+        # From Codes
         mu=4/(X*(3+4*nebynh)+1)
-        temp = (GAMMA-1)*(MP/KB)*mu*ie
+        temp1 = (GAMMA-1)*(MP/KB)*mu*ie 
         
-        return rho,temp
+        # From Shared
+        Y=1-X
+        Ne=nebynh
+        temp = 8*MP*ie/(3*KB*(4+4*Ne-4*Y*nebynh-3*Y))
+
+        return rho,temp,temp1
 
 
 
@@ -206,9 +212,9 @@ class _PIGHeader(_Folder):
     def __init__(self, path: str) -> None:
         self.path = os.path.join(path,"Header/attr-v2")
         self._header = bf.Attribute(self.path).Read()
-        # self.Units   = _PART(path.replace("PIG","PART")).Header.Units
+        self.Units   = _PART(path.replace("PIG","PART")).Header.Units
         # Simple replace will not work for secondarty snapshots where PART is deleted
-        self.Units   = _PART(os.path.abspath(path+"/../PART_000")).Header.Units
+        # self.Units   = _PART(os.path.abspath(path+"/../PART_000")).Header.Units
 
 
 
@@ -571,7 +577,7 @@ class _Sim:
         if snap_num is None:
             if z is None:raise ValueError("Either Snapnumber or Redshift is needed.")
             else:snap_num = self.SnapNumFromRedshift(z)
-
+            
         if not isinstance(snap_num,int):raise TypeError
         return _PIG(os.path.join(self.mpgadget_outdir,"PIG_" + self._FixedFormatSnapNumber(snap_num)))
     

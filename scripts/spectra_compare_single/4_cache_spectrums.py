@@ -19,7 +19,7 @@ def Read(tgid,name):
     with open(ddir,"rb") as fp:
         return pickle.load(fp)
     
-TGID = 4
+TGID = 3
 m_star_id = Read(TGID,"star_id")
 m_star_mass = Read(TGID,"star_mass")
 m_star_pot = Read(TGID,"star_pot")

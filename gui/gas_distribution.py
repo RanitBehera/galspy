@@ -7,8 +7,9 @@ from galspy.Utility.Visualization import Cube3D
 from matplotlib.collections import PathCollection
 
 
-SIM=gs.NavigationRoot(gs.NINJA.L150N2040_WIND_WEAK)
-PIG=SIM.PIG(z=7.0)
+SIM=gs.NavigationRoot(gs.NINJA.L150N2040)
+# SIM=gs.NavigationRoot("/mnt/home/student/cranit/Data/MP_Gadget/Nishi/L50N1008z05")
+PIG=SIM.PIG(z=7)
 
 class SelectFromCollection:
     def __init__(self, ax_ps:plt.Axes, ax_c3d:plt.Axes=None):
@@ -105,7 +106,7 @@ def Target(tgid):
     tie = ie[tmask]
     tnebynh = nebynh[tmask]
     tvel = vel[tmask] 
-    dens,temp = PIG.Gas.GetDensityAndTemperature(trho,tie,tnebynh,UNITS)
+    dens,temp,_ = PIG.Gas.GetDensityAndTemperature(trho,tie,tnebynh,UNITS)
 
     tpos = PIG.Gas.Position()[tmask]
 

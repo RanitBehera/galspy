@@ -112,29 +112,38 @@ def TargetFoF(tgid,probe_spacing_factor=0.01,probe_radius_factor=1,with_metal=Fa
         probe_mets[i]=np.sum(pp_ngb_met_mass*CubicSpline(pp_ngb_dist,pp_ngb_sml))
 
     # ----- Salting
-    probe_dens +=1e-30 #To avoid divide by zero errors
-    _Z = probe_mets/probe_dens
-    # ----- Metallicity Scaling
-    if with_metal:
-        probe_dens *=(_Z/0.02)**metal_factor
+
     # ----- Units
-    h=0.6736
+    h=PIG.Header.HubbleParam()
     probe_dens *= PIG.Header.Units.Density * (h**2)   # Mass / Volume
-    probe_z *= PIG.Header.Units.Length/h
+    zstops *= PIG.Header.Units.Length/h
+    # ----- Salting
+    probe_dens +=1e-30 #To avoid divide by zero errors
+    probe_Z = probe_mets/probe_dens
+    # ----- Metallicity Scaling
+    metal_factor=1
+    probe_dens_Z=probe_dens*((probe_Z/0.02)**metal_factor)
     # ----- Density to Number
-    probe_ndens = probe_dens * 0.75 / 1.67e-24
+    X=0.75
+    MH=1.67e-24
+    probe_ndens = probe_dens * (X/MH)
+    probe_ndens_Z = probe_dens_Z * (X/MH)
     # ----- Comoving to Physical
     probe_ndens *=(1+PIG.Header.Redshift())**3
-    probe_z /=(1+PIG.Header.Redshift())
+    probe_ndens_Z *=(1+PIG.Header.Redshift())**3
+    zstops /=(1+PIG.Header.Redshift())
 
     # ----- Integrate
-    ds=np.diff(probe_z)
+    ds=np.diff(zstops)
     N=np.sum(probe_ndens[:-1]*ds)
+    NZ=np.sum(probe_ndens_Z[:-1]*ds)
 
-    # ----- Convert to Physical
     kappa = 2e21
     epsilon=15
     AV = N/(epsilon*kappa)
+    AVZ = NZ/(epsilon*kappa)
+
+
 
 
 
@@ -157,7 +166,7 @@ def TargetFoF(tgid,probe_spacing_factor=0.01,probe_radius_factor=1,with_metal=Fa
         # plt.plot((probe_z-probe_z[0])/3.086e21,probe_ndens,'-',label=f"S={probe_spacing_factor} ({len(probe_z)}) ; N={np.log10(N):.02f}")
         plt.plot((probe_z-probe_z[0])/3.086e21,probe_ndens,'-',label=label+ f" N={np.log10(N):.02f} ; $A_V$={AV:.02f}")
 
-    return (tgid,N,AV)
+    return (tgid,N,NZ,AV,AVZ)
 
 TGID=20
 TargetFoF(TGID,0.01,1,False,1,"No Scaling ;")

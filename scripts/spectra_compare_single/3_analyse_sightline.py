@@ -48,12 +48,13 @@ N,NZ,AV,AVZ=odata.T
 # plt.figure()
 # plt.plot(dist,AVZ,'.',ms=2)
 
-plt.scatter(dist,AVZ,s=1,c='r')
-plt.scatter(dist,AV,s=1,c='b')
+# plt.scatter(dist,AVZ,s=1,c='r')
+# plt.scatter(dist,AV,s=1,c='b')
 
 
-# plt.scatter(dist,AVZ,s=1,c=np.log10(m_star_pos.T[2]-Z0))
-# plt.plot(cdist,CAVZ,'r.',ms=10)
+plt.scatter(dist,N,s=1,c=np.log10(m_star_pos.T[2]-Z0))
+plt.plot(cdist,CN,'r.',ms=10)
+
 plt.yscale("log")
 plt.xscale("log")
 

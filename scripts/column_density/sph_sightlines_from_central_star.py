@@ -10,8 +10,8 @@ from multiprocessing import Pool
 
 
 
-SIM = gs.NavigationRoot(gs.NINJA.L150N2040)
-PIG = SIM.PIG(z=7)
+SIM = gs.NavigationRoot(gs.NINJA.L150N2040_WIND_WEAK)
+PIG = SIM.PIG(z=10)
 UNITS=PIG.Header.Units
 
 
@@ -87,8 +87,8 @@ def TargetFoF(tgid):
     PROBE_RADIUS = np.max(gas_sml)
 
     num_points = np.int32((ept[2]-spt[2])/PROBE_SPACING)
-    probe_z = np.linspace(spt[2],ept[2],num_points)
-    probe_points = np.array([[spt[0],spt[1],zp] for zp in probe_z])
+    zstops = np.linspace(spt[2],ept[2],num_points)
+    probe_points = np.array([[spt[0],spt[1],zp] for zp in zstops])
 
     # Tree and Probe
     tree = KDTree(tgas_pos)
@@ -111,32 +111,37 @@ def TargetFoF(tgid):
         probe_dens[i]=np.sum(pp_ngb_mass*CubicSpline(pp_ngb_dist,pp_ngb_sml))
         probe_mets[i]=np.sum(pp_ngb_met_mass*CubicSpline(pp_ngb_dist,pp_ngb_sml))
 
+    # ----- Units
+    h=PIG.Header.HubbleParam()
+    probe_dens *= PIG.Header.Units.Density * (h**2)   # Mass / Volume
+    zstops *= PIG.Header.Units.Length/h
     # ----- Salting
     probe_dens +=1e-30 #To avoid divide by zero errors
-    _Z = probe_mets/probe_dens
+    probe_Z = probe_mets/probe_dens
     # ----- Metallicity Scaling
-    probe_dens *=(_Z/0.02)**1.0
-    # ----- Units
-    h=0.6736
-    probe_dens *= PIG.Header.Units.Density * (h**2)   # Mass / Volume
-    probe_z *= PIG.Header.Units.Length/h
+    metal_factor=1
+    probe_dens_Z=probe_dens*((probe_Z/0.02)**metal_factor)
     # ----- Density to Number
-    probe_ndens = probe_dens * 0.75 / 1.67e-24
+    X=0.75
+    MH=1.67e-24
+    probe_ndens = probe_dens * (X/MH)
+    probe_ndens_Z = probe_dens_Z * (X/MH)
     # ----- Comoving to Physical
     probe_ndens *=(1+PIG.Header.Redshift())**3
-    probe_z /=(1+PIG.Header.Redshift())
+    probe_ndens_Z *=(1+PIG.Header.Redshift())**3
+    zstops /=(1+PIG.Header.Redshift())
 
     # ----- Integrate
-    ds=np.diff(probe_z)
+    ds=np.diff(zstops)
     N=np.sum(probe_ndens[:-1]*ds)
+    NZ=np.sum(probe_ndens_Z[:-1]*ds)
 
-    # ----- Convert to Physical
-    kappa = 2e21
-    epsilon=15
-    AV = N/(epsilon*kappa)
+    # kappa = 2e21
+    # epsilon=15
+    # AV = N/(epsilon*kappa)
 
 
-    return (tgid,N,AV)
+    return (tgid,N,NZ)
 
 
 
@@ -150,7 +155,8 @@ with Pool(24) as pool:
 
 clm_den=dict(sorted(clm_den.items()))
 
-filepath = f"/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/column_density/data/{PIG.sim_name}_{PIG.redshift_name}.dict"
+DDIR="/mnt/home/student/cranit/RANIT/Repo/galspy/scripts/column_density/data/"
+filepath = DDIR + f"{PIG.sim_name}_{PIG.redshift_name}.dict"
 
 os.makedirs(os.path.dirname(filepath), exist_ok=True)
 with open(filepath,"wb") as fp:
