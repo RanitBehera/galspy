@@ -97,14 +97,9 @@ class _Gas(_NodeGroup):
 
         # From Codes
         mu=4/(X*(3+4*nebynh)+1)
-        temp1 = (GAMMA-1)*(MP/KB)*mu*ie 
+        temp = (GAMMA-1)*(MP/KB)*mu*ie 
         
-        # From Shared
-        Y=1-X
-        Ne=nebynh
-        temp = 8*MP*ie/(3*KB*(4+4*Ne-4*Y*nebynh-3*Y))
-
-        return rho,temp,temp1
+        return rho,temp
 
 
 

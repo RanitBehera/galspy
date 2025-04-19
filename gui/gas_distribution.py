@@ -106,7 +106,7 @@ def Target(tgid):
     tie = ie[tmask]
     tnebynh = nebynh[tmask]
     tvel = vel[tmask] 
-    dens,temp,_ = PIG.Gas.GetDensityAndTemperature(trho,tie,tnebynh,UNITS)
+    dens,temp = PIG.Gas.GetDensityAndTemperature(trho,tie,tnebynh,UNITS)
 
     tpos = PIG.Gas.Position()[tmask]
 

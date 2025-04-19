@@ -8,7 +8,7 @@ def Read(tgid,name):
     with open(ddir,"rb") as fp:
         return pickle.load(fp)
 
-TGID = 4
+TGID = 3
 
 m_star_gid = Read(TGID,"star_gid")
 m_star_pos = Read(TGID,"star_pos")
@@ -52,11 +52,15 @@ N,NZ,AV,AVZ=odata.T
 # plt.scatter(dist,AV,s=1,c='b')
 
 
-plt.scatter(dist,N,s=1,c=np.log10(m_star_pos.T[2]-Z0))
-plt.plot(cdist,CN,'r.',ms=10)
+plt.scatter(dist,AVZ,s=1,c=m_star_pos.T[2]-Z0)
+plt.plot(cdist,CAVZ,'r.',ms=10)
 
-plt.yscale("log")
+# plt.yscale("log")
 plt.xscale("log")
 
-# plt.colorbar()
+plt.xlabel("Distance From Mean Gas Position")
+plt.ylabel("Av")
+
+plt.colorbar(label="z Coordinate",fraction=0.05)
+plt.title(f"TGID={TGID}")
 plt.show()

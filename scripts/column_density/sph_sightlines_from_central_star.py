@@ -10,8 +10,8 @@ from multiprocessing import Pool
 
 
 
-SIM = gs.NavigationRoot(gs.NINJA.L150N2040_WIND_WEAK)
-PIG = SIM.PIG(z=7)
+SIM = gs.NavigationRoot(gs.NINJA.L150N2040)
+PIG = SIM.PIG(z=10)
 UNITS=PIG.Header.Units
 
 
@@ -86,7 +86,7 @@ def TargetFoF(tgid):
     PROBE_RADIUS = np.max(gas_sml)
 
     num_points = np.int32((ept[2]-spt[2])/PROBE_SPACING)
-    if num_points<0:print(tgid,ept[2],spt[2],PROBE_SPACING)
+    if num_points<0:return (tgid,0,0)
     zstops = np.linspace(spt[2],ept[2],num_points)
     probe_points = np.array([[spt[0],spt[1],zp] for zp in zstops])
 
@@ -111,39 +111,34 @@ def TargetFoF(tgid):
         probe_dens[i]=np.sum(pp_ngb_mass*CubicSpline(pp_ngb_dist,pp_ngb_sml))
         probe_mets[i]=np.sum(pp_ngb_met_mass*CubicSpline(pp_ngb_dist,pp_ngb_sml))
 
+    
+    # ----- Salting
+    probe_dens +=1e-30 #To avoid divide by zero errors
+    probe_Z = probe_mets/probe_dens
     # ----- Units
     h=PIG.Header.HubbleParam()
     probe_dens *= PIG.Header.Units.Density * (h**2)   # Mass / Volume
     zstops *= PIG.Header.Units.Length/h
-    # ----- Salting
-    probe_dens +=1e-30 #To avoid divide by zero errors
-    probe_Z = probe_mets/probe_dens
-    # ----- Metallicity Scaling
-    metal_factor=1
-    probe_dens_Z=probe_dens*((probe_Z/0.02)**metal_factor)
     # ----- Density to Number
     X=0.75
     MH=1.67e-24
     probe_ndens = probe_dens * (X/MH)
-    probe_ndens_Z = probe_dens_Z * (X/MH)
     # ----- Comoving to Physical
     probe_ndens *=(1+PIG.Header.Redshift())**3
-    probe_ndens_Z *=(1+PIG.Header.Redshift())**3
     zstops /=(1+PIG.Header.Redshift())
+    # ----- Metallicity Scaling
+    metal_factor=1
+    probe_ndens_Z=probe_ndens*((probe_Z/0.02)**metal_factor)
+    # If metallicity is super-solarr, then metal scaling will boost the density.
+    # While this doesn't make sense for density (or column density), It does correctly scales AV.
+    # What it means is that if solar metallcity produce certain AV, twice the solar metallicity will produce twice the AV.
 
     # ----- Integrate
     ds=np.diff(zstops)
     N=np.sum(probe_ndens[:-1]*ds)
     NZ=np.sum(probe_ndens_Z[:-1]*ds)
 
-    # kappa = 2e21
-    # epsilon=15
-    # AV = N/(epsilon*kappa)
-
-
     return (tgid,N,NZ)
-
-
 
 
 # %%
